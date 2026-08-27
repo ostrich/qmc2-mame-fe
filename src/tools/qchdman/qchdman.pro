@@ -1,6 +1,7 @@
 VERSION = 0.244
 
-QT += core gui script scripttools
+!versionAtLeast(QT_VERSION, 6.8.0): error("qchdman requires Qt 6.8 or newer")
+QT += core core5compat gui script scripttools widgets
 TARGET = qchdman
 TEMPLATE = app
 
@@ -14,10 +15,6 @@ greaterThan(DEBUG, 0) | contains(DEFINES, "QCHDMAN_DEBUG") {
 
 !equals(GIT_REV, ) {
     DEFINES += QCHDMAN_GIT_REV=$$GIT_REV
-}
-
-greaterThan(QT_MAJOR_VERSION, 4) {
-    QT += widgets
 }
 
 macx {

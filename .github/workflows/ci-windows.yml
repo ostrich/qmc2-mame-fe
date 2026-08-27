@@ -1,59 +1,58 @@
 name: CI (Windows)
-
-on:
-  push:
-  pull_request:
-
-env:
-  SDL_VERSION: 2.30.3
-
+on: [push, pull_request]
 jobs:
   build:
-
-    runs-on: windows-2019
-
+    runs-on: windows-2022
+    env:
+      SDL_VERSION: 2.30.3
     steps:
-      - name: Download Qt
-        uses: jurplel/install-qt-action@v3
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
         with:
-          version:      5.15.2
-          host:         windows
-          target:       desktop
-          arch:         win64_msvc2019_64
-          modules:      qtwebengine
-          archives:     qtbase qtdeclarative qtlocation qtmultimedia qtsvg qttools qtwebchannel qtwinextras qtxmlpatterns
-          setup-python: false
+          version: 6.8.3
+          arch: win64_msvc2022_64
+          modules: qt5compat qtmultimedia qtpositioning qtsvg qttools qtwebchannel qtwebengine
           cache: true
       - name: Download SDL
+        shell: pwsh
         run: |
-          Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-$env:SDL_VERSION/SDL2-devel-$env:SDL_VERSION-VC.zip" -OutFile ${{ runner.workspace }}\SDL2.zip
-          Expand-Archive ${{ runner.workspace }}\SDL2.zip -DestinationPath ${{ runner.workspace }}
+          Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-$env:SDL_VERSION/SDL2-devel-$env:SDL_VERSION-VC.zip" -OutFile "${{ runner.workspace }}\SDL2.zip"
+          Expand-Archive "${{ runner.workspace }}\SDL2.zip" -DestinationPath "${{ runner.workspace }}"
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: msys2/setup-msys2@v2
         with:
-          update: true
           install: make
           path-type: inherit
-      - uses: actions/checkout@v4
-      - name: Configure
+      - name: Build isolated QtScript
+        shell: pwsh
+        run: scripts/bootstrap-qtscript.ps1 -QtRoot $env:QT_ROOT_DIR -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript"
+      - name: Configure qmc2
+        shell: msys2 {0}
         env:
           MKSPEC: win32-msvc
           FORCE_MINGW: 0
           ARCH: Windows
           SDL: 2
           SDL_LIBS: 'LIBS+="../SDL2-${SDL_VERSION}/lib/x64/SDL2.lib ../SDL2-${SDL_VERSION}/lib/x64/SDL2main.lib"'
-          SDL_INCLUDEPATH: 'INCLUDEPATH+=../SDL2-${SDL_VERSION}/include'
-        shell: msys2 {0}
+          SDL_INCLUDEPATH: 'INCLUDEPATH+="../SDL2-${SDL_VERSION}/include"'
+          QMAKEPATH: ${{ github.workspace }}\.deps\qtscript
         run: make -j4 configure
-      - name: Build
-        run: nmake /f Makefile.qmake.release
+      - name: Build qmc2 and qchdman
+        shell: pwsh
+        env:
+          QMAKEPATH: ${{ github.workspace }}\.deps\qtscript
+        run: |
+          nmake /f Makefile.qmake.release
+          nmake qchdman
       - name: Deploy
+        shell: pwsh
         run: |
           windeployqt release\qmc2-mame.exe
-          Copy-Item ${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll  release
+          Copy-Item "${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll" release
+          Copy-Item .deps\qtscript\bin\Qt6Script*.dll release
       - uses: actions/upload-artifact@v4
         with:
-          name: qmc2-windows-2019-${{ github.sha }}
+          name: qmc2-windows-msvc2022-${{ github.sha }}
           path: |
             release
-
+            src/tools/qchdman/release

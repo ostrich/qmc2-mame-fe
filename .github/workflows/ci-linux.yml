@@ -1,26 +1,33 @@
-name: CI (Ubuntu)
-
-on:
-  push:
-  pull_request:
-
+name: CI (Linux)
+on: [push, pull_request]
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        qt: [6.8.3, 6.11.2]
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@master
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install libqt5svg5-dev libqt5xmlpatterns5-dev libsdl2-dev qt5-qmake qtmultimedia5-dev qttools5-dev-tools qtwebengine5-dev
-    - name: Build
-      env:
-        DISTCFG: 1
-      run: make -j4
-    - uses: actions/upload-artifact@master
-      with:
-        name: qmc2-ubuntu-latest-${{ github.sha }}
-        path: |
-          qmc2-sdlmame
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt }}
+          modules: qt5compat qtmultimedia qtpositioning qtsvg qttools qtwebchannel qtwebengine
+          cache: true
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev ninja-build
+      - name: Build isolated QtScript
+        run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
+      - name: Build qmc2 and qchdman
+        env:
+          DISTCFG: 1
+          QMAKEPATH: ${{ github.workspace }}/.deps/qtscript
+        run: |
+          make -j4
+          make -j4 qchdman
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qmc2-linux-qt-${{ matrix.qt }}-${{ github.sha }}
+          path: |
+            qmc2-sdlmame
+            src/tools/qchdman/qchdman
+            .deps/qtscript/lib/libQt6Script*.so*

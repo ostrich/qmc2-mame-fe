@@ -1,43 +1,36 @@
 name: CI (macOS)
-
-on:
-  push:
-  pull_request:
-
-env:
-  SDL_VERSION: 2.30.3
-
+on: [push, pull_request]
 jobs:
   build:
-
     strategy:
       matrix:
-        os: [macos-13, macos-latest]
         include:
-          - os: macos-13
-            qtpath: /usr/local/opt/qt@5/bin
-          - os: macos-latest
-            qtpath: /opt/homebrew/opt/qt@5/bin
+          - { os: macos-13, arch: x64 }
+          - { os: macos-15, arch: arm64 }
     runs-on: ${{ matrix.os }}
-
     steps:
-    - uses: actions/checkout@master
-    - name: Install dependencies
-      run: |
-        brew update
-        brew install qt@5
-        wget https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL2-$SDL_VERSION.dmg
-        sudo hdiutil attach SDL2-$SDL_VERSION.dmg
-        sudo cp -R /Volumes/SDL2/SDL2.framework /Library/Frameworks
-        sudo hdiutil detach /Volumes/SDL2
-    - name: Build
-      env:
-        DISTCFG: 1
-      run: |
-        export PATH="${{ matrix.qtpath }}:$PATH"
-        make -j3
-    - uses: actions/upload-artifact@master
-      with:
-        name: qmc2-${{ matrix.os }}-${{ github.sha }}
-        path: |
-          qmc2-sdlmame.app
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.8.3
+          arch: clang_64
+          modules: qt5compat qtmultimedia qtpositioning qtsvg qttools qtwebchannel qtwebengine
+          cache: true
+      - name: Install native dependencies
+        run: brew install ninja sdl2
+      - name: Build isolated QtScript
+        run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
+      - name: Build qmc2 and qchdman
+        env:
+          DISTCFG: 1
+          QMAKEPATH: ${{ github.workspace }}/.deps/qtscript
+        run: |
+          make -j3
+          make -j3 qchdman
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qmc2-macos-${{ matrix.arch }}-${{ github.sha }}
+          path: |
+            qmc2-sdlmame.app
+            src/tools/qchdman/qchdman.app
+            .deps/qtscript/lib/libQt6Script*.dylib

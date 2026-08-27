@@ -1,9 +1,7 @@
 # general project settings
 isEmpty(TARGET):TARGET = qmc2
-QT += core gui widgets xml xmlpatterns network sql svg testlib webenginewidgets
-win32 {
-	QT += winextras
-}
+!versionAtLeast(QT_VERSION, 6.8.0): error("QMC2 requires Qt 6.8 or newer")
+QT += core core5compat gui widgets xml network sql svg testlib webenginewidgets
 contains(DEFINES, "QMC2_MULTIMEDIA=1"): QT += multimedia multimediawidgets
 HEADERS += src/qftp/qftp.h \
 	src/qftp/qurlinfo.h
