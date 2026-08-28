@@ -1,9 +1,21 @@
 #include <QTextDocument>
 #include <QtNetwork>
 
-#include "macros.h"
-#include "romalyzer.h"
 #include "ftpreply.h"
+
+static QString humanReadableSize(quint64 value)
+{
+	static const char *suffixes[] = { " KB", " MB", " GB", " TB" };
+	qreal scaled = value;
+	int suffix = 0;
+	do {
+		scaled /= 1024.0;
+		if ( scaled < 1024.0 || suffix == 3 )
+			break;
+		++suffix;
+	} while ( true );
+	return QLocale().toString(scaled, 'f', 2) + QCoreApplication::translate("ROMAlyzer", suffixes[suffix]);
+}
 
 FtpReply::FtpReply(const QUrl &url)
 	: QNetworkReply()
@@ -14,7 +26,7 @@ FtpReply::FtpReply(const QUrl &url)
 	connect(ftp, SIGNAL(commandFinished(int, bool)), this, SLOT(processCommand(int, bool)));
 	offset = 0;
 	setUrl(url);
-	ftp->connectToHost(url.host());
+	ftp->connectToHost(url.host(), url.port(21));
 }
 
 void FtpReply::processCommand(int, bool err)
@@ -116,7 +128,7 @@ void FtpReply::setListContent()
 			content += QString("<tr class=\"even\">");
 		content += QString("<td><a href=\"" + child.toString() + "\">" + QString(item.name()).toHtmlEscaped() + "</a></td>");
 		if ( item.isFile() )
-			content += QString("<td>" + tr("File") + "</td><td>" + ROMAlyzer::humanReadable(item.size(), 2) + "</td></tr>\n");
+			content += QString("<td>" + tr("File") + "</td><td>" + humanReadableSize(item.size()) + "</td></tr>\n");
 		else if ( item.isDir() )
 			content += QString("<td>" + tr("Folder") + "<td></td></tr>\n");
 		else

@@ -44,6 +44,13 @@ jobs:
           qmake ../tests/qtscript/qtscript.pro
           make -j2
           QT_QPA_PLATFORM=offscreen ./tst_qtscript
+      - name: Run FTP compatibility fixtures
+        run: |
+          mkdir build-ftp-tests
+          cd build-ftp-tests
+          qmake ../tests/ftp/ftp.pro
+          make -j2
+          ./tst_ftp
       - name: Deploy application bundles
         run: |
           macdeployqt qmc2-sdlmame.app

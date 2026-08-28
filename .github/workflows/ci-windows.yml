@@ -64,6 +64,14 @@ jobs:
           qmake ..\tests\qtscript\qtscript.pro CONFIG+=release
           nmake
           .\release\tst_qtscript.exe
+      - name: Run FTP compatibility fixtures
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory build-ftp-tests
+          Set-Location build-ftp-tests
+          qmake ..\tests\ftp\ftp.pro CONFIG+=release
+          nmake
+          .\release\tst_ftp.exe
       - name: Deploy
         shell: pwsh
         run: |
