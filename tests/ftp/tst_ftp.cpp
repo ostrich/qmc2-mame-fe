@@ -31,6 +31,7 @@ public:
 
 	QString userName;
 	bool dosListing = false;
+	QByteArray customListing;
 
 private:
 	void writeControl(const QByteArray &line)
@@ -92,7 +93,9 @@ private:
 				} else {
 					writeControl("150 Opening data connection\r\n");
 					if ( argument.isEmpty() || argument.endsWith("/") ) {
-						if ( dosListing )
+						if ( !customListing.isEmpty() )
+							sendData(customListing);
+						else if ( dosListing )
 							sendData("01-01-2026  12:00PM                  12 file.bin\r\n"
 								"01-01-2026  12:00PM       <DIR>          subdir\r\n");
 						else
@@ -172,6 +175,22 @@ private slots:
 		const QByteArray html = reply.readAll();
 		QVERIFY(html.contains("file.bin"));
 		QVERIFY(html.contains("subdir"));
+	}
+
+	void escapesDirectoryListing()
+	{
+		FakeFtpServer server;
+		server.customListing = "-rw-r--r-- 1 owner group 12 Jan 01 2026 <img src=x onerror=alert(1)>.bin\r\n";
+		QUrl url = server.url("/pub/<unsafe>/");
+		url.setUserName("user");
+		url.setPassword("secret");
+		FtpReply reply(url);
+		QSignalSpy finished(&reply, &QNetworkReply::finished);
+		QVERIFY(finished.wait());
+		const QByteArray html = reply.readAll();
+		QVERIFY(html.contains("&lt;img src=x onerror=alert(1)&gt;.bin"));
+		QVERIFY(!html.contains("<img src=x"));
+		QVERIFY(!html.contains("secret"));
 	}
 };
 

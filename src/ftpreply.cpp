@@ -5,6 +5,7 @@
 
 #include <curl/curl.h>
 #include <atomic>
+#include <limits>
 #include <mutex>
 
 #include "ftpreply.h"
@@ -22,6 +23,8 @@ static QString humanReadableSize(quint64 value)
 	} while ( true );
 	return QLocale().toString(scaled, 'f', 2) + QCoreApplication::translate("ROMAlyzer", suffixes[suffix]);
 }
+
+static constexpr qsizetype maximumFtpListingSize = 16 * 1024 * 1024;
 
 class CurlFtpTransfer : public QThread
 {
@@ -45,6 +48,14 @@ protected:
 		curl_easy_setopt(curl, CURLOPT_URL, encodedUrl.constData());
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);
+#if LIBCURL_VERSION_NUM >= 0x075500
+		curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "ftp,ftps");
+		curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "ftp,ftps");
+#else
+		curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_FTP | CURLPROTO_FTPS);
+		curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_FTP | CURLPROTO_FTPS);
+#endif
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30L);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &CurlFtpTransfer::writeCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
@@ -70,7 +81,11 @@ private:
 	static size_t writeCallback(char *data, size_t size, size_t count, void *userdata)
 	{
 		auto *self = static_cast<CurlFtpTransfer *>(userdata);
+		if ( size != 0 && count > size_t(std::numeric_limits<qsizetype>::max()) / size )
+			return 0;
 		const qsizetype length = qsizetype(size * count);
+		if ( self->directoryRequest && length > maximumFtpListingSize - self->listing.size() )
+			return 0;
 		const QByteArray chunk(data, length);
 		if ( self->directoryRequest )
 			self->listing += chunk;
@@ -160,16 +175,17 @@ void FtpReply::setListContent(const QString &listing)
 	QUrl base = url();
 	if ( !base.path().endsWith('/') )
 		base.setPath(base.path() + '/');
-	QString html("<html><head>\n<title>" + url().toString().toHtmlEscaped() + "</title>\n"
+	const QString displayUrl = url().toString(QUrl::RemovePassword).toHtmlEscaped();
+	QString html("<html><head>\n<title>" + displayUrl + "</title>\n"
 		"<style type=\"text/css\">\nth { background-color: #aaaaaa; color: black; }\n"
 		"table { border: solid 1px #aaaaaa; }\ntr.odd { background-color: #dddddd; color: black; }\n"
 		"tr.even { background-color: white; color: black; }\n</style>\n</head><body>\n"
-		"<h1>" + tr("FTP directory listing for %1").arg(base.path()) + "</h1>\n"
+		"<h1>" + tr("FTP directory listing for %1").arg(base.path().toHtmlEscaped()) + "</h1>\n"
 		"<table align=\"center\" cellspacing=\"0\" width=\"100%\">\n<tr><th align=\"left\">" + tr("Name")
 		+ "</th><th align=\"left\">" + tr("Type") + "</th><th align=\"left\">" + tr("Size") + "</th></tr>\n");
 	const QUrl parent = base.resolved(QUrl(".."));
 	if ( parent.isParentOf(base) )
-		html += "<tr><td><strong><a href=\"" + parent.toString() + "\">" + tr("Parent directory") + "</a></strong></td><td></td></tr>\n";
+		html += "<tr><td><strong><a href=\"" + parent.toString(QUrl::RemovePassword).toHtmlEscaped() + "\">" + tr("Parent directory") + "</a></strong></td><td></td></tr>\n";
 	const QRegularExpression unixEntry(QStringLiteral("^([dl-])[^ ]*\\s+\\d+\\s+\\S+\\s+\\S+\\s+(\\d+)\\s+\\S+\\s+\\S+\\s+\\S+\\s+(.+)$"));
 	const QRegularExpression dosEntry(QStringLiteral("^\\d{2}-\\d{2}-\\d{2,4}\\s+\\d{2}:\\d{2}(?:AM|PM)\\s+(<DIR>|\\d+)\\s+(.+)$"), QRegularExpression::CaseInsensitiveOption);
 	int row = 0;
@@ -186,7 +202,7 @@ void FtpReply::setListContent(const QString &listing)
 			continue;
 		const QUrl child = base.resolved(QUrl(name));
 		html += QString("<tr class=\"%1\"><td><a href=\"%2\">%3</a></td>")
-			.arg(row++ % 2 ? "even" : "odd", child.toString(), name.toHtmlEscaped());
+			.arg(row++ % 2 ? "even" : "odd", child.toString(QUrl::RemovePassword).toHtmlEscaped(), name.toHtmlEscaped());
 		if ( directory )
 			html += "<td>" + tr("Folder") + "<td></td></tr>\n";
 		else
