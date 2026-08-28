@@ -1,3 +1,24 @@
+# QMC2 Qt 6 fork
+
+The `qt6` branch ports qmc2 and qchdman to Qt 6.8 and newer while retaining
+their existing configuration and qchdman script interfaces. Qt 5 and
+qmc2-arcade are not supported by this branch.
+
+- Ports the XML, WebEngine, networking, multimedia, input, and other changed or
+  removed Qt APIs.
+- Replaces bundled QFtp with libcurl and enables libarchive support.
+- Updates bundled zlib, minizip-ng, and LZMA SDK sources.
+- Replaces obsolete ProjectMESS web defaults with Arcade Database while
+  preserving custom lookup URLs.
+- Builds qmc2 and qchdman in CI on Linux, macOS Intel and Apple Silicon, and
+  Windows MSVC 2022, with Qt 6.8 LTS and latest-Qt coverage where applicable.
+
+qchdman retains QtScript and its embedded debugger through the maintained
+[qtscript-qt6 compatibility port](https://github.com/ostrich/qtscript-qt6).
+
+## Original README
+
+```text
 What is the M.A.M.E. Catalog / Launcher II?
 -------------------------------------------
 
@@ -85,3 +106,4 @@ Author
 ------
 
 René Reucher (rene.reucher@batcom-it.net)
+```
