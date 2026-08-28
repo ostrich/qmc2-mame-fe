@@ -11,7 +11,7 @@ jobs:
       - uses: jurplel/install-qt-action@v4
         with:
           version: ${{ matrix.qt }}
-          modules: qt5compat qtmultimedia qtpositioning qtsvg qttools qtwebchannel qtwebengine
+          modules: qt5compat qtmultimedia qtpositioning qtwebchannel qtwebengine
           cache: true
       - name: Install native dependencies
         run: sudo apt-get update && sudo apt-get install -y libarchive-dev libcurl4-openssl-dev libminizip-dev libsdl2-dev ninja-build zlib1g-dev

@@ -11,7 +11,7 @@ jobs:
         with:
           version: 6.8.3
           arch: win64_msvc2022_64
-          modules: qt5compat qtmultimedia qtpositioning qtsvg qttools qtwebchannel qtwebengine
+          modules: qt5compat qtmultimedia qtpositioning qtwebchannel qtwebengine
           cache: true
       - name: Download SDL
         shell: pwsh

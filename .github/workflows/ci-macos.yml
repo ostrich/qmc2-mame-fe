@@ -14,7 +14,7 @@ jobs:
         with:
           version: 6.8.3
           arch: clang_64
-          modules: qt5compat qtmultimedia qtpositioning qtsvg qttools qtwebchannel qtwebengine
+          modules: qt5compat qtmultimedia qtpositioning qtwebchannel qtwebengine
           cache: true
       - name: Install native dependencies
         run: |
