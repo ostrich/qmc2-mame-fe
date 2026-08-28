@@ -247,6 +247,7 @@ void ProcessManager::finished(int exitCode, QProcess::ExitStatus exitStatus)
 	stderrBuffer.remove(proc);
 	softwareListsMap.remove(proc);
 	softwareNamesMap.remove(proc);
+	proc->deleteLater();
 
 #if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	if ( procMap.count() == 0 && musicWasPlaying ) {
@@ -358,6 +359,7 @@ void ProcessManager::error(QProcess::ProcessError processError)
 			stderrBuffer.remove(proc);
 			softwareListsMap.remove(proc);
 			softwareNamesMap.remove(proc);
+			proc->deleteLater();
 			break;
 		case QProcess::Crashed:
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: emulator #%1 crashed").arg(procMap.value(proc)));

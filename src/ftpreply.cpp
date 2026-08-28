@@ -250,6 +250,10 @@ qint64 FtpReply::readData(char *data, qint64 maxSize)
 	const qint64 number = qMin(maxSize, content.size() - offset);
 	memcpy(data, content.constData() + offset, size_t(number));
 	offset += number;
+	if ( offset >= 1024 * 1024 && offset >= content.size() / 2 ) {
+		content.remove(0, offset);
+		offset = 0;
+	}
 	return number;
 }
 

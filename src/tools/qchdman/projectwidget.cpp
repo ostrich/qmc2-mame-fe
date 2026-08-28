@@ -660,6 +660,10 @@ void ProjectWidget::on_toolButtonRun_clicked(bool refreshArgsOnly)
 
 	ui->progressBar->setRange(0, 100);
 
+	if ( chdmanProc ) {
+		delete chdmanProc;
+		chdmanProc = nullptr;
+	}
 	chdmanProc = new QProcess(this);
 
 	connect(chdmanProc, SIGNAL(error(QProcess::ProcessError)), this, SLOT(error(QProcess::ProcessError)));
