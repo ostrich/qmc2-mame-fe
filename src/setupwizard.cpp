@@ -155,7 +155,7 @@ SetupWizard::SetupWizard(QSettings *cfg, QWidget *parent) :
 	comboBoxStyle->blockSignals(false);
 
 	// connections and start-up
-	connect(comboBoxStyle, SIGNAL(activated(const QString &)), this, SLOT(setupStyle(const QString &)));
+	connect(comboBoxStyle, &QComboBox::textActivated, this, &SetupWizard::setupStyle);
 	connect(comboBoxExecutableFile->lineEdit(), SIGNAL(textChanged(const QString &)), this, SLOT(comboBoxExecutableFile_textChanged(const QString &)));
 	QTimer::singleShot(0, this, SLOT(init()));
 }

@@ -402,7 +402,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	widgetActionToolbarSearch->setObjectName("WATS");
 	toolbar->addSeparator();
 	toolbar->addAction(widgetActionToolbarSearch);
-	connect(comboBoxToolbarSearch, SIGNAL(activated(const QString &)), this, SLOT(comboBoxToolbarSearch_activated(const QString &)));
+	connect(comboBoxToolbarSearch, &QComboBox::textActivated, this, qOverload<const QString &>(&MainWindow::comboBoxToolbarSearch_activated));
 	connect(comboBoxToolbarSearch, SIGNAL(editTextChanged(const QString &)), this, SLOT(comboBoxToolbarSearch_editTextChanged(const QString &)));
 
 	// save splitter widgets at index 0 for later comparison
@@ -3131,7 +3131,7 @@ void MainWindow::comboBoxSearch_editTextChanged_delayed()
 	searchActive = m_focusSearchResults = false;
 }
 
-void MainWindow::on_comboBoxSearch_activated(const QString &text)
+void MainWindow::on_comboBoxSearch_textActivated(const QString &text)
 {
 	if ( tabWidgetMachineList->currentWidget() != tabSearch ) {
 		tabWidgetMachineList->blockSignals(true);

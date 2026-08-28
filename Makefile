@@ -232,9 +232,9 @@ ifndef PHONON
 PHONON = 1
 endif
 
-# >>> MULTIMEDIA / Qt 5 <<<
+# >>> MULTIMEDIA / Qt 6 <<<
 #
-# Enable Qt 5 Multimedia based features (1) or leave them out of the build (0).
+# Enable Qt 6 Multimedia based features (1) or leave them out of the build (0).
 #
 # As with Phonon for Qt 4, a working QtMultimedia backend is required. Codecs
 # have to be installed separately.
@@ -531,10 +531,7 @@ endif
 #
 # Enable (1) or disable (0) support for machine 'attached' YouTube videos.
 #
-# With Qt 4 this feature requires Phonon and will thus be disabled automatically
-# when Phonon has been disabled globally (PHONON=0)!
-# 
-# In case of Qt 5 we use the QtMultimedia module. When multi-media features have
+# This feature uses the Qt 6 Multimedia module. When multimedia features have
 # been disabled globally (MULTIMEDIA=0) the YouTube feature will be disabled as
 # well.
 #
@@ -1272,7 +1269,7 @@ clean: all
 install: all
 bin: all
 all:
-	@$(ECHO) "Error: Wrong qmake version. Version 3 (Qt 5) required!"
+	@$(ECHO) "Error: Wrong qmake version. Qt 6.8 or newer is required!"
 endif
 
 detect-os: os-detect

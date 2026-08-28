@@ -591,7 +591,7 @@ void MachineListViewer::on_treeView_clicked(const QModelIndex &index)
 	}
 }
 
-void MachineListViewer::on_comboBoxViewName_activated(const QString &viewName)
+void MachineListViewer::on_comboBoxViewName_textActivated(const QString &viewName)
 {
 	loadView(viewName);
 }
