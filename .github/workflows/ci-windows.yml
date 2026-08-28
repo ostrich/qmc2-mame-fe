@@ -29,7 +29,14 @@ jobs:
         with:
           install: make
           path-type: inherit
+      - name: Cache isolated QtScript
+        id: qtscript-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ github.workspace }}\.deps\qtscript
+          key: qtscript-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.ps1', 'scripts/patch-qtscript.cmake') }}
       - name: Build isolated QtScript
+        if: steps.qtscript-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: scripts/bootstrap-qtscript.ps1 -QtRoot $env:QT_ROOT_DIR -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript"
       - name: Configure qmc2
