@@ -11,8 +11,8 @@ INCLUDEPATH += ../../src
     CONFIG += link_pkgconfig
     PKGCONFIG += zlib
 } else {
-    VCPKG_PREFIX = $$(VCPKG_ROOT)
-    isEmpty(VCPKG_PREFIX): VCPKG_PREFIX = $$(VCPKG_INSTALLATION_ROOT)
+    VCPKG_PREFIX = $$(VCPKG_INSTALLATION_ROOT)
+    isEmpty(VCPKG_PREFIX): VCPKG_PREFIX = $$(VCPKG_ROOT)
     ZLIB_ROOT = $$VCPKG_PREFIX/installed/x64-windows
     INCLUDEPATH += $$ZLIB_ROOT/include
     LIBS += /LIBPATH:$$ZLIB_ROOT/lib zlib.lib
