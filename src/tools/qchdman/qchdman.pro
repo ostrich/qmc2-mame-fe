@@ -2,6 +2,7 @@ VERSION = 0.244
 
 !versionAtLeast(QT_VERSION, 6.8.0): error("qchdman requires Qt 6.8 or newer")
 QT += core core5compat gui widgets
+greaterThan(QMAKE_GCC_MAJOR_VERSION, 15): QMAKE_CXXFLAGS_WARN_ON += -Wno-sfinae-incomplete
 TARGET = qchdman
 TEMPLATE = app
 
@@ -24,7 +25,8 @@ greaterThan(DEBUG, 0) | contains(DEFINES, "QCHDMAN_DEBUG") {
     !contains(CONFIG, "warn_on debug"): CONFIG += warn_on debug
 } else {
     !contains(DEFINES, "QCHDMAN_RELEASE"): DEFINES += QCHDMAN_RELEASE
-    !contains(CONFIG, "warn_off release"): CONFIG += warn_off release
+    CONFIG -= warn_off
+    !contains(CONFIG, "warn_on release"): CONFIG += warn_on release
 }
 
 !equals(GIT_REV, ) {

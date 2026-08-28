@@ -336,7 +336,7 @@ void MainWindow::on_actionProjectNew_triggered(bool)
 	createProjectWindow(QCHDMAN_MDI_PROJECT);
 }
 
-void MainWindow::on_actionProjectNewScript_triggered(bool checked)
+void MainWindow::on_actionProjectNewScript_triggered(bool)
 {
 	createProjectWindow(QCHDMAN_MDI_SCRIPT);
 }
@@ -354,7 +354,7 @@ void MainWindow::on_actionProjectLoad_triggered(bool)
 	}
 }
 
-void MainWindow::on_actionProjectLoadScript_triggered(bool checked)
+void MainWindow::on_actionProjectLoadScript_triggered(bool)
 {
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Choose script file"), QString(), tr("Script files (*.scr)") + ";;" + tr("All files (*)"), 0, globalConfig->preferencesNativeFileDialogs() ? (QFileDialog::Options)0 : QFileDialog::DontUseNativeDialog);
 	if ( !fileName.isNull() ) {
@@ -510,7 +510,7 @@ void MainWindow::on_actionHelpForum_triggered(bool)
 	QDesktopServices::openUrl(QUrl::fromUserInput("http://forums.bannister.org/ubbthreads.php?ubb=postlist&Board=12"));
 }
 
-void MainWindow::on_actionHelpBugTracker_triggered(bool checked)
+void MainWindow::on_actionHelpBugTracker_triggered(bool)
 {
 	QDesktopServices::openUrl(QUrl::fromUserInput("http://tracker.batcom-it.net/view_all_bug_page.php?project_id=1"));
 }
