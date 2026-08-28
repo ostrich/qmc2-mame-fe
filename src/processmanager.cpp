@@ -302,7 +302,7 @@ void ProcessManager::started()
 		musicWasPlaying = false;
 #endif
 #if QMC2_MULTIMEDIA_ENABLED
-	if ( qmc2MainWindow->mediaPlayer->state() == QMediaPlayer::PlayingState && procMap.count() == 1 ) {
+	if ( qmc2MainWindow->mediaPlayer->playbackState() == QMediaPlayer::PlayingState && procMap.count() == 1 ) {
 		musicWasPlaying = true;
 		if ( qmc2MainWindow->checkBoxAudioPause->isChecked() )
 			QTimer::singleShot(0, qmc2MainWindow, SLOT(on_actionAudioPauseTrack_triggered()));

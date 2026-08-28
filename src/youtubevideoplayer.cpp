@@ -43,7 +43,9 @@ YouTubeVideoPlayer::YouTubeVideoPlayer(QString sID, QString sName, QWidget *pare
 
 	mFullscreenVideoWidget = 0;
 	mVideoWidget = new QVideoWidget(this);
-	mVideoPlayer = new QMediaPlayer(this, (QMediaPlayer::Flags)(QMediaPlayer::VideoSurface | QMediaPlayer::StreamPlayback));
+	mVideoPlayer = new QMediaPlayer(this);
+	mVideoAudioOutput = new QAudioOutput(this);
+	mVideoPlayer->setAudioOutput(mVideoAudioOutput);
 	videoWidget()->setAspectRatioMode(Qt::KeepAspectRatio);
 	videoWidget()->setContextMenuPolicy(Qt::CustomContextMenu);
 	videoWidget()->setPalette(Qt::black);
@@ -55,8 +57,8 @@ YouTubeVideoPlayer::YouTubeVideoPlayer(QString sID, QString sName, QWidget *pare
 	connect(mediaObject(), SIGNAL(seekableChanged(bool)), seekSlider, SLOT(setEnabled(bool)));
 	connect(mediaObject(), SIGNAL(durationChanged(qint64)), this, SLOT(videoPlayer_durationChanged(qint64)));
 	connect(mediaObject(), SIGNAL(positionChanged(qint64)), this, SLOT(videoTick(qint64)));
-	connect(mediaObject(), SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(videoStateChanged(QMediaPlayer::State)));
-	connect(mediaObject(), SIGNAL(bufferStatusChanged(int)), this, SLOT(videoBufferStatus(int)));
+	connect(mediaObject(), SIGNAL(playbackStateChanged(QMediaPlayer::PlaybackState)), this, SLOT(videoStateChanged(QMediaPlayer::PlaybackState)));
+	connect(mediaObject(), SIGNAL(bufferProgressChanged(float)), this, SLOT(videoBufferStatus(float)));
 
 	videoEventFilter = new VideoEventFilter(this, 0);
 	videoWidget()->installEventFilter(videoEventFilter);
@@ -105,7 +107,6 @@ YouTubeVideoPlayer::YouTubeVideoPlayer(QString sID, QString sName, QWidget *pare
 	currentFormat = bestAvailableFormat = YOUTUBE_FORMAT_UNKNOWN_INDEX;
 	videoSeqNum = 0;
 
-	videoPlayer()->setNotifyInterval(1000);
 
 	volumeSlider->setToolTip(tr("Volume level"));
 	seekSlider->setToolTip(tr("Video progress"));
@@ -353,7 +354,7 @@ YouTubeVideoPlayer::~YouTubeVideoPlayer()
 void YouTubeVideoPlayer::saveSettings()
 {
   	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "YouTubeWidget/PreferredFormat", comboBoxPreferredFormat->currentIndex());
-	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "YouTubeWidget/AudioVolume", audioOutput()->volume());
+	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "YouTubeWidget/AudioVolume", qRound(audioOutput()->volume() * 100.0));
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "YouTubeWidget/PageIndex", toolBox->currentIndex());
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "YouTubeWidget/PlayOMatic/Enabled", checkBoxPlayOMatic->isChecked());
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "YouTubeWidget/PlayOMatic/Mode", comboBoxMode->currentIndex());
@@ -580,7 +581,7 @@ void YouTubeVideoPlayer::playMovieFile(QString &filePath)
 	if ( fi.exists() ) {
 		currentVideoID = "#:" + filePath;
 		loadOnly = false;
-		videoPlayer()->setMedia(QUrl::fromLocalFile(filePath));
+		videoPlayer()->setSource(QUrl::fromLocalFile(filePath));
 		play();
 		comboBoxPreferredFormat->setEnabled(false);
 		if ( !playedVideos.contains(currentVideoID) )
@@ -771,7 +772,7 @@ void YouTubeVideoPlayer::attachVideo(QString id, QString title, QString author, 
 				if ( pixmapFound ) {
 					imagePixmap = new ImagePixmap(pm);
 					imagePixmap->imagePath = youTubeCacheDir.filePath(imageFile);
-					qmc2ImagePixmapCache.insert("yt_" + id, imagePixmap, pm.toImage().byteCount());
+					qmc2ImagePixmapCache.insert("yt_" + id, imagePixmap, pm.toImage().sizeInBytes());
 				}
 			}
 		}
@@ -930,14 +931,15 @@ void YouTubeVideoPlayer::videoTick(qint64 time)
 	seekSlider->blockSignals(false);
 }
 
-void YouTubeVideoPlayer::videoBufferStatus(int percentFilled)
+void YouTubeVideoPlayer::videoBufferStatus(float progress)
 {
+	const int percentFilled = qRound(progress * 100.0f);
 	progressBarBufferStatus->setValue(percentFilled);
 	progressBarBufferStatus->setToolTip(tr("Current buffer fill level: %1%").arg(percentFilled));
 	showMessage(tr("Buffering: %1%").arg(percentFilled));
 }
 
-void YouTubeVideoPlayer::videoStateChanged(QMediaPlayer::State state)
+void YouTubeVideoPlayer::videoStateChanged(QMediaPlayer::PlaybackState state)
 {
 	QTime hrTime(0, 0, 0, 0);
 
@@ -990,7 +992,7 @@ void YouTubeVideoPlayer::loadVideo(const QString &videoID)
 		loadOnly = true;
 		if ( !isMuted )
 			audioOutput()->setMuted(true);
-		videoPlayer()->setMedia(url);
+		videoPlayer()->setSource(url);
 		pause();
 		if ( !playedVideos.contains(videoID) )
 			playedVideos << videoID;
@@ -1003,7 +1005,7 @@ void YouTubeVideoPlayer::playVideo(const QString &videoID)
 	QUrl url(getVideoStreamUrl(videoID));
 	if ( url.isValid() ) {
 		loadOnly = false;
-		videoPlayer()->setMedia(url);
+		videoPlayer()->setSource(url);
 		play();
 		comboBoxPreferredFormat->setEnabled(true);
 		if ( !playedVideos.contains(videoID) )
@@ -1045,7 +1047,7 @@ QUrl YouTubeVideoPlayer::getVideoStreamUrl(QString videoID, QStringList *videoIn
 	connect(videoInfoReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(videoInfoError(QNetworkReply::NetworkError)));
 	connect(videoInfoReply, SIGNAL(finished()), this, SLOT(videoInfoFinished()));
 
-	QTime timer(0, 0, 0, 0);
+	QElapsedTimer timer;
 	bool timeoutOccurred = false;
 	timer.start();
 	while ( !viFinished && !viError && !timeoutOccurred ) {
@@ -1545,7 +1547,7 @@ void YouTubeVideoPlayer::on_toolButtonSearch_clicked()
 
 void YouTubeVideoPlayer::on_volumeSlider_valueChanged(int volume)
 {
-	audioOutput()->setVolume(volume);
+	audioOutput()->setVolume((qreal)volume / 100.0);
 	labelVolumeSlider->setText(tr("Volume") + " " + QString::number(volume) + "%");
 }
 
@@ -1578,7 +1580,7 @@ void YouTubeVideoPlayer::updateAttachedVideoInfoImages()
 					if ( pixmapFound ) {
 						ImagePixmap ipm = pm;
 						ipm.imagePath = youTubeCacheDir.filePath(imageFile);
-						qmc2ImagePixmapCache.insert("yt_" + viw->videoID, new ImagePixmap(ipm), pm.toImage().byteCount());
+						qmc2ImagePixmapCache.insert("yt_" + viw->videoID, new ImagePixmap(ipm), pm.toImage().sizeInBytes());
 						viw->setImage(&ipm);
 						continue;
 					}
@@ -1609,7 +1611,7 @@ void YouTubeVideoPlayer::updateAttachedVideoInfoImages()
 		connect(videoImageReply, SIGNAL(readyRead()), this, SLOT(videoImageReadyRead()));
 		connect(videoImageReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(videoImageError(QNetworkReply::NetworkError)));
 		connect(videoImageReply, SIGNAL(finished()), this, SLOT(videoImageFinished()));
-		QTime timer(0, 0, 0, 0);
+		QElapsedTimer timer;
 		bool timeoutOccurred = false;
 		timer.start();
 		while ( !forcedExit && !vimgFinished && !vimgError && !timeoutOccurred ) {
@@ -1719,9 +1721,9 @@ void YouTubeVideoPlayer::imageDownloadFinished(QNetworkReply *reply)
 	// example URL: 'http://i3.ytimg.com/vi/bFjX1uUhB1A/default.jpg'
 	QString videoID;
 	QRegularExpression rx("http\\:\\/\\/.*\\/vi\\/(.*)\\/.*");
-	int pos = rx.indexIn(urlString);
-	if ( pos > -1 ) {
-		videoID = rx.cap(1);
+	const QRegularExpressionMatch match = rx.match(urlString);
+	if ( match.hasMatch() ) {
+		videoID = match.captured(1);
 #ifdef QMC2_DEBUG
 		qmc2MainWindow->log(QMC2_LOG_FRONTEND, QString("DEBUG: YouTubeVideoPlayer::imageDownloadFinished(QNetworkReply *reply = %1): videoID = '%2'").arg((qulonglong)reply).arg(videoID));
 #endif
@@ -1743,7 +1745,7 @@ void YouTubeVideoPlayer::imageDownloadFinished(QNetworkReply *reply)
 		QImageReader imageReader(reply);
 		ImagePixmap pm = QPixmap::fromImageReader(&imageReader);
 		if ( !pm.isNull() ) {
-			qmc2ImagePixmapCache.insert("yt_" + videoID, new ImagePixmap(pm), pm.toImage().byteCount());
+			qmc2ImagePixmapCache.insert("yt_" + videoID, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 			viw->setImage(pm, true);
 			QDir youTubeCacheDir(qmc2Config->value(QMC2_FRONTEND_PREFIX + "YouTubeWidget/CacheDirectory").toString());
 			if ( youTubeCacheDir.exists() ) {

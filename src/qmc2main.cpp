@@ -6182,7 +6182,9 @@ void MainWindow::init()
 	menuTools->removeAction(menuAudioPlayer->menuAction());
 #else
 	audioState = QMediaPlayer::StoppedState;
-	mediaPlayer = new QMediaPlayer(this, QMediaPlayer::StreamPlayback);
+	mediaPlayer = new QMediaPlayer(this);
+	mediaAudioOutput = new QAudioOutput(this);
+	mediaPlayer->setAudioOutput(mediaAudioOutput);
 	listWidgetAudioPlaylist->setTextElideMode(Qt::ElideMiddle);
 	listWidgetAudioPlaylist->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	QStringList psl(qmc2Config->value(QMC2_FRONTEND_PREFIX + "AudioPlayer/PlayList").toStringList());
@@ -6198,18 +6200,17 @@ void MainWindow::init()
 	checkBoxAudioPause->setChecked(qmc2Config->value(QMC2_FRONTEND_PREFIX + "AudioPlayer/Pause", true).toBool());
 	checkBoxAudioFade->setChecked(qmc2Config->value(QMC2_FRONTEND_PREFIX + "AudioPlayer/Fade", true).toBool());
 	dialAudioVolume->setValue(qmc2Config->value(QMC2_FRONTEND_PREFIX + "AudioPlayer/Volume", 50).toInt());
-	mediaPlayer->setVolume(dialAudioVolume->value());
+	mediaAudioOutput->setVolume((qreal)dialAudioVolume->value() / 100.0);
 	toolButtonAudioPreviousTrack->setDefaultAction(actionAudioPreviousTrack);
 	toolButtonAudioNextTrack->setDefaultAction(actionAudioNextTrack);
 	toolButtonAudioStopTrack->setDefaultAction(actionAudioStopTrack);
 	toolButtonAudioPauseTrack->setDefaultAction(actionAudioPauseTrack);
 	toolButtonAudioPlayTrack->setDefaultAction(actionAudioPlayTrack);
-	mediaPlayer->setNotifyInterval(1000);
 	connect(mediaPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(audioTick(qint64)));
 	connect(mediaPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(audioTotalTimeChanged(qint64)));
 	connect(mediaPlayer, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(audioStateChanged(QMediaPlayer::MediaStatus)));
 	connect(mediaPlayer, SIGNAL(metaDataChanged()), this, SLOT(audioMetaDataChanged()));
-	connect(mediaPlayer, SIGNAL(bufferStatusChanged(int)), this, SLOT(audioBufferStatus(int)));
+	connect(mediaPlayer, SIGNAL(bufferProgressChanged(float)), this, SLOT(audioBufferStatus(float)));
 	audioFastForwarding = audioFastBackwarding = audioSkippingTracks = false;
 	if ( checkBoxAudioPlayOnStart->isChecked() ) {
 		audioState = QMediaPlayer::PlayingState;
@@ -6984,8 +6985,8 @@ void MainWindow::on_actionAudioPlayTrack_triggered(bool /*checked*/)
 {
 #if QMC2_MULTIMEDIA_ENABLED
 	// if this is a URL media source, force a reconnect to the stream...
-	if ( mediaPlayer->currentMedia().canonicalUrl().scheme() != "file" )
-		mediaPlayer->setMedia(mediaPlayer->currentMedia().canonicalUrl());
+	if ( mediaPlayer->source().scheme() != "file" )
+		mediaPlayer->setSource(mediaPlayer->source());
 
 	static QString audioPlayerCurrentTrack;
 	audioFastForwarding = audioFastBackwarding = false;
@@ -7022,9 +7023,9 @@ void MainWindow::on_actionAudioPlayTrack_triggered(bool /*checked*/)
 			audioPlayerCurrentTrack = ci->text();
 			listWidgetAudioPlaylist->scrollToItem(ci, qmc2CursorPositioningMode);
 			if ( QFileInfo(audioPlayerCurrentTrack).exists() )
-				mediaPlayer->setMedia(QUrl::fromLocalFile(audioPlayerCurrentTrack));
+				mediaPlayer->setSource(QUrl::fromLocalFile(audioPlayerCurrentTrack));
 			else
-				mediaPlayer->setMedia(QUrl::fromUserInput(audioPlayerCurrentTrack));
+				mediaPlayer->setSource(QUrl::fromUserInput(audioPlayerCurrentTrack));
 		}
 		mediaPlayer->play();
 		actionAudioPlayTrack->setChecked(true);
@@ -7184,7 +7185,7 @@ void MainWindow::on_actionAudioLowerVolume_triggered(bool /*checked*/)
 void MainWindow::on_dialAudioVolume_valueChanged(int value)
 {
 #if QMC2_MULTIMEDIA_ENABLED
-	mediaPlayer->setVolume(value);
+	mediaAudioOutput->setVolume((qreal)value / 100.0);
 #else
 	phononAudioOutput->setVolume((qreal)value/100.0);
 #endif
@@ -7338,10 +7339,11 @@ void MainWindow::audioMetaDataChanged()
 {
 	static QString lastTrackInfo;
 #if QMC2_MULTIMEDIA_ENABLED
-	QString titleMetaData(mediaPlayer->metaData(QMediaMetaData::Title).toString());
-	QString artistMetaData(mediaPlayer->metaData(QMediaMetaData::ContributingArtist).toStringList().join(" / "));
-	QString albumMetaData(mediaPlayer->metaData(QMediaMetaData::AlbumTitle).toString());
-	QString genreMetaData(mediaPlayer->metaData(QMediaMetaData::Genre).toString());
+	const QMediaMetaData metaData = mediaPlayer->metaData();
+	QString titleMetaData(metaData.value(QMediaMetaData::Title).toString());
+	QString artistMetaData(metaData.value(QMediaMetaData::ContributingArtist).toStringList().join(" / "));
+	QString albumMetaData(metaData.value(QMediaMetaData::AlbumTitle).toString());
+	QString genreMetaData(metaData.value(QMediaMetaData::Genre).toString());
 #else
 	QString titleMetaData(phononAudioPlayer->metaData(Phonon::TitleMetaData).join(", "));
 	QString artistMetaData(phononAudioPlayer->metaData(Phonon::ArtistMetaData).join(", "));
@@ -7358,8 +7360,9 @@ void MainWindow::audioMetaDataChanged()
 	}
 }
 
-void MainWindow::audioBufferStatus(int percentFilled)
+void MainWindow::audioBufferStatus(float progress)
 {
+	const int percentFilled = qRound(progress * 100.0f);
 	progressBarAudioProgress->setRange(0, 100);
 	progressBarAudioProgress->setFormat(tr("Buffering %p%"));
 	progressBarAudioProgress->setValue(percentFilled);

@@ -24,6 +24,7 @@
 #endif
 #if QMC2_MULTIMEDIA_ENABLED
 #include <QMediaPlayer>
+#include <QAudioOutput>
 #endif
 #include "imagewidget.h"
 #include "rankitemwidget.h"
@@ -121,10 +122,11 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 #endif
 #if QMC2_MULTIMEDIA_ENABLED
 		QMediaPlayer *mediaPlayer;
+		QAudioOutput *mediaAudioOutput;
 		bool audioFastForwarding;
 		bool audioFastBackwarding;
 		bool audioSkippingTracks;
-		QMediaPlayer::State audioState;
+		QMediaPlayer::PlaybackState audioState;
 #endif
 #if defined(QMC2_EMBEDDER_SUPPORTED)
 		QWidget *widgetEmbeddedEmus;
@@ -340,7 +342,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void audioTotalTimeChanged(qint64);
 		void audioFade(int);
 		void audioMetaDataChanged();
-		void audioBufferStatus(int);
+		void audioBufferStatus(float);
 		void audioScrollToCurrentItem();
 
 		// download manager widget

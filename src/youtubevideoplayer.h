@@ -11,6 +11,7 @@
 #include <QScreen>
 #include <QPainterPath>
 #include <QMediaPlayer>
+#include <QAudioOutput>
 #include <QVideoWidget>
 
 #include "ui_youtubevideoplayer.h"
@@ -219,12 +220,12 @@ class YouTubeVideoPlayer : public QWidget, public Ui::YouTubeVideoPlayer
 		QUrl getVideoStreamUrl(QString, QStringList *videoInfoStringList = 0, bool videoInfoOnly = false);
 		QString indexToFormat(int);
 
-		bool isPlaying() { return videoPlayer()->state() == QMediaPlayer::PlayingState; }
-		bool isPaused() { return videoPlayer()->state() == QMediaPlayer::PausedState; }
-		bool hasVideo() { return videoPlayer()->isVideoAvailable(); }
+		bool isPlaying() { return videoPlayer()->playbackState() == QMediaPlayer::PlayingState; }
+		bool isPaused() { return videoPlayer()->playbackState() == QMediaPlayer::PausedState; }
+		bool hasVideo() { return videoPlayer()->hasVideo(); }
 		QMediaPlayer *videoPlayer() { return mVideoPlayer; }
 		QVideoWidget *videoWidget() { if ( mFullscreenVideoWidget ) return mFullscreenVideoWidget; else return mVideoWidget; }
-		QMediaPlayer *audioOutput() { return mVideoPlayer; }
+		QAudioOutput *audioOutput() { return mVideoAudioOutput; }
 		QMediaPlayer *mediaObject() { return mVideoPlayer; }
 		qint64 remainingTime() { return videoPlayer()->duration() - videoPlayer()->position(); }
 		void showMessage(QString message, int timeout = 2000) { videoOverlayWidget->showMessage(message, timeout); }
@@ -248,8 +249,8 @@ class YouTubeVideoPlayer : public QWidget, public Ui::YouTubeVideoPlayer
 		void playNextVideo();
 		void videoTick(qint64);
 		void videoFinished();
-		void videoStateChanged(QMediaPlayer::State);
-		void videoBufferStatus(int);
+		void videoStateChanged(QMediaPlayer::PlaybackState);
+		void videoBufferStatus(float);
 
 		void videoInfoReadyRead();
 		void videoInfoError(QNetworkReply::NetworkError);
@@ -310,6 +311,7 @@ class YouTubeVideoPlayer : public QWidget, public Ui::YouTubeVideoPlayer
 
 	private:
 		QMediaPlayer *mVideoPlayer;
+		QAudioOutput *mVideoAudioOutput;
 		QVideoWidget *mVideoWidget;
 		QVideoWidget *mFullscreenVideoWidget;
 };
