@@ -75,6 +75,20 @@ jobs:
           qmake ..\tests\ftp\ftp.pro CONFIG+=release
           nmake
           .\release\tst_ftp.exe
+      - name: Run archive correctness fixtures
+        shell: pwsh
+        run: |
+          foreach ($test in @("bigbytearray", "sevenzip")) {
+            New-Item -ItemType Directory "build-$test-tests"
+            Push-Location "build-$test-tests"
+            qmake "..\tests\$test\$test.pro" CONFIG+=release
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            nmake
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            & ".\release\tst_$test.exe"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Pop-Location
+          }
       - name: Deploy
         shell: pwsh
         run: |

@@ -48,6 +48,16 @@ jobs:
           qmake ../tests/ftp/ftp.pro
           make -j2
           ./tst_ftp
+      - name: Run archive correctness fixtures
+        run: |
+          for test in bigbytearray sevenzip; do
+            mkdir "build-$test-tests"
+            cd "build-$test-tests"
+            qmake "../tests/$test/$test.pro"
+            make -j2
+            "./tst_$test"
+            cd ..
+          done
       - name: Verify runtime libraries
         run: |
           ! ldd qmc2-sdlmame | grep 'not found'

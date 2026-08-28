@@ -471,6 +471,16 @@ problem-4 : performace:
 #endif
 
 
+/* QMC2 parses untrusted archives under undefined-behavior sanitizers.  The
+   SDK's fast path casts arbitrary byte pointers to wider integer pointers,
+   which violates C alignment rules even on CPUs that support the access.
+   Allow callers to select the portable byte-wise helpers. */
+#ifdef Z7_NO_UNALIGNED_ACCESS
+  #undef MY_CPU_LE_UNALIGN
+  #undef MY_CPU_LE_UNALIGN_64
+#endif
+
+
 #ifdef MY_CPU_LE_UNALIGN
 
 #define GetUi16(p) (*(const UInt16 *)(const void *)(p))

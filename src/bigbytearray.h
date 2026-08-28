@@ -6,8 +6,12 @@
 #include <QByteArray>
 #include "macros.h"
 
+#ifndef QMC2_BBA_CHUNK_SIZE
 #define QMC2_BBA_CHUNK_SIZE	quint64(QMC2_1G)
+#endif
+#ifndef QMC2_QBYTEARRAY_LIMIT
 #define QMC2_QBYTEARRAY_LIMIT	quint64(QMC2_2G)
+#endif
 
 class BigByteArray
 {

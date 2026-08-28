@@ -12,6 +12,7 @@
 #include <QThread>
 #include <QWaitCondition>
 #include <QMutex>
+#include <QAtomicInteger>
 
 #include "bigbytearray.h"
 
@@ -62,12 +63,12 @@ class SevenZipExtractorThread : public QThread
 		explicit SevenZipExtractorThread(QObject *parent = 0);
 		~SevenZipExtractorThread();
 
-		bool quitFlag() { return m_quitFlag; }
-		void setQuitFlag(bool flag) { m_quitFlag = flag; }
-		bool isActive() { return m_active; }
-		int fileCount() { return m_fileCount; }
+		bool quitFlag() const { return m_quitFlag.loadAcquire(); }
+		void setQuitFlag(bool flag) { m_quitFlag.storeRelease(flag); }
+		bool isActive() const { return m_active.loadAcquire(); }
+		int fileCount() const { return m_fileCount.loadAcquire(); }
 		void setParams(CSzArEx *db, ILookInStream *lookInStream, uint fileIndex, UInt32 *blockIndex, Byte **buffer, size_t *bufferSize, size_t *offset, size_t *sizeProcessed, ISzAlloc *allocImp, ISzAlloc *allocTempImp);
-		SRes result() { return m_result; }
+		SRes result() const { return m_result.loadAcquire(); }
 		QMutex &waitMutex() { return m_waitMutex; }
 		QWaitCondition &waitCondition() { return m_waitCondition; }
 
@@ -81,9 +82,9 @@ class SevenZipExtractorThread : public QThread
 		void failed(uint);
 
 	private:
-		bool m_quitFlag;
-		bool m_active;
-		int m_fileCount;
+		QAtomicInteger<bool> m_quitFlag;
+		QAtomicInteger<bool> m_active;
+		QAtomicInteger<int> m_fileCount;
 		CSzArEx *m_db;
 		ILookInStream *m_lookInStream;
 		uint m_fileIndex;
@@ -94,7 +95,7 @@ class SevenZipExtractorThread : public QThread
 		size_t *m_sizeProcessed;
 		ISzAlloc *m_allocImp;
 		ISzAlloc *m_allocTempImp;
-		SRes m_result;
+		QAtomicInteger<SRes> m_result;
 		QMutex m_waitMutex;
 		QWaitCondition m_waitCondition;
 };
@@ -156,6 +157,8 @@ class SevenZipFile : public QObject
 		QString m_lastError;
 		SevenZipExtractorThread *m_extractor;
 		bool m_isOpen;
+		bool m_fileIsOpen;
+		bool m_dbIsInitialized;
 		bool m_firstExtraction;
 		bool m_fillingDictionary;
 		QString m_userData;

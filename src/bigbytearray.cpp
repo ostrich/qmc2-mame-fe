@@ -50,23 +50,32 @@ void BigByteArray::append(const BigByteArray &bba)
 QByteArray &BigByteArray::mid(quint64 index, int len)
 {
 	m_tempArray.clear();
-	if ( len > (qlonglong)QMC2_QBYTEARRAY_LIMIT ){
+	if ( len < 0 || quint64(len) > QMC2_QBYTEARRAY_LIMIT ) {
 		qWarning() << "BigByteArray::mid(): length must not exceed 2 GB";
 		return m_tempArray;
 	}
-	int c = int(index / QMC2_BBA_CHUNK_SIZE);
-	if ( c < m_concatByteArrays.count() ) {
-		int lc = int((index + len) / QMC2_BBA_CHUNK_SIZE);
-		if ( lc < m_concatByteArrays.count() ) {
-			int i = index - c * QMC2_BBA_CHUNK_SIZE;
-			int l = QMC2_MIN(m_concatByteArrays.at(c).size() - i, len);
-			m_tempArray.append(m_concatByteArrays.at(c).mid(i, l));
-			if ( l < len )
-				m_tempArray.append(m_concatByteArrays.at(lc).left(len - l));
-		} else
-			qWarning() << "BigByteArray::mid(): length out of range";
-	} else
+	if ( len == 0 )
+		return m_tempArray;
+	if ( index >= size() || quint64(len) > size() - index ) {
+		qWarning() << "BigByteArray::mid(): range out of bounds";
+		return m_tempArray;
+	}
+
+	int chunkIndex = int(index / QMC2_BBA_CHUNK_SIZE);
+	if ( chunkIndex >= m_concatByteArrays.count() ) {
 		qWarning() << "BigByteArray::mid(): index out of range";
+		return m_tempArray;
+	}
+
+	int offset = int(index % QMC2_BBA_CHUNK_SIZE);
+	int remaining = len;
+	while ( remaining > 0 ) {
+		const QByteArray &chunk = m_concatByteArrays.at(chunkIndex++);
+		const int copyLength = qMin(remaining, chunk.size() - offset);
+		m_tempArray.append(chunk.constData() + offset, copyLength);
+		remaining -= copyLength;
+		offset = 0;
+	}
 	return m_tempArray;
 }
 
