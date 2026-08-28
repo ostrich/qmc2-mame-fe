@@ -1,5 +1,5 @@
 #include <QtGui>
-#include <QDesktopWidget>
+#include <QScreen>
 #include "macros.h"
 
 #if defined(QMC2_EMBEDDER_SUPPORTED)
@@ -402,7 +402,7 @@ void Embedder::simulatePauseKey()
 	XKeyEvent xev;
 	xev.display = QX11Info::display();
 	xev.window = embeddedWinId;
-	xev.root = qApp->desktop()->winId();
+	xev.root = DefaultRootWindow(xev.display);
 	xev.subwindow = 0;
 	xev.time = QX11Info::appTime();
 	xev.x = xev.y = xev.x_root = xev.y_root = 1;
@@ -520,8 +520,9 @@ void Embedder::checkWindow()
 		} else {
 			if ( !fullScreen ) {
 				int desktopWidth, desktopHeight;
-				desktopWidth = qApp->desktop()->width();
-				desktopHeight = qApp->desktop()->height();
+				const QSize desktopSize = QGuiApplication::primaryScreen()->size();
+				desktopWidth = desktopSize.width();
+				desktopHeight = desktopSize.height();
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("embedded emulator #%1 is switching to full-screen, using desktop-resolution %2x%3").arg(machineId).arg(desktopWidth).arg(desktopHeight));
   				SetWindowPos(windowHandle, HWND_BOTTOM, 0, 0, desktopWidth, desktopHeight, SWP_HIDEWINDOW);
 				SetParent(windowHandle, 0);

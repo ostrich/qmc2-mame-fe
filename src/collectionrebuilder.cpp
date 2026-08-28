@@ -1128,7 +1128,7 @@ bool CollectionRebuilderThread::nextId(QString *id, QStringList *romNameList, QS
 			}
 		} else {
 			QByteArray line(m_xmlFile.readLine());
-			while ( !m_xmlFile.atEnd() && line.indexOf(setEntityStartPattern()) < 0 && (rebuilderDialog()->romAlyzer()->mode() == QMC2_ROMALYZER_MODE_SOFTWARE ? line.indexOf(listEntityStartPattern()) < 0 : true) && !exitThread )
+			while ( !m_xmlFile.atEnd() && line.indexOf(setEntityStartPattern().toUtf8()) < 0 && (rebuilderDialog()->romAlyzer()->mode() == QMC2_ROMALYZER_MODE_SOFTWARE ? line.indexOf(listEntityStartPattern().toUtf8()) < 0 : true) && !exitThread )
 				line = m_xmlFile.readLine();
 			if ( m_xmlFile.atEnd() ) {
 				emit progressChanged(m_xmlIndexCount);
@@ -1137,7 +1137,7 @@ bool CollectionRebuilderThread::nextId(QString *id, QStringList *romNameList, QS
 			} else if ( !exitThread ) {
 				QString xmlString;
 				if ( rebuilderDialog()->romAlyzer()->mode() == QMC2_ROMALYZER_MODE_SOFTWARE ) {
-					int startIndex = line.indexOf(listEntityStartPattern());
+					int startIndex = line.indexOf(listEntityStartPattern().toUtf8());
 					if ( startIndex >= 0 ) {
 						startIndex += listEntityStartPattern().length();
 						setListCheckpoint(line.mid(startIndex, line.indexOf("\"", startIndex) - startIndex), rebuilderDialog()->comboBoxXmlSource->currentIndex());
@@ -1145,7 +1145,7 @@ bool CollectionRebuilderThread::nextId(QString *id, QStringList *romNameList, QS
 					}
 				}
 				QString setEntityEndPattern("</" + rebuilderDialog()->lineEditSetEntity->text() + ">");
-				while ( !m_xmlFile.atEnd() && line.indexOf(setEntityEndPattern) < 0 && !exitThread ) {
+				while ( !m_xmlFile.atEnd() && line.indexOf(setEntityEndPattern.toUtf8()) < 0 && !exitThread ) {
 					xmlString += line;
 					line = m_xmlFile.readLine();
 				}
@@ -1245,7 +1245,7 @@ bool CollectionRebuilderThread::rewriteSet(QString *setKey, QStringList *romName
 {
 	QString set, baseDir = rebuilderDialog()->romAlyzer()->lineEditSetRewriterOutputPath->text();
 	if ( rebuilderDialog()->romAlyzer()->mode() == QMC2_ROMALYZER_MODE_SOFTWARE ) {
-		QStringList setKeyTokens(setKey->split(':', QString::SkipEmptyParts));
+		QStringList setKeyTokens(setKey->split(':', Qt::SkipEmptyParts));
 		if ( setKeyTokens.count() < 2 )
 			return false;
 		else {
@@ -1467,7 +1467,7 @@ bool CollectionRebuilderThread::writeAllZipData(QString baseDir, QString id, QSt
 			}
 		}
 		if ( rebuilderDialog()->romAlyzer()->checkBoxSetRewriterAddZipComment->isChecked() )
-			zipClose(zip, tr("Created by QMC2 v%1 (%2)").arg(XSTR(QMC2_VERSION)).arg(cDT.toString(Qt::SystemLocaleShortDate)).toUtf8().constData());
+			zipClose(zip, tr("Created by QMC2 v%1 (%2)").arg(XSTR(QMC2_VERSION)).arg(QLocale().toString(cDT, QLocale::ShortFormat)).toUtf8().constData());
 		else
 			zipClose(zip, "");
 		if ( reproducedDumps == 0 )
@@ -1986,29 +1986,17 @@ void CollectionRebuilderThread::setFilterExpression(QString expression, int synt
 	doFilter = !expression.isEmpty();
 	exactMatch = exact;
 	isIncludeFilter = (type == 0);
-	QRegExp::PatternSyntax ps;
 	switch ( syntax ) {
-		case 1:
-			ps = QRegExp::RegExp2;
-			break;
 		case 2:
-			ps = QRegExp::Wildcard;
-			break;
 		case 3:
-			ps = QRegExp::WildcardUnix;
+			expression = QRegularExpression::wildcardToRegularExpression(expression);
 			break;
 		case 4:
-			ps = QRegExp::FixedString;
+			expression = QRegularExpression::escape(expression);
 			break;
-		case 5:
-			ps = QRegExp::W3CXmlSchema11;
-			break;
-		case 0:
-		default:
-			ps = QRegExp::RegExp;
-			break;
+		default: break;
 	}
-	filterRx = QRegExp(expression, Qt::CaseSensitive, ps);
+	filterRx = QRegularExpression(expression);
 	if ( doFilter && !filterRx.isValid() ) {
 		emit log(tr("WARNING: invalid filter expression '%1' ignored").arg(expression));
 		doFilter = false;
@@ -2020,29 +2008,17 @@ void CollectionRebuilderThread::setFilterExpressionSoftware(QString expression, 
 	doFilterSoftware = !expression.isEmpty();
 	exactMatchSoftware = exact;
 	isIncludeFilterSoftware = (type == 0);
-	QRegExp::PatternSyntax ps;
 	switch ( syntax ) {
-		case 1:
-			ps = QRegExp::RegExp2;
-			break;
 		case 2:
-			ps = QRegExp::Wildcard;
-			break;
 		case 3:
-			ps = QRegExp::WildcardUnix;
+			expression = QRegularExpression::wildcardToRegularExpression(expression);
 			break;
 		case 4:
-			ps = QRegExp::FixedString;
+			expression = QRegularExpression::escape(expression);
 			break;
-		case 5:
-			ps = QRegExp::W3CXmlSchema11;
-			break;
-		case 0:
-		default:
-			ps = QRegExp::RegExp;
-			break;
+		default: break;
 	}
-	filterRxSoftware = QRegExp(expression, Qt::CaseSensitive, ps);
+	filterRxSoftware = QRegularExpression(expression);
 	if ( doFilterSoftware && !filterRxSoftware.isValid() ) {
 		emit log(tr("WARNING: invalid filter expression '%1' ignored").arg(expression));
 		doFilterSoftware = false;
@@ -2068,22 +2044,22 @@ bool CollectionRebuilderThread::evaluateFilters(QString &setKey)
 
 	switch ( rebuilderDialog()->romAlyzer()->mode() ) {
 		case QMC2_ROMALYZER_MODE_SOFTWARE: {
-				QStringList setKeyTokens(setKey.split(':', QString::SkipEmptyParts));
+				QStringList setKeyTokens(setKey.split(':', Qt::SkipEmptyParts));
 				if ( setKeyTokens.count() < 2 )
 					return false;
 				list = setKeyTokens.at(0);
 				if ( doFilterSoftware ) {
 					if ( isIncludeFilterSoftware ) {
 						if ( exactMatchSoftware ) {
-							if ( !filterRxSoftware.exactMatch(list) )
+							if ( !QRegularExpression(QRegularExpression::anchoredPattern(filterRxSoftware.pattern())).match(list).hasMatch() )
 								return false;
-						} else if ( filterRxSoftware.indexIn(list) < 0 )
+						} else if ( !filterRxSoftware.match(list).hasMatch() )
 							return false;
 					} else {
 						if ( exactMatchSoftware ) {
-							if ( filterRxSoftware.exactMatch(list) )
+							if ( QRegularExpression(QRegularExpression::anchoredPattern(filterRxSoftware.pattern())).match(list).hasMatch() )
 								return false;
-						} else if ( filterRxSoftware.indexIn(list) >= 0 )
+						} else if ( filterRxSoftware.match(list).hasMatch() )
 							return false;
 					}
 				}
@@ -2123,15 +2099,15 @@ bool CollectionRebuilderThread::evaluateFilters(QString &setKey)
 	if ( doFilter ) {
 		if ( isIncludeFilter ) {
 			if ( exactMatch ) {
-				if ( !filterRx.exactMatch(set) )
+				if ( !QRegularExpression(QRegularExpression::anchoredPattern(filterRx.pattern())).match(set).hasMatch() )
 					return false;
-			} else if ( filterRx.indexIn(set) < 0 )
+			} else if ( !filterRx.match(set).hasMatch() )
 				return false;
 		} else {
 			if ( exactMatch ) {
-				if ( filterRx.exactMatch(set) )
+				if ( QRegularExpression(QRegularExpression::anchoredPattern(filterRx.pattern())).match(set).hasMatch() )
 					return false;
-			} else if ( filterRx.indexIn(set) >= 0 )
+			} else if ( filterRx.match(set).hasMatch() )
 				return false;
 		}
 	}
@@ -2145,8 +2121,8 @@ bool CollectionRebuilderThread::checkSumExists(QString sha1, QString crc, quint6
 			if ( m_hashCache.contains(QString("-%1-%2").arg(crc).arg(size)) )
 				return true;
 			else { // rare case so shouldn't hurt
-				QStringList uniqueKeys(m_hashCache.uniqueKeys());
-				return uniqueKeys.indexOf(QRegExp(QString(".*-%1-%2").arg(crc).arg(size))) >= 0;
+				QStringList uniqueKeys(m_hashCache.keys());
+				return uniqueKeys.indexOf(QRegularExpression(QString(".*-%1-%2").arg(crc).arg(size))) >= 0;
 			}
 		} else {
 			if ( m_hashCache.contains(QString("%1-%2-%3").arg(sha1).arg(crc).arg(size)) )
@@ -2183,7 +2159,7 @@ void CollectionRebuilderThread::updateHashCache()
 			emit log(tr("hash cache update interrupted"));
 		} else {
 			emit log(tr("hash cache updated") + " - " + tr("%n hash(es) loaded", "", m_hashCache.count()));
-			m_hashCacheUpdateTime = QDateTime::currentDateTime().toTime_t();
+			m_hashCacheUpdateTime = QDateTime::currentDateTime().toSecsSinceEpoch();
 			emit progressRangeChanged(m_xmlIndex, m_xmlIndexCount);
 			emit progressChanged(m_xmlIndex);
 		}
@@ -2216,7 +2192,8 @@ void CollectionRebuilderThread::run()
 				emit log(tr("rebuilding started"));
 			emit statusUpdated(0, 0, 0);
 			emit rebuildStarted();
-			QTime rebuildTimer, elapsedTime(0, 0, 0, 0);
+			QElapsedTimer rebuildTimer;
+			QTime elapsedTime(0, 0, 0, 0);
 			rebuildTimer.start();
 			if ( useHashCache )
 				updateHashCache();

@@ -21,7 +21,7 @@ void FtpReply::processCommand(int, bool err)
 {
 	if ( err ) {
 		setError(ContentNotFoundError, "Unknown command");
-		emit error(ContentNotFoundError);
+		emit errorOccurred(ContentNotFoundError);
 		return;
 	}
 

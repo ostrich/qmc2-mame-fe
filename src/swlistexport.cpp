@@ -52,7 +52,7 @@ SoftwareListExporter::SoftwareListExporter(QWidget *parent)
 	QStringList columnActivation = qmc2Config->value(QMC2_FRONTEND_PREFIX + "SoftwareListExporter/ColumnActivation", defaultColumnActivation).toStringList();
 
 	// make sure all columns are included, otherwise reset column order & activation
-	if ( orderedColumns.toSet() != columnNamesUntranslated.toSet() ) {
+	if ( QSet<QString>(orderedColumns.begin(), orderedColumns.end()) != QSet<QString>(columnNamesUntranslated.begin(), columnNamesUntranslated.end()) ) {
 		orderedColumns = columnNamesUntranslated;
 		columnActivation = defaultColumnActivation;
 	}
@@ -164,7 +164,7 @@ void SoftwareListExporter::exportToASCII()
 
 		if ( exportFile.open(QIODevice::WriteOnly | QIODevice::Text) ) {
 			ts.setDevice(&exportFile);
-			ts.setCodec(QTextCodec::codecForName("UTF-8"));
+			ts.setEncoding(QStringConverter::Utf8);
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("exporting current software-list in ASCII format to '%1'").arg(QFileInfo(exportFile).filePath()));
 		} else {
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: can't open ASCII export file '%1' for writing, please check permissions").arg(QFileInfo(exportFile).filePath()));
@@ -223,7 +223,7 @@ void SoftwareListExporter::exportToASCII()
 		ts << "\n";
 	}
 
-	QMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
+	QMultiMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
 	bool ascendingOrder = qmc2Config->value(QMC2_FRONTEND_PREFIX + "SoftwareListExporter/SortOrder", 0).toInt() == 0;
 	bool showMoreChars = maxLength > 3;
 	while ( ascendingOrder ? itExport.hasNext() : itExport.hasPrevious() ) {
@@ -295,7 +295,7 @@ void SoftwareListExporter::exportToCSV()
 
 		if ( exportFile.open(QIODevice::WriteOnly | QIODevice::Text) ) {
 			ts.setDevice(&exportFile);
-			ts.setCodec(QTextCodec::codecForName("UTF-8"));
+			ts.setEncoding(QStringConverter::Utf8);
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("exporting current software-list in CSV format to '%1'").arg(QFileInfo(exportFile).filePath()));
 		} else {
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: can't open CSV export file '%1' for writing, please check permissions").arg(QFileInfo(exportFile).filePath()));
@@ -342,7 +342,7 @@ void SoftwareListExporter::exportToCSV()
 		ts << "\n" << del << del << "\n";
 	}
 
-	QMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
+	QMultiMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
 	bool ascendingOrder = qmc2Config->value(QMC2_FRONTEND_PREFIX + "SoftwareListExporter/SortOrder", 0).toInt() == 0;
 	while ( ascendingOrder ? itExport.hasNext() : itExport.hasPrevious() ) {
 		if  ( ascendingOrder )

@@ -3,12 +3,13 @@
 
 #include <QProcess>
 #include <QTime>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QFile>
 #include <QList>
 #include <QAction>
 #include <QTextStream>
-#include <QXmlDefaultHandler>
+#include <QXmlStreamReader>
 #include <QMenu>
 #include <QMovie>
 #include <QMap>
@@ -42,7 +43,7 @@ class SoftwareItem : public QTreeWidgetItem
 		}
 };
 
-class SoftwareListXmlHandler : public QXmlDefaultHandler
+class SoftwareListXmlHandler
 {
 	public:
 		QTreeWidget *parentTreeWidget;
@@ -66,8 +67,9 @@ class SoftwareListXmlHandler : public QXmlDefaultHandler
 		SoftwareListXmlHandler(QTreeWidget *, QStringList *hiddenLists, bool viewTree = false);
 		~SoftwareListXmlHandler();
 		
-		bool startElement(const QString &, const QString &, const QString &, const QXmlAttributes &);
-		bool endElement(const QString &, const QString &, const QString &);
+		bool parse(const QString &);
+		bool startElement(const QString &, const QXmlStreamAttributes &);
+		bool endElement(const QString &);
 		bool characters(const QString &);
 
 		void loadSoftwareStates(QString);
@@ -86,7 +88,7 @@ class SoftwareListXmlHandler : public QXmlDefaultHandler
 		QStringList *m_hiddenLists;
 };
 
-class SoftwareEntryXmlHandler : public QXmlDefaultHandler
+class SoftwareEntryXmlHandler
 {
 	public:
 		SoftwareItem *parentTreeWidgetItem;
@@ -109,8 +111,9 @@ class SoftwareEntryXmlHandler : public QXmlDefaultHandler
 		SoftwareEntryXmlHandler(QTreeWidgetItem *, bool viewTree = false);
 		~SoftwareEntryXmlHandler();
 		
-		bool startElement(const QString &, const QString &, const QString &, const QXmlAttributes &);
-		bool endElement(const QString &, const QString &, const QString &);
+		bool parse(const QString &);
+		bool startElement(const QString &, const QXmlStreamAttributes &);
+		bool endElement(const QString &);
 
 		bool viewTree() { return m_viewTree; }
 		void setViewTree(bool viewTree) { m_viewTree = viewTree; }
@@ -171,7 +174,7 @@ class SoftwareSnap : public QWidget
 	protected:
 		void paintEvent(QPaintEvent *);
 		void mousePressEvent(QMouseEvent *);
-		void enterEvent(QEvent *);
+		void enterEvent(QEnterEvent *);
 		void leaveEvent(QEvent *);
 		void contextMenuEvent(QContextMenuEvent *);
 
@@ -240,7 +243,7 @@ class SoftwareList : public QWidget, public Ui::SoftwareList
 		QStringList mountedSoftware;
 		QStringList swlLines;
 		QTextStream softwareStateStream;
-		QTime loadTimer;
+		QElapsedTimer loadTimer;
 		QTimer snapTimer;
 		QTimer searchTimer;
 		QTimer detailUpdateTimer;

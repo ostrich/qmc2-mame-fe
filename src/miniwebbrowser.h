@@ -8,6 +8,9 @@
 #include <QCache>
 
 #include "ui_miniwebbrowser.h"
+
+class QNetworkReply;
+class QNetworkRequest;
 #include "iconlineedit.h"
 #include "macros.h"
 
@@ -40,7 +43,7 @@ class BrowserWidget : public QWebEngineView
 			lastMouseClickPosition = e->pos();
 			QWebEngineView::mousePressEvent(e);
 		}
-		void enterEvent(QEvent *e)
+		void enterEvent(QEnterEvent *e)
 		{
 			QWebEngineView::enterEvent(e);
 			mouseCurrentlyOnView = true;

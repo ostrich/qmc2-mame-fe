@@ -760,7 +760,7 @@ void EmulatorOptions::load(bool overwrite, QString optName)
 					} else
 						v = qmc2Config->value(option.name, option.dvalue.toInt()).toInt(&ok);
 					if ( ok ) {
-						optionsMap[sectionTitle][i].value.sprintf("%d", v);
+						optionsMap[sectionTitle][i].value = QString::number(v);
 						optionsMap[sectionTitle][i].valid = true;
 						optionsMap[sectionTitle][i].item->setData(QMC2_EMUOPT_COLUMN_VALUE, Qt::EditRole, QVariant::fromValue(v));
 					}
@@ -912,7 +912,7 @@ void EmulatorOptions::save(QString optName)
 				case QMC2_EMUOPT_TYPE_INT: {
 					int v = optionsMap[sectionTitle][i].item->data(QMC2_EMUOPT_COLUMN_VALUE, Qt::DisplayRole).toInt();
 					int gv = qmc2GlobalEmulatorOptions->optionsMap[sectionTitle][i].item->data(QMC2_EMUOPT_COLUMN_VALUE, Qt::DisplayRole).toInt();
-					vs.sprintf("%d", v);
+					vs = QString::number(v);
 					if ( isGlobal ) {
 						if ( v != optionsMap[sectionTitle][i].dvalue.toInt() ) {
 							optionsMap[sectionTitle][i].value = vs;
@@ -1446,13 +1446,12 @@ void EmulatorOptions::checkTemplateMap()
 				continue;
 #endif
 			QStringList wl;
-			QRegExp rx("(\\S+|\\\".*\\\")");
-			int pos = 0;
-			while ( (pos = rx.indexIn(l, pos)) != -1 ) {
-				QString s = rx.cap(1);
+			QRegularExpression rx("(\\S+|\\\".*\\\")");
+			QRegularExpressionMatchIterator matches = rx.globalMatch(l);
+			while ( matches.hasNext() ) {
+				QString s = matches.next().captured(1);
 				s = s.remove("\"");
 				wl << s;
-				pos += rx.matchedLength();
 			}
 			if ( wl.count() == 2 )
 				emuOptions[wl[0]] = wl[1];
@@ -1502,8 +1501,8 @@ void EmulatorOptions::checkTemplateMap()
 						break;
 					case QMC2_EMUOPT_TYPE_FLOAT2:
 						assumedType = "float2";
-						floatParts = emuOptions[option.name].split(",", QString::SkipEmptyParts);
-						floatPartsDefault = option.dvalue.split(",", QString::SkipEmptyParts);
+						floatParts = emuOptions[option.name].split(",", Qt::SkipEmptyParts);
+						floatPartsDefault = option.dvalue.split(",", Qt::SkipEmptyParts);
 						isDifferent = false;
 						for (int i = 0; i < floatPartsDefault.count() && !isDifferent; i++)
 							if ( floatParts[i].toDouble() != floatPartsDefault[i].toDouble() )
@@ -1519,8 +1518,8 @@ void EmulatorOptions::checkTemplateMap()
 						break;
 					case QMC2_EMUOPT_TYPE_FLOAT3:
 						assumedType = "float3";
-						floatParts = emuOptions[option.name].split(",", QString::SkipEmptyParts);
-						floatPartsDefault = option.dvalue.split(",", QString::SkipEmptyParts);
+						floatParts = emuOptions[option.name].split(",", Qt::SkipEmptyParts);
+						floatPartsDefault = option.dvalue.split(",", Qt::SkipEmptyParts);
 						isDifferent = false;
 						for (int i = 0; i < floatPartsDefault.count() && !isDifferent; i++)
 							if ( floatParts[i].toDouble() != floatPartsDefault[i].toDouble() )
@@ -1668,12 +1667,12 @@ void EmulatorOptions::exportToIni(bool global, QString useFileName)
 	static QBrush redBrush(QColor(255, 0, 0));
 	static QBrush greenBrush(QColor(0, 255, 0));
 	// lookup default value for inipath
-	QStringList iniPaths = qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath").toString().split(";", QString::SkipEmptyParts);
+	QStringList iniPaths = qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath").toString().split(";", Qt::SkipEmptyParts);
 	if ( iniPaths.isEmpty() ) {
 		foreach (QString sectionTitle, qmc2GlobalEmulatorOptions->optionsMap.keys() ) {
 			for (int optionPos = 0; optionPos < qmc2GlobalEmulatorOptions->optionsMap[sectionTitle].count() && iniPaths.isEmpty(); optionPos++) {
 				if ( qmc2GlobalEmulatorOptions->optionsMap[sectionTitle][optionPos].name == "inipath" )
-					iniPaths = qmc2GlobalEmulatorOptions->optionsMap[sectionTitle][optionPos].dvalue.split(";", QString::SkipEmptyParts);
+					iniPaths = qmc2GlobalEmulatorOptions->optionsMap[sectionTitle][optionPos].dvalue.split(";", Qt::SkipEmptyParts);
 			}
 		}
 	}
@@ -1798,12 +1797,12 @@ void EmulatorOptions::importFromIni(bool global, QString useFileName)
 	static QBrush redBrush(QColor(255, 0, 0));
 	static QBrush greenBrush(QColor(0, 255, 0));
 	// lookup default value for inipath
-	QStringList iniPaths = qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath").toString().split(";", QString::SkipEmptyParts);
+	QStringList iniPaths = qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath").toString().split(";", Qt::SkipEmptyParts);
 	if ( iniPaths.isEmpty() ) {
 		foreach (QString sectionTitle, qmc2GlobalEmulatorOptions->optionsMap.keys() ) {
 			for (int optionPos = 0; optionPos < qmc2GlobalEmulatorOptions->optionsMap[sectionTitle].count() && iniPaths.isEmpty(); optionPos++) {
 				if ( qmc2GlobalEmulatorOptions->optionsMap[sectionTitle][optionPos].name == "inipath" )
-					iniPaths = qmc2GlobalEmulatorOptions->optionsMap[sectionTitle][optionPos].dvalue.split(";", QString::SkipEmptyParts);
+					iniPaths = qmc2GlobalEmulatorOptions->optionsMap[sectionTitle][optionPos].dvalue.split(";", Qt::SkipEmptyParts);
 			}
 		}
 	}
@@ -1883,7 +1882,7 @@ void EmulatorOptions::importFromIni(bool global, QString useFileName)
 			QString lineTrimmed = ts.readLine().trimmed();
 			lineCounter++;
 			if ( !lineTrimmed.isEmpty() && !lineTrimmed.startsWith("#") && !lineTrimmed.startsWith("<UNADORNED") ) {
-				QStringList words = lineTrimmed.split(QRegExp("\\s+"));
+				QStringList words = lineTrimmed.split(QRegularExpression("\\s+"));
 				if ( words.count() > 0 ) {
 					QString option = words[0];
 					// lookup option in map

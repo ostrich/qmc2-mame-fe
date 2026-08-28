@@ -4,6 +4,7 @@
 #include <QFontMetrics>
 #include <QFont>
 #include <QTime>
+#include <QElapsedTimer>
 #include <QTest>
 #include <QDir>
 #include <QFileInfo>
@@ -170,7 +171,7 @@ void RomPathCleaner::on_pushButtonStartStop_clicked()
 			default:
 			case QMC2_RPC_PATH_INDEX_ROMPATH:
 				if ( qmc2Config->contains(QMC2_EMULATOR_PREFIX + "Configuration/Global/rompath") )
-					cleanerThread()->setCheckedPaths(qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/rompath", QString()).toString().split(';', QString::SkipEmptyParts));
+					cleanerThread()->setCheckedPaths(qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/rompath", QString()).toString().split(';', Qt::SkipEmptyParts));
 				else if ( qmc2Config->contains(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/WorkingDirectory") )
 					cleanerThread()->setCheckedPaths(QStringList() << qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/WorkingDirectory", QString()).toString() + "/roms");
 				else
@@ -244,7 +245,8 @@ void RomPathCleanerThread::run()
 			emit statusUpdated(m_filesProcessed, m_renamedFiles, m_obsoleteROMs, m_obsoleteDisks, m_invalidFiles);
 			emit log(tr("check started"));
 			emit checkStarted();
-			QTime checkTimer, elapsedTime(0, 0, 0, 0);
+			QElapsedTimer checkTimer;
+			QTime elapsedTime(0, 0, 0, 0);
 			checkTimer.start();
 			int pathCount = 1;
 			foreach (QString path, m_checkedPaths) {

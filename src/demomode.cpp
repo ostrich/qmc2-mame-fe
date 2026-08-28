@@ -2,6 +2,7 @@
 #include <QHash>
 #include <QTreeWidgetItem>
 #include <QStringList>
+#include <QRandomGenerator>
 
 #include <algorithm> // std::sort()
 
@@ -200,7 +201,7 @@ void DemoModeDialog::on_pushButtonRunDemo_clicked()
 			QStringList excludedCategories = qmc2Config->value(QMC2_FRONTEND_PREFIX + "DemoMode/ExcludedCategories", QStringList()).toStringList();
 			int minDrvStatus = comboBoxDriverStatus->currentIndex();
 			QString nameFilter = lineEditNameFilter->text();
-			QRegExp nameFilterRegExp(nameFilter);
+			QRegularExpression nameFilterRegExp(nameFilter);
 			if ( !nameFilter.isEmpty() && !nameFilterRegExp.isValid() )
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: demo mode: the name filter regular expression is invalid"));
 			foreach (QString game, qmc2MachineListItemHash.keys()) {
@@ -320,7 +321,7 @@ void DemoModeDialog::startNextEmu()
 			seqNum = 0;
 		qmc2DemoMachine = selectedMachines[seqNum];
 	} else
-		qmc2DemoMachine = selectedMachines[qrand() % selectedMachines.count()];
+		qmc2DemoMachine = selectedMachines[QRandomGenerator::global()->bounded(selectedMachines.count())];
 	QString gameDescription = qmc2MachineListItemHash.value(qmc2DemoMachine)->text(QMC2_MACHINELIST_COLUMN_MACHINE);
 	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("starting emulation in demo mode for '%1'").arg(gameDescription));
 	setStatus(gameDescription);

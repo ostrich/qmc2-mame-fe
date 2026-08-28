@@ -8,7 +8,7 @@
 #include <QIcon>
 #include <QHash>
 #include <QTimer>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QPixmap>
@@ -62,8 +62,8 @@ class CollectionRebuilderThread : public QThread
 		quint64 missingDisks;
 		quint64 missingROMs;
 		quint64 setsProcessed;
-		QRegExp filterRx;
-		QRegExp filterRxSoftware;
+		QRegularExpression filterRx;
+		QRegularExpression filterRxSoftware;
 		QMutex mutex;
 		QWaitCondition waitCondition;
 

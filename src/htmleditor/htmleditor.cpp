@@ -37,7 +37,7 @@
 #include <QDir>
 #include <QCache>
 #include <QHash>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QDesktopServices>
 #include <QScreen>
 #include <QToolButton>
@@ -632,10 +632,10 @@ void HtmlEditor::insertImageFromUrl()
 QUrl HtmlEditor::guessUrlFromString(const QString &string)
 {
 	QString urlStr(string.trimmed());
-	QRegExp test(QLatin1String("^[a-zA-Z]+\\:.*"));
+	QRegularExpression test(QLatin1String("^[a-zA-Z]+\\:.*"));
 
 	// check if it looks like a qualified URL. Try parsing it and see
-	bool hasSchema = test.exactMatch(urlStr);
+	bool hasSchema = QRegularExpression(QRegularExpression::anchoredPattern(test.pattern())).match(urlStr).hasMatch();
 	if ( hasSchema ) {
 		QUrl url(urlStr, QUrl::TolerantMode);
 		if ( url.isValid() )
@@ -1279,7 +1279,7 @@ QString HtmlEditor::systemInfo(QString id)
 	if ( sysInfo.isEmpty() )
 		sysInfo = tr("No data available");
 	else
-		sysInfo.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(qmc2MainWindow->urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
+		sysInfo.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(qmc2MainWindow->urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
 	return sysInfo;
 }
 
@@ -1289,14 +1289,14 @@ QString HtmlEditor::emuInfo(QString id)
 	if ( emulatorInfo.isEmpty() )
 		emulatorInfo = tr("No data available");
 	else
-		emulatorInfo.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(qmc2MainWindow->urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
+		emulatorInfo.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(qmc2MainWindow->urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
 	return emulatorInfo;
 }
 
 QStringList HtmlEditor::videoSnapUrls(QString id)
 {
 	QStringList vsUrls;
-	foreach (QString videoSnapFolder, qmc2Config->value("MAME/FilesAndDirectories/VideoSnapFolder", QMC2_DEFAULT_DATA_PATH + "/vdo/").toString().split(";", QString::SkipEmptyParts)) {
+	foreach (QString videoSnapFolder, qmc2Config->value("MAME/FilesAndDirectories/VideoSnapFolder", QMC2_DEFAULT_DATA_PATH + "/vdo/").toString().split(";", Qt::SkipEmptyParts)) {
 		foreach (QString formatExtension, qmc2MainWindow->videoSnapAllowedFormatExtensions) {
 			QFileInfo fi(QDir::cleanPath(videoSnapFolder + "/" + id + formatExtension));
 			if ( fi.exists() && fi.isReadable() ) {
@@ -1338,7 +1338,7 @@ QString HtmlEditor::softwareInfo(QString list, QString id)
 	if ( softInfo.isEmpty() )
 		softInfo = tr("No data available");
 	else
-		softInfo.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(qmc2MainWindow->urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
+		softInfo.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(qmc2MainWindow->urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
 	return softInfo;
 }
 
@@ -1560,7 +1560,7 @@ bool HtmlEditor::softwareManualExists(const QString &list, const QString &id)
 	if ( !exists ) {
 		QString parentKey(softwareParentHash.value(list + ':' + id));
 		if ( !parentKey.isEmpty() && parentKey != "<np>" ) {
-			QStringList parentWords(parentKey.split(':', QString::SkipEmptyParts));
+			QStringList parentWords(parentKey.split(':', Qt::SkipEmptyParts));
 			exists = !userDataDb->softwareManualPaths(parentWords.at(0), parentWords.at(1)).isEmpty();
 		}
 	}
@@ -1573,7 +1573,7 @@ QStringList HtmlEditor::softwareManualPaths(const QString &list, const QString &
 	if ( manualPaths.isEmpty() ) {
 		QString parentKey(softwareParentHash.value(list + ':' + id));
 		if ( !parentKey.isEmpty() && parentKey != "<np>" ) {
-			QStringList parentWords(parentKey.split(':', QString::SkipEmptyParts));
+			QStringList parentWords(parentKey.split(':', Qt::SkipEmptyParts));
 			manualPaths = userDataDb->softwareManualPaths(parentWords.at(0), parentWords.at(1));
 		}
 	}

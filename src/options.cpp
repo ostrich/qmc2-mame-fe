@@ -20,6 +20,7 @@
 #include <QNetworkAccessManager>
 #include <QCache>
 #include <QWebEngineSettings>
+#include <QWebEngineProfile>
 
 #include "options.h"
 #include "emuopt.h"
@@ -601,14 +602,15 @@ void Options::apply()
 			tb->setIconSize(iconSizeMiddle);
 	}
 	// global web-browser fonts
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::StandardFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::SerifFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::SansSerifFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::FantasyFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::CursiveFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::FixedFont, logFont.family());
-	QWebEngineSettings::defaultSettings()->setFontSize(QWebEngineSettings::DefaultFontSize, qApp->font().pointSize() + 1);
-	QWebEngineSettings::defaultSettings()->setFontSize(QWebEngineSettings::DefaultFixedFontSize, logFont.pointSize() + 1);
+	QWebEngineSettings *webSettings = QWebEngineProfile::defaultProfile()->settings();
+	webSettings->setFontFamily(QWebEngineSettings::StandardFont, qApp->font().family());
+	webSettings->setFontFamily(QWebEngineSettings::SerifFont, qApp->font().family());
+	webSettings->setFontFamily(QWebEngineSettings::SansSerifFont, qApp->font().family());
+	webSettings->setFontFamily(QWebEngineSettings::FantasyFont, qApp->font().family());
+	webSettings->setFontFamily(QWebEngineSettings::CursiveFont, qApp->font().family());
+	webSettings->setFontFamily(QWebEngineSettings::FixedFont, logFont.family());
+	webSettings->setFontSize(QWebEngineSettings::DefaultFontSize, qApp->font().pointSize() + 1);
+	webSettings->setFontSize(QWebEngineSettings::DefaultFixedFontSize, logFont.pointSize() + 1);
 #if QMC2_JOYSTICK == 1
 	pushButtonRescanJoysticks->setIconSize(iconSize);
 	pushButtonRemapJoystickFunction->setIconSize(iconSize);
@@ -1732,7 +1734,7 @@ void Options::on_pushButtonApply_clicked()
 #endif
 		switch ( iconFileType() ) {
 			case QMC2_ICON_FILETYPE_ZIP:
-				foreach (QString filePath, config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", QString::SkipEmptyParts)) {
+				foreach (QString filePath, config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", Qt::SkipEmptyParts)) {
 					unzFile iconFile = unzOpen(filePath.toUtf8().constData());
 					if ( iconFile == 0 )
 						qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open icon file, please check access permissions for %1").arg(filePath));
@@ -1741,7 +1743,7 @@ void Options::on_pushButtonApply_clicked()
 				}
 				break;
 			case QMC2_ICON_FILETYPE_7Z:
-				foreach (QString filePath, config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", QString::SkipEmptyParts)) {
+				foreach (QString filePath, config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", Qt::SkipEmptyParts)) {
 					SevenZipFile *iconFile = new SevenZipFile(filePath);
 					if ( !iconFile->open() ) {
 						qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open icon file %1").arg(filePath) + " - " + tr("7z error") + ": " + iconFile->lastError());
@@ -1752,7 +1754,7 @@ void Options::on_pushButtonApply_clicked()
 				break;
 #if defined(QMC2_LIBARCHIVE_ENABLED)
 			case QMC2_ICON_FILETYPE_ARCHIVE:
-				foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", QString::SkipEmptyParts)) {
+				foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", Qt::SkipEmptyParts)) {
 					ArchiveFile *archiveFile = new ArchiveFile(filePath, true);
 					if ( !archiveFile->open() ) {
 						qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open icon file %1").arg(filePath) + " - " + tr("libarchive error") + ": " + archiveFile->errorString());

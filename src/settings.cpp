@@ -13,30 +13,30 @@ QString Settings::stResolve(const QString& qstr) {
 	QString qstrEnv, qstrFinal;
 
 #if defined(QMC2_OS_WIN)
-	QRegExp qrx("(\\%(.*)\\%)", Qt::CaseInsensitive, QRegExp::RegExp2);
+	QRegularExpression qrx("(\\%(.*?)\\%)", QRegularExpression::CaseInsensitiveOption);
 #else
-	QRegExp qrx("(\\$\\{(.*)\\})", Qt::CaseSensitive, QRegExp::RegExp2);
+	QRegularExpression qrx("(\\$\\{(.*?)\\})");
 #endif
-	qrx.setMinimal(true);
 
-	int pos = 0;
 	int posLastEnd = -1;
-	while ((pos = qrx.indexIn(qstr, pos)) != -1) {
+	QRegularExpressionMatchIterator matches = qrx.globalMatch(qstr);
+	while (matches.hasNext()) {
+		const QRegularExpressionMatch match = matches.next();
+		const int pos = match.capturedStart();
 		if (pos > posLastEnd)
-			qstrFinal += qstr.midRef(posLastEnd + 1, pos - (posLastEnd + 1));
+			qstrFinal += qstr.mid(posLastEnd + 1, pos - (posLastEnd + 1));
 
-		qbaBuf = qrx.cap(2).toUtf8();
+		qbaBuf = match.captured(2).toUtf8();
 		qbaBuf = qgetenv(qbaBuf.constData());
 		if (!qbaBuf.isNull()) {
 			qstrFinal += QString::fromLocal8Bit(qbaBuf.constData());
 		} else
-			qstrFinal += qrx.cap(1);  // unresolved, so put it back untouched
+			qstrFinal += match.captured(1);  // unresolved, so put it back untouched
     
-		pos += qrx.matchedLength();
-		posLastEnd = pos - 1;
+		posLastEnd = match.capturedEnd() - 1;
 	}
 	if (posLastEnd < qstr.length())
-		qstrFinal += qstr.midRef(posLastEnd + 1, qstr.length());
+		qstrFinal += qstr.mid(posLastEnd + 1, qstr.length());
 	return qstrFinal;
 }
 

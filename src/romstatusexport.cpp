@@ -135,7 +135,7 @@ void ROMStatusExporter::exportToASCII()
 		if ( exportFile.open(QIODevice::WriteOnly | QIODevice::Text) ) {
 			qmc2ExportingROMStatus = true;
 			ts.setDevice(&exportFile);
-			ts.setCodec(QTextCodec::codecForName("UTF-8"));
+			ts.setEncoding(QStringConverter::Utf8);
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("exporting ROM status in ASCII format to '%1'").arg(QFileInfo(exportFile).filePath()));
 		} else {
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: can't open ASCII export file '%1' for writing, please check permissions").arg(QFileInfo(exportFile).filePath()));
@@ -341,7 +341,7 @@ void ROMStatusExporter::exportToASCII()
 		<< QString("-").leftJustified(maxDriverStatusColumnWidth, '-', true)
 		<< "\n";
 
-	QMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
+	QMultiMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
 	int i = 0;
 	bool ascendingOrder = (comboBoxSortOrder->currentIndex() == 0);
 	bool showMoreChars = ( spinBoxASCIIColumnWidth->value() > 3 );
@@ -456,7 +456,7 @@ void ROMStatusExporter::exportToCSV()
 		if ( exportFile.open(QIODevice::WriteOnly | QIODevice::Text) ) {
 			qmc2ExportingROMStatus = true;
 			ts.setDevice(&exportFile);
-			ts.setCodec(QTextCodec::codecForName("UTF-8"));
+			ts.setEncoding(QStringConverter::Utf8);
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("exporting ROM status in CSV format to '%1'").arg(QFileInfo(exportFile).filePath()));
 		} else {
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: can't open CSV export file '%1' for writing, please check permissions").arg(QFileInfo(exportFile).filePath()));
@@ -576,7 +576,7 @@ void ROMStatusExporter::exportToCSV()
 		<< del << tr("Players") << del << sep
 		<< del << tr("Driver status") << del << "\n" << del << del << "\n";
 
-	QMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
+	QMultiMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
 	int i = 0;
 	bool ascendingOrder = (comboBoxSortOrder->currentIndex() == 0);
 	if ( !ascendingOrder )
@@ -695,7 +695,7 @@ void ROMStatusExporter::exportToHTML()
 	    	if ( exportFile.open(QIODevice::WriteOnly | QIODevice::Text) ) {
 		  	qmc2ExportingROMStatus = true;
 		  	ts.setDevice(&exportFile);
-		  	ts.setCodec(QTextCodec::codecForName("UTF-8"));
+			ts.setEncoding(QStringConverter::Utf8);
 		  	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("exporting ROM status in HTML format to '%1'").arg(QFileInfo(exportFile).filePath()));
 	    	} else {
 		  	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: can't open HTML export file '%1' for writing, please check permissions").arg(QFileInfo(exportFile).filePath()));
@@ -837,7 +837,7 @@ void ROMStatusExporter::exportToHTML()
 	   	<< "<td nowrap><b>" << tr("Name") << "</b></td><td nowrap><b>" << tr("ROM status") << "</b></td><td nowrap><b>" << tr("Description") << "</b></td><td nowrap><b>" << tr("Year") << "</b></td><td nowrap><b>" << tr("Manufacturer") << "</b></td><td nowrap><b>" << tr("ROM types") << "</b></td><td nowrap><b>" << tr("Players") << "</b></td><td nowrap><b>" << tr("Driver status") << "</td></b>\n"
 	   	<< "</tr>\n";
 
-      	QMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
+		QMultiMapIterator<QString, QTreeWidgetItem *> itExport(exportMap);
       	int i = 0;
       	bool ascendingOrder = (comboBoxSortOrder->currentIndex() == 0);
       	if ( !ascendingOrder )

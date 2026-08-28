@@ -51,7 +51,7 @@ DeviceItemDelegate::DeviceItemDelegate(QObject *parent) :
 QWidget *DeviceItemDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &/*option*/, const QModelIndex &index) const
 {
 	QModelIndex sibling = index.sibling(index.row(), QMC2_DEVCONFIG_COLUMN_EXT);
-	QStringList extensions(sibling.data(Qt::EditRole).toString().split('/', QString::SkipEmptyParts));
+	QStringList extensions(sibling.data(Qt::EditRole).toString().split('/', Qt::SkipEmptyParts));
 	QString filterString(tr("All files") + " (*)");
 	if ( extensions.count() > 0 ) {
 #if defined(QMC2_OS_WIN)
@@ -174,7 +174,7 @@ void DeviceItemDelegate::loadMidiInterfaces()
 			buffer.replace("\r\n", "\n"); // convert WinDOS's "0x0D 0x0A" to just "0x0A" 
 #endif
 			if ( !buffer.isEmpty() ) {
-				QStringList lines(buffer.split('\n', QString::SkipEmptyParts));
+				QStringList lines(buffer.split('\n', Qt::SkipEmptyParts));
 				QStringList midiInOutMarks(QStringList() << "MIDI input ports:" << "MIDI output ports:");
 				bool midiIn = false;
 				bool midiOut = false;
@@ -554,12 +554,8 @@ void DeviceConfigurator::insertChildItems(QTreeWidgetItem *parentItem, QList<QTr
 void DeviceConfigurator::updateDeviceTree(DeviceTreeNode *node, const QString &machine)
 {
 	QString xmlBuffer(getXmlData(machine));
-	QXmlInputSource xmlInputSource;
-	xmlInputSource.setData(xmlBuffer);
 	DeviceTreeXmlHandler xmlHandler(node);
-	QXmlSimpleReader xmlReader;
-	xmlReader.setContentHandler(&xmlHandler);
-	if ( !xmlReader.parse(xmlInputSource) )
+	if ( !xmlHandler.parse(xmlBuffer) )
 		qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: error while parsing XML data for '%1'").arg(machine));
 }
 
@@ -644,7 +640,7 @@ void DeviceConfigurator::traverseDeviceTree(QTreeWidgetItem *parentItem, DeviceT
 			cbBios->setCurrentIndex(0);
 			cbBios->setEnabled(false);
 		} else {
-			currentOption.replace(QRegExp(" - .*"), QString());
+			currentOption.replace(QRegularExpression(" - .*"), QString());
 			if ( node->optionBioses(currentOption).isEmpty() ) {
 				cbBios->insertItem(0, tr("N/A"));
 				cbBios->setCurrentIndex(0);
@@ -684,7 +680,7 @@ void DeviceConfigurator::traverseDeviceTree(QTreeWidgetItem *parentItem, DeviceT
 
 void DeviceConfigurator::makeUnique(QStringList *devNames, QStringList *devBriefNames)
 {
-	QRegExp removeDigitsRx("\\d+$");
+	QRegularExpression removeDigitsRx("\\d+$");
 	QHash<QString, int> devNameCounts;
 	QHash<QString, int> devBriefNameCounts;
 	for (int i = 0; i < devNames->count(); i++) {
@@ -779,7 +775,7 @@ void DeviceConfigurator::optionComboBox_currentIndexChanged(int index)
 {
 	QComboBox *cb = (QComboBox *)sender();
 	QString currentOption(cb->itemText(index));
-	currentOption.replace(QRegExp(" - .*"), QString());
+	currentOption.replace(QRegularExpression(" - .*"), QString());
 	QTreeWidgetItem *item = (QTreeWidgetItem *)cb->itemData(index).toULongLong();
 	QString currentSlot(item->text(QMC2_SLOTCONFIG_COLUMN_SLOT));
 	DeviceTreeNode *parentNode = m_rootNode->findNode(m_rootNode, currentSlot);
@@ -983,7 +979,7 @@ void DeviceConfigurator::on_toolButtonSaveConfiguration_clicked()
 					slotNames << slotName;
 					slotOptions << cb->currentText().split(splitChar).at(0);
 					if ( cbBIOS ) {
-						QString biosChoice(cbBIOS->currentText().split(splitChar, QString::SkipEmptyParts).at(0));
+						QString biosChoice(cbBIOS->currentText().split(splitChar, Qt::SkipEmptyParts).at(0));
 						if ( biosChoice == tr("N/A") )
 							biosChoice.clear();
 						slotBIOSs << biosChoice;
@@ -997,7 +993,7 @@ void DeviceConfigurator::on_toolButtonSaveConfiguration_clicked()
 					slotNames << slotName;
 					slotOptions << cb->currentText().split(splitChar).at(0);
 					if ( cbBIOS ) {
-						QString biosChoice(cbBIOS->currentText().split(splitChar, QString::SkipEmptyParts).at(0));
+						QString biosChoice(cbBIOS->currentText().split(splitChar, Qt::SkipEmptyParts).at(0));
 						if ( biosChoice == tr("N/A") )
 							biosChoice.clear();
 						slotBIOSs << biosChoice;
@@ -1007,7 +1003,7 @@ void DeviceConfigurator::on_toolButtonSaveConfiguration_clicked()
 					slotNames << slotName;
 					if ( cbBIOS ) {
 						bool isDefaultBiosChoice = cbBIOS->currentText().endsWith(" / " + tr("default"));
-						QString biosChoice(cbBIOS->currentText().split(splitChar, QString::SkipEmptyParts).at(0));
+						QString biosChoice(cbBIOS->currentText().split(splitChar, Qt::SkipEmptyParts).at(0));
 						if ( biosChoice == tr("N/A") )
 							biosChoice.clear();
 						slotBIOSs << biosChoice;
@@ -1216,7 +1212,11 @@ void DeviceConfigurator::on_lineEditConfigurationName_textChanged(const QString 
 							if ( cbBIOS ) {
 								int index = -1;
 								if ( !biosValuePair.second.isEmpty() && !biosValuePair.second[i].isEmpty() )
-									index = cbBIOS->findText(QString("^%1(| / %2)$").arg(biosValuePair.second[i]).arg(tr("default")), Qt::MatchRegExp);
+									{
+										QRegularExpression rx(QString("^%1(| / %2)$").arg(QRegularExpression::escape(biosValuePair.second[i])).arg(QRegularExpression::escape(tr("default"))));
+										for (int j = 0; j < cbBIOS->count() && index < 0; ++j)
+											if ( rx.match(cbBIOS->itemText(j)).hasMatch() ) index = j;
+									}
 								if ( index >= 0 ) {
 									cbBIOS->blockSignals(true);
 									cbBIOS->setCurrentIndex(index);
@@ -1303,7 +1303,7 @@ void DeviceConfigurator::on_listWidgetDeviceConfigurations_customContextMenuRequ
 			actionRemoveConfiguration->setVisible(true);
 		}
 		listWidgetDeviceConfigurations->setCurrentItem(item);
-		listWidgetDeviceConfigurations->setItemSelected(item, true);
+		item->setSelected(true);
 		deviceConfigurationListMenu->move(listWidgetDeviceConfigurations->viewport()->mapToGlobal(point));
 		deviceConfigurationListMenu->show();
 	}
@@ -1538,7 +1538,7 @@ void DeviceConfigurator::on_toolButtonChooserFilter_toggled(bool enabled)
 {
 	if ( enabled ) {
 		QList<QTreeWidgetItem *> items = treeWidgetDeviceSetup->findItems(comboBoxDeviceInstanceChooser->currentText(), Qt::MatchExactly);
-		QStringList extensions = items.first()->text(QMC2_DEVCONFIG_COLUMN_EXT).split("/", QString::SkipEmptyParts);
+		QStringList extensions = items.first()->text(QMC2_DEVCONFIG_COLUMN_EXT).split("/", Qt::SkipEmptyParts);
 		extensions << "zip";
 		for (int i = 0; i < extensions.count(); i++) {
 			QString ext = extensions[i];
@@ -1887,7 +1887,7 @@ void DeviceConfigurator::on_toolButtonChooserSaveConfiguration_clicked()
 									defaultIndex = nestedSlotPreselectionMap.value(cb);
 								QComboBox *cbBIOS = (QComboBox *)treeWidgetSlotOptions->itemWidget(item, QMC2_SLOTCONFIG_COLUMN_BIOS);
 								if ( cbBIOS ) {
-									QString biosChoice = cbBIOS->currentText().split(" ", QString::SkipEmptyParts)[0];
+									QString biosChoice = cbBIOS->currentText().split(" ", Qt::SkipEmptyParts)[0];
 									if ( biosChoice == tr("N/A") )
 										biosChoice.clear();
 									slotBIOSs << biosChoice;
@@ -1929,31 +1929,42 @@ void DeviceConfigurator::on_splitterFileChooser_splitterMoved(int, int)
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "Layout/DeviceConfigurator/FileChooserSplitter", QSize(splitterFileChooser->sizes().at(0), splitterFileChooser->sizes().at(1)));
 }
 
-bool DeviceTreeXmlHandler::startElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName, const QXmlAttributes &attributes)
+bool DeviceTreeXmlHandler::parse(const QString &xml)
+{
+	QXmlStreamReader reader(xml);
+	while ( !reader.atEnd() ) {
+		reader.readNext();
+		if ( reader.isStartElement() ) startElement(reader.name().toString(), reader.attributes());
+		else if ( reader.isEndElement() ) endElement(reader.name().toString());
+	}
+	return !reader.hasError();
+}
+
+bool DeviceTreeXmlHandler::startElement(const QString &qName, const QXmlStreamAttributes &attributes)
 {
 	if ( qName == "slot" ) {
-		m_currentSlot = attributes.value("name");
+		m_currentSlot = attributes.value("name").toString();
 	} else if ( qName == "slotoption" ) {
-		m_slotOptions.append(attributes.value("name"));
-		m_slotOptionDevices.append(attributes.value("devname"));
-		if ( attributes.value("default") == "yes" )
-			m_defaultOption = attributes.value("name");
+		m_slotOptions.append(attributes.value("name").toString());
+		m_slotOptionDevices.append(attributes.value("devname").toString());
+		if ( attributes.value("default").toString() == "yes" )
+			m_defaultOption = attributes.value("name").toString();
 	} else if ( qName == "device" ) {
-		m_currentDeviceType = attributes.value("type");
-		m_currentDeviceTag = attributes.value("tag");
+		m_currentDeviceType = attributes.value("type").toString();
+		m_currentDeviceTag = attributes.value("tag").toString();
 		if ( m_currentDeviceTag.startsWith(':') )
 			m_currentDeviceTag.prepend(m_devNode->fullName());
-		m_currentDeviceInterface = attributes.value("interface");
+		m_currentDeviceInterface = attributes.value("interface").toString();
 	} else if ( qName == "instance" ) {
-		m_currentDevice = attributes.value("name");
-		m_currentDeviceBriefName = attributes.value("briefname");
+		m_currentDevice = attributes.value("name").toString();
+		m_currentDeviceBriefName = attributes.value("briefname").toString();
 	} else if ( qName == "extension" ) {
-		m_currentDeviceExtensions.append(attributes.value("name"));
+		m_currentDeviceExtensions.append(attributes.value("name").toString());
 	}
 	return true;
 }
 
-bool DeviceTreeXmlHandler::endElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName)
+bool DeviceTreeXmlHandler::endElement(const QString &qName)
 {
 	bool rc = true;
 	if ( qName == "slot" ) {
@@ -1974,12 +1985,8 @@ bool DeviceTreeXmlHandler::endElement(const QString &/*namespaceURI*/, const QSt
 				DeviceTreeNode *deviceNode = new DeviceTreeNode(childNode, m_defaultOption);
 				childNode->addChild(deviceNode);
 				QString xmlBuffer(getXmlData(m_slotOptionDevices.at(m_slotOptions.indexOf(m_defaultOption))));
-				QXmlInputSource xmlInputSource;
-				xmlInputSource.setData(xmlBuffer);
 				DeviceTreeXmlHandler xmlHandler(deviceNode);
-				QXmlSimpleReader xmlReader;
-				xmlReader.setContentHandler(&xmlHandler);
-				xmlReader.parse(xmlInputSource);
+				xmlHandler.parse(xmlBuffer);
 			}
 		}
 		m_currentSlot.clear();

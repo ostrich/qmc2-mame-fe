@@ -8,7 +8,7 @@
 #include <QTextStream>
 #include <QTextCodec>
 #include <QXmlStreamReader>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QDir>
 #include <QUuid>
 #include <QHash>
@@ -138,7 +138,7 @@ QString DatInfoDatabaseManager::softwareInfo(QString list, QString id, bool from
 	if ( fromParent ) {
 		QString parentKey(softwareParentHash.value(list + ':' + id));
 		if ( !parentKey.isEmpty() && parentKey != "<np>" )
-			id = parentKey.split(":", QString::SkipEmptyParts)[1];
+			id = parentKey.split(":", Qt::SkipEmptyParts)[1];
 	}
 	QString infotext;
 	QSqlQuery query(m_db);
@@ -534,7 +534,7 @@ bool DatInfoDatabaseManager::softwareInfoImportRequired(QStringList pathList)
 		foreach (QString path, pathList) {
 			QFileInfo fi(path);
 			uint dtImport = importDates[importFiles.indexOf(path)].toUInt();
-			if ( dtImport < fi.lastModified().toTime_t() )
+			if ( dtImport < fi.lastModified().toSecsSinceEpoch() )
 				datesChanged = true;
 			if ( datesChanged )
 				break;
@@ -652,7 +652,7 @@ void DatInfoDatabaseManager::importSoftwareInfo(QStringList pathList, bool fromS
 			} else
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("DAT-info database") + ": " + tr("done (importing %1 from '%2')").arg(tr("software info-texts")).arg(QDir::toNativeSeparators(path)));
 			importPaths << path;
-			importDates << QString::number(QFileInfo(path).lastModified().toTime_t());
+			importDates << QString::number(QFileInfo(path).lastModified().toSecsSinceEpoch());
 			swInfoDB.close();
 		} else
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("DAT-info database") + ": " + tr("WARNING: can't open software info file '%1'").arg(QDir::toNativeSeparators(path)));
@@ -698,7 +698,7 @@ bool DatInfoDatabaseManager::emuInfoImportRequired(QStringList pathList)
 		foreach (QString path, pathList) {
 			QFileInfo fi(path);
 			uint dtImport = importDates[importFiles.indexOf(path)].toUInt();
-			if ( dtImport < fi.lastModified().toTime_t() )
+			if ( dtImport < fi.lastModified().toSecsSinceEpoch() )
 				datesChanged = true;
 			if ( datesChanged )
 				break;
@@ -734,9 +734,9 @@ void DatInfoDatabaseManager::importEmuInfo(QStringList pathList, bool fromScratc
 			qmc2MainWindow->progressBarMachineList->setValue(0);
 			qApp->processEvents();
 			QTextStream ts(&emuInfoDB);
-			ts.setCodec(QTextCodec::codecForName("UTF-8"));
+			ts.setEncoding(QStringConverter::Utf8);
 			quint64 recordsProcessed = 0, pendingUpdates = 0;
-			QRegExp lineBreakRx("(<br>){2,}");
+			QRegularExpression lineBreakRx("(<br>){2,}");
 			while ( !ts.atEnd() && !qmc2LoadingInterrupted ) {
 				QString singleLineSimplified = ts.readLine().simplified();
 				bool startsWithDollarInfo = singleLineSimplified.startsWith("$info=");
@@ -749,7 +749,7 @@ void DatInfoDatabaseManager::importEmuInfo(QStringList pathList, bool fromScratc
 					startsWithDollarInfo = singleLineSimplified.startsWith("$info=");
 				}
 				if ( startsWithDollarInfo ) {
-					QStringList gameNames = singleLineSimplified.mid(6).split(",", QString::SkipEmptyParts);
+					QStringList gameNames = singleLineSimplified.mid(6).split(",", Qt::SkipEmptyParts);
 					bool startsWithDollarMame = false;
 					while ( !startsWithDollarMame && !ts.atEnd() ) {
 						singleLineSimplified = ts.readLine().simplified();
@@ -805,7 +805,7 @@ void DatInfoDatabaseManager::importEmuInfo(QStringList pathList, bool fromScratc
 			} else
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("DAT-info database") + ": " + tr("done (importing %1 from '%2')").arg(tr("emulator info-texts")).arg(QDir::toNativeSeparators(path)));
 			importPaths << path;
-			importDates << QString::number(QFileInfo(path).lastModified().toTime_t());
+			importDates << QString::number(QFileInfo(path).lastModified().toSecsSinceEpoch());
 			emuInfoDB.close();
 
 		} else
@@ -852,7 +852,7 @@ bool DatInfoDatabaseManager::machineInfoImportRequired(QStringList pathList)
 		foreach (QString path, pathList) {
 			QFileInfo fi(path);
 			uint dtImport = importDates[importFiles.indexOf(path)].toUInt();
-			if ( dtImport < fi.lastModified().toTime_t() )
+			if ( dtImport < fi.lastModified().toSecsSinceEpoch() )
 				datesChanged = true;
 			if ( datesChanged )
 				break;
@@ -968,7 +968,7 @@ void DatInfoDatabaseManager::importMachineInfo(QStringList pathList, QStringList
 			} else
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("DAT-info database") + ": " + tr("done (importing %1 from '%2')").arg(tr("machine info-texts")).arg(QDir::toNativeSeparators(path)));
 			importPaths << path;
-			importDates << QString::number(QFileInfo(path).lastModified().toTime_t());
+			importDates << QString::number(QFileInfo(path).lastModified().toSecsSinceEpoch());
 			machineInfoDB.close();
 		} else
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("DAT-info database") + ": " + tr("WARNING: can't open machine info file %1").arg(QDir::toNativeSeparators(path)));

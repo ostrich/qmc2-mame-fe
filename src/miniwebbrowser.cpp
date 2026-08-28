@@ -2,7 +2,7 @@
 #include <QNetworkReply>
 #include <QNetworkAccessManager>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QDir>
 #include <QWebEngineHistory>
 #include <QWebEngineSettings>
@@ -391,7 +391,7 @@ void MiniWebBrowser::webViewBrowser_linkClicked(const QUrl url)
 				webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
 			else {
 				webBrowser->adjustSize();
-				webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
+				webBrowser->move(QGuiApplication::primaryScreen()->availableGeometry().center() - webBrowser->rect().center());
 			}
 			connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 			webBrowser->webViewBrowser->load(url);
@@ -656,9 +656,9 @@ void MiniWebBrowser::setStatus(QString statusMessage)
 		labelStatus->setMaximumHeight(f.pointSize() + 4);
 		QFontMetrics fm(f);
 		if ( progressBar->isVisible() )
-			labelStatus->setText(fm.elidedText(m_statusMessage, Qt::ElideRight, webViewBrowser->width() / 2 - fm.width("W")));
+			labelStatus->setText(fm.elidedText(m_statusMessage, Qt::ElideRight, webViewBrowser->width() / 2 - fm.horizontalAdvance("W")));
 		else
-			labelStatus->setText(fm.elidedText(m_statusMessage, Qt::ElideRight, webViewBrowser->width() - fm.width("W")));
+			labelStatus->setText(fm.elidedText(m_statusMessage, Qt::ElideRight, webViewBrowser->width() - fm.horizontalAdvance("W")));
 		labelStatus->show();
 	}
 
@@ -677,7 +677,7 @@ QWebEngineView *BrowserWidget::createWindow(QWebEnginePage::WebWindowType type)
 		webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
 	else {
 		webBrowser->adjustSize();
-		webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
+		webBrowser->move(QGuiApplication::primaryScreen()->availableGeometry().center() - webBrowser->rect().center());
 	}
 	connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 	webBrowser->show();
@@ -688,7 +688,7 @@ void BrowserWidget::wheelEvent(QWheelEvent *e)
 {
 	if ( e->modifiers() & Qt::ControlModifier ) {
 		if ( parentBrowser )
-			parentBrowser->spinBoxZoom->setValue(parentBrowser->spinBoxZoom->value() + parentBrowser->spinBoxZoom->singleStep() * (e->delta() > 0 ? 1 : e->delta() < 0 ? -1 : 0));
+			parentBrowser->spinBoxZoom->setValue(parentBrowser->spinBoxZoom->value() + parentBrowser->spinBoxZoom->singleStep() * (e->angleDelta().y() > 0 ? 1 : e->angleDelta().y() < 0 ? -1 : 0));
 		e->accept();
 	} else {
 		e->ignore();

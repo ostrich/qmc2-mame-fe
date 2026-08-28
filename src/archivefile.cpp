@@ -163,7 +163,7 @@ bool ArchiveFile::createEntry(QString name, size_t size)
 	archive_entry_set_size(m_entry, size);
 	archive_entry_set_filetype(m_entry, AE_IFREG);
 	archive_entry_set_perm(m_entry, 0644);
-	archive_entry_set_mtime(m_entry, QDateTime::currentDateTime().toTime_t(), 0);
+	archive_entry_set_mtime(m_entry, QDateTime::currentDateTime().toSecsSinceEpoch(), 0);
 	archive_write_header(m_archive, m_entry);
 	return !hasError();
 }

@@ -8,7 +8,7 @@
 #include <QtXml>
 #include <QtNetwork>
 #include <QMap>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QPainterPath>
 #include <QMediaPlayer>
 #include <QVideoWidget>
@@ -88,7 +88,7 @@ class VideoOverlayWidget : public QWidget
 				QRect r;
 				messageText = message;
 				if ( videoWidget()->isFullScreen() )
-					r = qApp->desktop()->rect();
+					r = QGuiApplication::primaryScreen()->geometry();
 				else
 					r = videoWidget()->rect();
 				QFont f(qApp->font());
@@ -99,7 +99,7 @@ class VideoOverlayWidget : public QWidget
 				r.adjust(-adjRect.width()*2, -adjRect.height(), +adjRect.width()*2, +adjRect.height());
 				int myHeight = r.height();
 				if ( videoWidget()->isFullScreen() )
-					r.setBottom(qApp->desktop()->rect().bottom());
+					r.setBottom(QGuiApplication::primaryScreen()->geometry().bottom());
 				else
 					r.setBottom(videoWidget()->rect().bottom());
 				r.setTop(r.bottom() - myHeight);
@@ -314,7 +314,7 @@ class YouTubeVideoPlayer : public QWidget, public Ui::YouTubeVideoPlayer
 		QVideoWidget *mFullscreenVideoWidget;
 };
 
-class YouTubeXmlHandler : public QXmlDefaultHandler
+class YouTubeXmlHandler
 {
 	public:
 		QListWidget *listWidget;
@@ -324,10 +324,10 @@ class YouTubeXmlHandler : public QXmlDefaultHandler
 
 		YouTubeXmlHandler(QListWidget *, YouTubeVideoPlayer *);
 
-		bool startElement(const QString &, const QString &, const QString &, const QXmlAttributes &);
-		bool endElement(const QString &, const QString &, const QString &);
+		bool parse(const QString &);
+		bool startElement(const QString &);
+		bool endElement(const QString &);
 		bool characters(const QString &);
-		bool fatalError(const QXmlParseException &);
 
 	private:
 		YouTubeVideoPlayer *mVideoPlayer;

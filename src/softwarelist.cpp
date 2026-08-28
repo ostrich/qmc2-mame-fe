@@ -1009,7 +1009,7 @@ QString &SoftwareList::lookupMountDevice(QString device, QString deviceInterface
 	QHash<QString, QStringList> deviceInstanceHash;
 	softwareListDeviceName.clear();
 
-	QStringList xmlLines(qmc2MachineList->xmlDb()->xml(systemName).split('\n', QString::SkipEmptyParts));
+	QStringList xmlLines(qmc2MachineList->xmlDb()->xml(systemName).split('\n', Qt::SkipEmptyParts));
 	QStringList *xmlData = &xmlLines;
 	QStringList dynamicXmlData;
 	QXmlStreamReader xmlMachineEntry(qmc2MachineList->xmlDb()->xml(systemName));
@@ -1037,7 +1037,7 @@ QString &SoftwareList::lookupMountDevice(QString device, QString deviceInterface
 			swlArgs << QString("-%1").arg(instances.at(j)) << files[j].replace("~", "$HOME");
 #endif
 		}
-		foreach (QString line, getXmlDataWithEnabledSlots(swlArgs).split('\n', QString::SkipEmptyParts))
+		foreach (QString line, getXmlDataWithEnabledSlots(swlArgs).split('\n', Qt::SkipEmptyParts))
 			dynamicXmlData << line.trimmed();
 		xmlData = &dynamicXmlData;
 #ifdef QMC2_DEBUG
@@ -1054,7 +1054,7 @@ QString &SoftwareList::lookupMountDevice(QString device, QString deviceInterface
 				if ( xmlMachineEntry.name() == "device" && xmlMachineEntry.attributes().hasAttribute("type") ) {
 					QString devName;
 					if ( xmlMachineEntry.attributes().hasAttribute("interface") ) {
-						QStringList devInterfaces(xmlMachineEntry.attributes().value("interface").toString().split(',', QString::SkipEmptyParts));
+						QStringList devInterfaces(xmlMachineEntry.attributes().value("interface").toString().split(',', Qt::SkipEmptyParts));
 						while ( xmlMachineEntry.readNextStartElement() ) {
 							if ( xmlMachineEntry.name() == "instance" && xmlMachineEntry.attributes().hasAttribute("briefname") ) {
 								devName = xmlMachineEntry.attributes().value("briefname").toString();
@@ -1136,7 +1136,7 @@ void SoftwareList::getXmlData()
 #endif
 
 		if ( !filter.isEmpty() )
-			systemSoftwareFilterHash.insert(systemName, filter.split(',', QString::SkipEmptyParts));
+			systemSoftwareFilterHash.insert(systemName, filter.split(',', Qt::SkipEmptyParts));
 	}
 #ifdef QMC2_DEBUG
 	else
@@ -1370,12 +1370,8 @@ bool SoftwareList::load()
 #ifdef QMC2_DEBUG
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, QString("DEBUG: SoftwareList::load(): XML data for software list '%1' follows:\n%2").arg(swList).arg(softwareListXml));
 #endif
-				QXmlInputSource xmlInputSource;
-				xmlInputSource.setData(softwareListXml);
 				SoftwareListXmlHandler xmlHandler(treeWidgetKnownSoftware, &hiddenLists);
-				QXmlSimpleReader xmlReader;
-				xmlReader.setContentHandler(&xmlHandler);
-				if ( !xmlReader.parse(xmlInputSource) && !interruptLoad )
+				if ( !xmlHandler.parse(softwareListXml) && !interruptLoad )
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: error while parsing XML data for software list '%1'").arg(swList));
 				else if ( xmlHandler.newSoftwareStates )
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, QObject::tr("state info for software-list '%1': L:%2 C:%3 M:%4 I:%5 N:%6 U:%7").arg(swList).arg(xmlHandler.numTotal).arg(xmlHandler.numCorrect).arg(xmlHandler.numMostlyCorrect).arg(xmlHandler.numIncorrect).arg(xmlHandler.numNotFound).arg(xmlHandler.numUnknown));
@@ -1437,7 +1433,7 @@ bool SoftwareList::load()
 				if ( softwareListHidden )
 					showItem = false;
 				else if ( toolButtonCompatFilterToggle->isChecked() ) {
-					QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", QString::SkipEmptyParts));
+					QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", Qt::SkipEmptyParts));
 					showItem = compatList.isEmpty() || compatFilters.isEmpty();
 					for (int i = 0; i < compatList.count() && !showItem; i++)
 						for (int j = 0; j < compatFilters.count() && !showItem; j++)
@@ -1708,7 +1704,7 @@ void SoftwareList::on_toolButtonManualOpenInViewer_clicked()
 	if ( manualPaths.isEmpty() ) {
 		QString parentKey(softwareParentHash.value(currentItem->text(QMC2_SWLIST_COLUMN_LIST) + ':' + currentItem->text(QMC2_SWLIST_COLUMN_NAME)));
 		if ( !parentKey.isEmpty() && parentKey != "<np>" ) {
-			QStringList parentWords(parentKey.split(':', QString::SkipEmptyParts));
+			QStringList parentWords(parentKey.split(':', Qt::SkipEmptyParts));
 			manualPaths = userDataDb->softwareManualPaths(parentWords.at(0), parentWords.at(1));
 		}
 	}
@@ -1747,7 +1743,7 @@ void SoftwareList::checkSoftwareManualAvailability()
 	if ( !enable ) {
 		QString parentKey(softwareParentHash.value(currentItem->text(QMC2_SWLIST_COLUMN_LIST) + ':' + currentItem->text(QMC2_SWLIST_COLUMN_NAME)));
 		if ( !parentKey.isEmpty() && parentKey != "<np>" ) {
-			QStringList parentWords(parentKey.split(':', QString::SkipEmptyParts));
+			QStringList parentWords(parentKey.split(':', Qt::SkipEmptyParts));
 			enable = !userDataDb->softwareManualPaths(parentWords.at(0), parentWords.at(1)).isEmpty();
 		}
 	}
@@ -2210,8 +2206,7 @@ void SoftwareList::verifyFinished(int exitCode, QProcess::ExitStatus exitStatus)
 void SoftwareList::verifyReadyReadStandardOutput()
 {
 	// this makes the GUI much more responsive, but is HAS to be called before verifyProc->readAllStandardOutput()!
-	if ( QCoreApplication::hasPendingEvents() )
-		qApp->processEvents();
+	qApp->processEvents();
 	verifyReadingStdout = true;
 	QString s(swStatesLastLine + verifyProc->readAllStandardOutput());
 	QStringList lines(s.split('\n'));
@@ -2224,10 +2219,10 @@ void SoftwareList::verifyReadyReadStandardOutput()
 	foreach (QString line, lines) {
 		line = line.simplified();
 		if ( !line.isEmpty() ) {
-			QStringList words(line.split(QRegExp("\\s+"), QString::SkipEmptyParts));
+			QStringList words(line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts));
 			if ( line.startsWith("romset") ) {
 				progressBar->setValue(progressBar->value() + 1);
-				QStringList romsetWords(words.at(1).split(':', QString::SkipEmptyParts));
+				QStringList romsetWords(words.at(1).split(':', Qt::SkipEmptyParts));
 				QString listName(romsetWords.at(0));
 				QString softwareName(romsetWords.at(1));
 				QString status(words.last());
@@ -2385,7 +2380,7 @@ void SoftwareList::on_toolButtonToggleStatenameAdjustment_clicked(bool checked)
 void SoftwareList::on_toolButtonSoftwareStates_toggled(bool checked)
 {
 	QString itemText(toolBoxSoftwareList->itemText(QMC2_SWLIST_KNOWN_SW_PAGE));
-	itemText.remove(QRegExp(" \\| " + tr("filtered") + "$"));
+	itemText.remove(QRegularExpression(" \\| " + tr("filtered") + "$"));
 	if ( checked ) {
 		toolButtonSoftwareStates->setMenu(menuSoftwareStates);
 		if ( isReady ) {
@@ -2510,7 +2505,7 @@ void SoftwareList::on_toolButtonCompatFilterToggle_clicked(bool checked)
 	QStringList hiddenLists(userDataDb->hiddenLists(systemName));
 	for (int count = 0; count < treeWidgetKnownSoftware->topLevelItemCount(); count++) {
 		QTreeWidgetItem *item = treeWidgetKnownSoftware->topLevelItem(count);
-		QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(',', QString::SkipEmptyParts));
+		QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(',', Qt::SkipEmptyParts));
 		bool softwareListHidden = hiddenLists.contains(item->text(QMC2_SWLIST_COLUMN_LIST));
 		bool showItem = true;
 		if ( softwareListHidden )
@@ -2553,7 +2548,7 @@ void SoftwareList::on_toolButtonCompatFilterToggle_clicked(bool checked)
 	}
 	for (int count = 0; count < treeWidgetFavoriteSoftware->topLevelItemCount(); count++) {
 		QTreeWidgetItem *item = treeWidgetFavoriteSoftware->topLevelItem(count);
-		QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(',', QString::SkipEmptyParts));
+		QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(',', Qt::SkipEmptyParts));
 		bool softwareListHidden = hiddenLists.contains(item->text(QMC2_SWLIST_COLUMN_LIST));
 		bool showItem = true;
 		if ( softwareListHidden )
@@ -2573,7 +2568,7 @@ void SoftwareList::on_toolButtonCompatFilterToggle_clicked(bool checked)
 	}
 	for (int count = 0; count < treeWidgetSearchResults->topLevelItemCount(); count++) {
 		QTreeWidgetItem *item = treeWidgetSearchResults->topLevelItem(count);
-		QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(',', QString::SkipEmptyParts));
+		QStringList compatList(item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(',', Qt::SkipEmptyParts));
 		bool softwareListHidden = hiddenLists.contains(item->text(QMC2_SWLIST_COLUMN_LIST));
 		bool showItem = true;
 		if ( softwareListHidden )
@@ -2670,7 +2665,7 @@ void SoftwareList::on_toolButtonAddToFavorites_clicked(bool)
 			item->setWhatsThis(QMC2_SWLIST_COLUMN_TITLE, si->whatsThis(QMC2_SWLIST_COLUMN_TITLE));
 			item->setWhatsThis(QMC2_SWLIST_COLUMN_NAME, si->whatsThis(QMC2_SWLIST_COLUMN_NAME));
 			item->setWhatsThis(QMC2_SWLIST_COLUMN_PART, si->whatsThis(QMC2_SWLIST_COLUMN_PART));
-			QStringList compatList = item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", QString::SkipEmptyParts);
+			QStringList compatList = item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", Qt::SkipEmptyParts);
 			bool softwareListHidden = hiddenLists.contains(item->text(QMC2_SWLIST_COLUMN_LIST));
 			bool showItem = true;
 			if ( softwareListHidden )
@@ -2762,19 +2757,13 @@ void SoftwareList::on_treeWidgetKnownSoftware_itemExpanded(QTreeWidgetItem *item
 	if ( item->child(0)->text(QMC2_SWLIST_COLUMN_TITLE) == MachineList::trWaitingForData ) {
 		QString softwareXml(swlDb->xml(item->text(QMC2_SWLIST_COLUMN_LIST), item->text(QMC2_SWLIST_COLUMN_NAME)));
 		if ( !softwareXml.isEmpty() ) {
-			QXmlInputSource xmlInputSource;
-			xmlInputSource.setData(softwareXml);
 			successfulLookups.clear();
 			SoftwareEntryXmlHandler xmlHandler(item);
-			QXmlSimpleReader xmlReader;
-			xmlReader.setContentHandler(&xmlHandler);
-			xmlReader.setFeature("http://xml.org/sax/features/namespaces", false);
-			xmlReader.setFeature("http://trolltech.com/xml/features/report-whitespace-only-CharData", false);
 			treeWidgetKnownSoftware->setSortingEnabled(false);
 			item->child(0)->setText(QMC2_SWLIST_COLUMN_TITLE, tr("Searching"));
 			treeWidgetKnownSoftware->viewport()->update();
 			qApp->processEvents();
-			if ( !xmlReader.parse(xmlInputSource) )
+			if ( !xmlHandler.parse(softwareXml) )
 				if ( !xmlHandler.success )
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: error while parsing XML data for software list entry '%1:%2'").arg(item->text(QMC2_SWLIST_COLUMN_LIST)).arg(item->text(QMC2_SWLIST_COLUMN_NAME)));
 			treeWidgetKnownSoftware->setSortingEnabled(true);
@@ -2790,19 +2779,13 @@ void SoftwareList::on_treeWidgetKnownSoftwareTree_itemExpanded(QTreeWidgetItem *
 	if ( item->child(0)->text(QMC2_SWLIST_COLUMN_TITLE) == MachineList::trWaitingForData ) {
 		QString softwareXml(swlDb->xml(item->text(QMC2_SWLIST_COLUMN_LIST), item->text(QMC2_SWLIST_COLUMN_NAME)));
 		if ( !softwareXml.isEmpty() ) {
-			QXmlInputSource xmlInputSource;
-			xmlInputSource.setData(softwareXml);
 			successfulLookups.clear();
 			SoftwareEntryXmlHandler xmlHandler(item, true);
-			QXmlSimpleReader xmlReader;
-			xmlReader.setContentHandler(&xmlHandler);
-			xmlReader.setFeature("http://xml.org/sax/features/namespaces", false);
-			xmlReader.setFeature("http://trolltech.com/xml/features/report-whitespace-only-CharData", false);
 			treeWidgetKnownSoftwareTree->setSortingEnabled(false);
 			item->child(0)->setText(QMC2_SWLIST_COLUMN_TITLE, tr("Searching"));
 			treeWidgetKnownSoftwareTree->viewport()->update();
 			qApp->processEvents();
-			if ( !xmlReader.parse(xmlInputSource) )
+			if ( !xmlHandler.parse(softwareXml) )
 				if ( !xmlHandler.success )
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: error while parsing XML data for software list entry '%1:%2'").arg(item->text(QMC2_SWLIST_COLUMN_LIST)).arg(item->text(QMC2_SWLIST_COLUMN_NAME)));
 			treeWidgetKnownSoftwareTree->setSortingEnabled(true);
@@ -2818,19 +2801,13 @@ void SoftwareList::on_treeWidgetFavoriteSoftware_itemExpanded(QTreeWidgetItem *i
 	if ( item->child(0)->text(QMC2_SWLIST_COLUMN_TITLE) == MachineList::trWaitingForData ) {
 		QString softwareXml(swlDb->xml(item->text(QMC2_SWLIST_COLUMN_LIST), item->text(QMC2_SWLIST_COLUMN_NAME)));
 		if ( !softwareXml.isEmpty() ) {
-			QXmlInputSource xmlInputSource;
-			xmlInputSource.setData(softwareXml);
 			successfulLookups.clear();
 			SoftwareEntryXmlHandler xmlHandler(item);
-			QXmlSimpleReader xmlReader;
-			xmlReader.setContentHandler(&xmlHandler);
-			xmlReader.setFeature("http://xml.org/sax/features/namespaces", false);
-			xmlReader.setFeature("http://trolltech.com/xml/features/report-whitespace-only-CharData", false);
 			treeWidgetFavoriteSoftware->setSortingEnabled(false);
 			item->child(0)->setText(QMC2_SWLIST_COLUMN_TITLE, tr("Searching"));
 			treeWidgetFavoriteSoftware->viewport()->update();
 			qApp->processEvents();
-			if ( !xmlReader.parse(xmlInputSource) )
+			if ( !xmlHandler.parse(softwareXml) )
 				if ( !xmlHandler.success )
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: error while parsing XML data for software list entry '%1:%2'").arg(item->text(QMC2_SWLIST_COLUMN_LIST)).arg(item->text(QMC2_SWLIST_COLUMN_NAME)));
 			treeWidgetFavoriteSoftware->setSortingEnabled(true);
@@ -2846,19 +2823,13 @@ void SoftwareList::on_treeWidgetSearchResults_itemExpanded(QTreeWidgetItem *item
 	if ( item->child(0)->text(QMC2_SWLIST_COLUMN_TITLE) == MachineList::trWaitingForData ) {
 		QString softwareXml(swlDb->xml(item->text(QMC2_SWLIST_COLUMN_LIST), item->text(QMC2_SWLIST_COLUMN_NAME)));
 		if ( !softwareXml.isEmpty() ) {
-			QXmlInputSource xmlInputSource;
-			xmlInputSource.setData(softwareXml);
 			successfulLookups.clear();
 			SoftwareEntryXmlHandler xmlHandler(item);
-			QXmlSimpleReader xmlReader;
-			xmlReader.setContentHandler(&xmlHandler);
-			xmlReader.setFeature("http://xml.org/sax/features/namespaces", false);
-			xmlReader.setFeature("http://trolltech.com/xml/features/report-whitespace-only-CharData", false);
 			treeWidgetSearchResults->setSortingEnabled(false);
 			item->child(0)->setText(QMC2_SWLIST_COLUMN_TITLE, tr("Searching"));
 			treeWidgetSearchResults->viewport()->update();
 			qApp->processEvents();
-			if ( !xmlReader.parse(xmlInputSource) )
+			if ( !xmlHandler.parse(softwareXml) )
 				if ( !xmlHandler.success )
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: error while parsing XML data for software list entry '%1:%2'").arg(item->text(QMC2_SWLIST_COLUMN_LIST)).arg(item->text(QMC2_SWLIST_COLUMN_NAME)));
 			treeWidgetSearchResults->setSortingEnabled(true);
@@ -3067,7 +3038,7 @@ void SoftwareList::on_treeWidgetKnownSoftware_customContextMenuRequested(const Q
 	QTreeWidgetItem *item = treeWidgetKnownSoftware->itemAt(p);
 	if ( !item )
 		return;
-	treeWidgetKnownSoftware->setItemSelected(item, true);
+	item->setSelected(true);
 	actionAddToFavorites->setVisible(true);
 	actionRemoveFromFavorites->setVisible(false);
 	updateRebuildSoftwareMenuVisibility();
@@ -3081,7 +3052,7 @@ void SoftwareList::on_treeWidgetKnownSoftwareTree_customContextMenuRequested(con
 	QTreeWidgetItem *item = treeWidgetKnownSoftwareTree->itemAt(p);
 	if ( !item )
 		return;
-	treeWidgetKnownSoftwareTree->setItemSelected(item, true);
+	item->setSelected(true);
 	actionAddToFavorites->setVisible(true);
 	actionRemoveFromFavorites->setVisible(false);
 	updateRebuildSoftwareMenuVisibility();
@@ -3095,7 +3066,7 @@ void SoftwareList::on_treeWidgetFavoriteSoftware_customContextMenuRequested(cons
 	QTreeWidgetItem *item = treeWidgetFavoriteSoftware->itemAt(p);
 	if ( !item )
 		return;
-	treeWidgetFavoriteSoftware->setItemSelected(item, true);
+	item->setSelected(true);
 	actionAddToFavorites->setVisible(false);
 	actionRemoveFromFavorites->setVisible(true);
 	updateRebuildSoftwareMenuVisibility();
@@ -3109,7 +3080,7 @@ void SoftwareList::on_treeWidgetSearchResults_customContextMenuRequested(const Q
 	QTreeWidgetItem *item = treeWidgetSearchResults->itemAt(p);
 	if ( !item )
 		return;
-	treeWidgetSearchResults->setItemSelected(item, true);
+	item->setSelected(true);
 	actionAddToFavorites->setVisible(true);
 	actionRemoveFromFavorites->setVisible(false);
 	updateRebuildSoftwareMenuVisibility();
@@ -3339,9 +3310,8 @@ void SoftwareList::comboBoxSearch_editTextChanged_delayed()
 	QString patternCopy(pattern);
 	// easy pattern match
 	int pos = 0;
-	QRegExp rxAsterisk("(\\*)");
-	while ( (pos = rxAsterisk.indexIn(pattern, pos)) != -1 ) {
-		int matchedLength = rxAsterisk.matchedLength();
+	while ( (pos = pattern.indexOf('*', pos)) != -1 ) {
+		int matchedLength = 1;
 		if ( pos > 0 ) {
 			if ( pattern[pos - 1] != '\\' ) {
 				pattern.replace(pos, 1, ".*");
@@ -3354,18 +3324,17 @@ void SoftwareList::comboBoxSearch_editTextChanged_delayed()
 		pos += matchedLength;
 	}
 	pos = 0;
-	QRegExp rxQuestionMark("(\\?)");
-	while ( (pos = rxQuestionMark.indexIn(pattern, pos)) != -1 ) {
+	while ( (pos = pattern.indexOf('?', pos)) != -1 ) {
 		if ( pos > 0 ) {
 			if ( pattern[pos - 1] != '\\' )
 				pattern.replace(pos, 1, ".");
 		} else
 			pattern.replace(pos, 1, ".");
-		pos += rxQuestionMark.matchedLength();
+		pos++;
 	}
 	pattern.replace(' ', ".* .*").replace(".*^", "").replace("$.*", "");
 	treeWidgetSearchResults->clear();
-	QRegExp patternRx(QRegExp(pattern, Qt::CaseInsensitive, QRegExp::RegExp2));
+	QRegularExpression patternRx(pattern, QRegularExpression::CaseInsensitiveOption);
 	if ( !patternRx.isValid() ) {
 		lastSearchText.clear();
 		lastNegatedMatch = negatedMatch;
@@ -3410,7 +3379,7 @@ void SoftwareList::comboBoxSearch_editTextChanged_delayed()
 			if ( softwareListHidden )
 				showItem = false;
 			else if ( qmc2SoftwareList->toolButtonCompatFilterToggle->isChecked() ) {
-				QStringList compatList(newItem->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", QString::SkipEmptyParts));
+				QStringList compatList(newItem->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", Qt::SkipEmptyParts));
 				showItem = compatList.isEmpty() || compatFilters.isEmpty();
 				for (int j = 0; j < compatList.count() && !showItem; j++)
 					for (int k = 0; k < compatFilters.count() && !showItem; k++)
@@ -3569,8 +3538,8 @@ QStringList &SoftwareList::arguments(QStringList *softwareLists, QStringList *so
 			}
 			snapnameList = item->text(QMC2_SWLIST_COLUMN_LIST);
 			snapnameSoftware = item->text(QMC2_SWLIST_COLUMN_NAME);
-			QStringList interfaces(item->text(QMC2_SWLIST_COLUMN_INTERFACE).split(',', QString::SkipEmptyParts));
-			QStringList parts(item->text(QMC2_SWLIST_COLUMN_PART).split(',', QString::SkipEmptyParts));
+			QStringList interfaces(item->text(QMC2_SWLIST_COLUMN_INTERFACE).split(',', Qt::SkipEmptyParts));
+			QStringList parts(item->text(QMC2_SWLIST_COLUMN_PART).split(',', Qt::SkipEmptyParts));
 			successfulLookups.clear();
 			for (int i = 0; i < parts.count(); i++) {
 				QString mountDev(lookupMountDevice(parts.at(i), interfaces.at(i)));
@@ -3881,7 +3850,7 @@ void SoftwareList::loadFavoritesFromFile()
 								if ( softwareListHidden )
 									showItem = false;
 								else if ( toolButtonCompatFilterToggle->isChecked() ) {
-									QStringList compatList = item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", QString::SkipEmptyParts);
+									QStringList compatList = item->whatsThis(QMC2_SWLIST_COLUMN_TITLE).split(",", Qt::SkipEmptyParts);
 									showItem = compatList.isEmpty() || compatFilters.isEmpty();
 									for (int i = 0; i < compatList.count() && !showItem; i++)
 										for (int j = 0; j < compatFilters.count() && !showItem; j++)
@@ -4167,7 +4136,7 @@ void SoftwareListXmlHandler::loadSoftwareStates(QString listName)
 		ts.readLine(); // comment line
 		QChar splitChar(' ');
 		while ( !ts.atEnd() && !qmc2SoftwareList->interruptLoad ) {
-			QStringList words = ts.readLine().trimmed().split(splitChar, QString::SkipEmptyParts);
+			QStringList words = ts.readLine().trimmed().split(splitChar, Qt::SkipEmptyParts);
 			if ( words.count() > 1 ) {
 				switch ( words[1][0].toLatin1() ) {
 					case 'C':
@@ -4197,7 +4166,19 @@ void SoftwareListXmlHandler::loadSoftwareStates(QString listName)
 	}
 }
 
-bool SoftwareListXmlHandler::startElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName, const QXmlAttributes &attributes)
+bool SoftwareListXmlHandler::parse(const QString &xml)
+{
+	QXmlStreamReader reader(xml);
+	while ( !reader.atEnd() ) {
+		reader.readNext();
+		if ( reader.isStartElement() ) startElement(reader.name().toString(), reader.attributes());
+		else if ( reader.isEndElement() ) endElement(reader.name().toString());
+		else if ( reader.isCharacters() && !reader.isWhitespace() ) characters(reader.text().toString());
+	}
+	return !reader.hasError();
+}
+
+bool SoftwareListXmlHandler::startElement(const QString &qName, const QXmlStreamAttributes &attributes)
 {
 	if ( qmc2SoftwareList->interruptLoad )
 		return false;
@@ -4208,7 +4189,7 @@ bool SoftwareListXmlHandler::startElement(const QString &/*namespaceURI*/, const
 	}
 
 	if ( qName == "softwarelist" ) {
-		softwareListName = attributes.value("name");
+		softwareListName = attributes.value("name").toString();
 		softwareListHidden = hiddenLists()->contains(softwareListName);
 		compatFilters = systemSoftwareFilterHash.value(qmc2SoftwareList->systemName);
 		if ( qmc2SoftwareList->toolButtonSoftwareStates->isChecked() )
@@ -4218,9 +4199,9 @@ bool SoftwareListXmlHandler::startElement(const QString &/*namespaceURI*/, const
 	}
 
 	if ( qName == "software" ) {
-		softwareName = attributes.value("name");
-		softwareSupported = attributes.value("supported");
-		softwareParentName = attributes.value("cloneof");
+		softwareName = attributes.value("name").toString();
+		softwareSupported = attributes.value("supported").toString();
+		softwareParentName = attributes.value("cloneof").toString();
 		QString setKey(softwareListName + ':' + softwareName);
 		if ( !softwareParentName.isEmpty() )
 			softwareParentHash.insert(setKey, softwareListName + ':' + softwareParentName);
@@ -4312,9 +4293,9 @@ bool SoftwareListXmlHandler::startElement(const QString &/*namespaceURI*/, const
 	}
 
 	if ( qName == "part" ) {
-		softwarePart = attributes.value("name");
+		softwarePart = attributes.value("name").toString();
 		QString parts = softwareItem->text(QMC2_SWLIST_COLUMN_PART);
-		softwareInterface = attributes.value("interface");
+		softwareInterface = attributes.value("interface").toString();
 		QString interfaces = softwareItem->text(QMC2_SWLIST_COLUMN_INTERFACE);
 		if ( parts.isEmpty() )
 			softwareItem->setText(QMC2_SWLIST_COLUMN_PART, softwarePart);
@@ -4328,13 +4309,13 @@ bool SoftwareListXmlHandler::startElement(const QString &/*namespaceURI*/, const
 	}
 	
 	if ( qName == "feature" ) {
-		if ( attributes.value("name") == "compatibility" ) {
+		if ( attributes.value("name").toString() == "compatibility" ) {
 			// we use the invisible whatsThis data of the title column to store the software-compatibility list
-			QString partCompat = attributes.value("value");
+			QString partCompat = attributes.value("value").toString();
 			if ( !partCompat.isEmpty() ) {
 				softwareItem->setWhatsThis(QMC2_SWLIST_COLUMN_TITLE, partCompat);
 				if ( qmc2SoftwareList->toolButtonCompatFilterToggle->isChecked() ) {
-					QStringList compatList = partCompat.split(",", QString::SkipEmptyParts);
+					QStringList compatList = partCompat.split(",", Qt::SkipEmptyParts);
 					bool showItem = compatList.isEmpty() || compatFilters.isEmpty();
 					if ( softwareListHidden )
 						showItem = false;
@@ -4348,11 +4329,11 @@ bool SoftwareListXmlHandler::startElement(const QString &/*namespaceURI*/, const
 			return true;
 		}
 		/*
-		if ( attributes.value("name") == "requirement" ) {
+		if ( attributes.value("name").toString() == "requirement" ) {
 			// we use the invisible whatsThis data of the part column to store the requirements
-			QString requirement = attributes.value("value");
+			QString requirement = attributes.value("value").toString();
 			if ( !requirement.isEmpty() ) {
-				QStringList currentRequirements = softwareItem->whatsThis(QMC2_SWLIST_COLUMN_PART).split("\t", QString::SkipEmptyParts);
+				QStringList currentRequirements = softwareItem->whatsThis(QMC2_SWLIST_COLUMN_PART).split("\t", Qt::SkipEmptyParts);
 				currentRequirements << requirement;
 				currentRequirements.removeDuplicates();
 				softwareItem->setWhatsThis(QMC2_SWLIST_COLUMN_PART, currentRequirements.join("\t"));
@@ -4368,7 +4349,7 @@ bool SoftwareListXmlHandler::startElement(const QString &/*namespaceURI*/, const
 	return true;
 }
 
-bool SoftwareListXmlHandler::endElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName)
+bool SoftwareListXmlHandler::endElement(const QString &qName)
 {
 	if ( qmc2SoftwareList->interruptLoad )
 		return false;
@@ -4478,13 +4459,13 @@ SoftwareSnap::~SoftwareSnap()
 void SoftwareSnap::openSource()
 {
 	if ( useZip() ) {
-		foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", QString::SkipEmptyParts)) {
+		foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", Qt::SkipEmptyParts)) {
 			snapFileMap[filePath] = unzOpen(filePath.toUtf8().constData());
 			if ( snapFileMap[filePath] == 0 )
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open software snap-shot file, please check access permissions for %1").arg(filePath));
 		}
 	} else if ( useSevenZip() ) {
-		foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", QString::SkipEmptyParts)) {
+		foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", Qt::SkipEmptyParts)) {
 			SevenZipFile *snapFile = new SevenZipFile(filePath);
 			if ( !snapFile->open() ) {
 				  qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open software snap-shot file %1").arg(filePath) + " - " + tr("7z error") + ": " + snapFile->lastError());
@@ -4497,7 +4478,7 @@ void SoftwareSnap::openSource()
 	}
 #if defined(QMC2_LIBARCHIVE_ENABLED)
 	else if ( useArchive() ) {
-		foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", QString::SkipEmptyParts)) {
+		foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", Qt::SkipEmptyParts)) {
 			ArchiveFile *snapFile = new ArchiveFile(filePath);
 			if ( !snapFile->open() )
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open software snap-shot file %1").arg(filePath) + " - " + tr("libarchive error") + ": " + snapFile->errorString());
@@ -4538,7 +4519,7 @@ void SoftwareSnap::closeSource()
 QString SoftwareSnap::primaryPathFor(QString list, QString name)
 {
 	if ( !qmc2UseSoftwareSnapFile ) {
-		QStringList fl = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapDirectory").toString().split(";", QString::SkipEmptyParts);
+		QStringList fl = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapDirectory").toString().split(";", Qt::SkipEmptyParts);
 		QString baseDirectory;
 		if ( fl.count() > 0 )
 			baseDirectory = fl[0];
@@ -4619,7 +4600,7 @@ void SoftwareSnap::mousePressEvent(QMouseEvent *e)
 		ctxMenuRequested = true;
 }
 
-void SoftwareSnap::enterEvent(QEvent *e)
+void SoftwareSnap::enterEvent(QEnterEvent *e)
 {
 	if ( contextMenu->isVisible() )
 		QTimer::singleShot(0, contextMenu, SLOT(hide()));
@@ -4800,7 +4781,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 	if ( fromParent ) {
 		QString parentKey(softwareParentHash.value(listName + ':' + entryName));
 		if ( !parentKey.isEmpty() && parentKey != "<np>" ) {
-			QString parentName(parentKey.split(':', QString::SkipEmptyParts).at(1));
+			QString parentName(parentKey.split(':', Qt::SkipEmptyParts).at(1));
 			myCacheKey = "sws_" + listName + "_" + parentName;
 		}
 	}
@@ -4819,7 +4800,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 			if ( useZip() ) {
 				// try loading image from (semicolon-separated) ZIP archive(s)
 				if ( snapFileMap.isEmpty() ) {
-					foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", QString::SkipEmptyParts)) {
+					foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", Qt::SkipEmptyParts)) {
 						snapFileMap[filePath] = unzOpen(filePath.toUtf8().constData());
 						if ( snapFileMap[filePath] == 0 )
 							qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open software snap-shot file, please check access permissions for %1").arg(filePath));
@@ -4831,7 +4812,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 						QByteArray imageData;
 						foreach (int format, activeFormats) {
 							QString formatName = ImageWidget::formatNames[format];
-							foreach (QString extension, ImageWidget::formatExtensions[format].split(", ", QString::SkipEmptyParts)) {
+							foreach (QString extension, ImageWidget::formatExtensions[format].split(", ", Qt::SkipEmptyParts)) {
 								QString pathInZip = listName + "/" + entryName + "." + extension;
 								if ( unzLocateFile(snapFile, pathInZip.toUtf8().constData(), 0) == UNZ_OK ) {
 									if ( unzOpenCurrentFile(snapFile) == UNZ_OK ) {
@@ -4849,7 +4830,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 								if ( fileOk ) {
 									if ( pm.loadFromData(imageData, formatName.toUtf8().constData()) ) {
 										pmLoaded = true;
-										qmc2ImagePixmapCache.insert(onBehalfOf, new ImagePixmap(pm), pm.toImage().byteCount());
+										qmc2ImagePixmapCache.insert(onBehalfOf, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 										break;
 									}
 								}
@@ -4866,7 +4847,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 			} else if ( useSevenZip() ) {
 				// try loading image from (semicolon-separated) 7z archive(s)
 				if ( snapFileMap7z.isEmpty() ) {
-					foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", QString::SkipEmptyParts)) {
+					foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapFile").toString().split(";", Qt::SkipEmptyParts)) {
 						SevenZipFile *snapFile = new SevenZipFile(filePath);
 						if ( !snapFile->open() ) {
 							  qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open software snap-shot file %1").arg(filePath) + " - " + tr("7z error") + ": " + snapFile->lastError());
@@ -4883,7 +4864,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 						QByteArray imageData;
 						foreach (int format, activeFormats) {
 							QString formatName = ImageWidget::formatNames[format];
-							foreach (QString extension, ImageWidget::formatExtensions[format].split(", ", QString::SkipEmptyParts)) {
+							foreach (QString extension, ImageWidget::formatExtensions[format].split(", ", Qt::SkipEmptyParts)) {
 								bool isFillingDictionary = false;
 								QString pathIn7z = listName + "/" + entryName + "." + extension;
 								int index = snapFile->indexOfName(pathIn7z);
@@ -4906,7 +4887,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 										QPainter p;
 										QString message = tr("Decompressing archive, please wait...");
 										p.begin(&pm);
-										p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing | QPainter::SmoothPixmapTransform);
+										p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform | QPainter::SmoothPixmapTransform);
 										QFont f(qApp->font());
 										f.setWeight(QFont::Bold);
 										f.setPointSize(f.pointSize() * 2);
@@ -4925,7 +4906,7 @@ void SoftwareSnap::loadImage(bool fromParent)
 										enableWidgets(false);
 									} else if ( pm.loadFromData(imageData, formatName.toUtf8().constData()) ) {
 										pmLoaded = true;
-										qmc2ImagePixmapCache.insert(onBehalfOf, new ImagePixmap(pm), pm.toImage().byteCount());
+										qmc2ImagePixmapCache.insert(onBehalfOf, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 										break;
 									}
 								}
@@ -4943,17 +4924,17 @@ void SoftwareSnap::loadImage(bool fromParent)
 		} else {
 			// try loading image from (semicolon-separated) software-snapshot folder(s)
 			pmLoaded = false;
-			foreach (QString baseDirectory, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapDirectory").toString().split(";", QString::SkipEmptyParts)) {
+			foreach (QString baseDirectory, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareSnapDirectory").toString().split(";", Qt::SkipEmptyParts)) {
 				QDir snapDir(baseDirectory + "/" + listName);
 				foreach (int format, activeFormats) {
-					foreach (QString extension, ImageWidget::formatExtensions[format].split(", ", QString::SkipEmptyParts)) {
+					foreach (QString extension, ImageWidget::formatExtensions[format].split(", ", Qt::SkipEmptyParts)) {
 						QString fullEntryName = entryName + "." + extension;
 						if ( snapDir.exists(fullEntryName) ) {
 							QString filePath = snapDir.absoluteFilePath(fullEntryName);
 							if ( pm.load(filePath) ) {
 								pmLoaded = true;
 								pm.imagePath = filePath;
-								qmc2ImagePixmapCache.insert(onBehalfOf, new ImagePixmap(pm), pm.toImage().byteCount()); 
+								qmc2ImagePixmapCache.insert(onBehalfOf, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 							}
 						}
 						if ( pmLoaded )
@@ -5241,7 +5222,18 @@ SoftwareEntryXmlHandler::~SoftwareEntryXmlHandler()
 	// NOP
 }
 
-bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName, const QXmlAttributes &attributes)
+bool SoftwareEntryXmlHandler::parse(const QString &xml)
+{
+	QXmlStreamReader reader(xml);
+	while ( !reader.atEnd() ) {
+		reader.readNext();
+		if ( reader.isStartElement() ) startElement(reader.name().toString(), reader.attributes());
+		else if ( reader.isEndElement() ) endElement(reader.name().toString());
+	}
+	return !reader.hasError();
+}
+
+bool SoftwareEntryXmlHandler::startElement(const QString &qName, const QXmlStreamAttributes &attributes)
 {
 	if ( ++elementCounter % QMC2_SWLIST_LOAD_RESPONSE_LONG == 0 ) {
 		QTreeWidgetItem *item = parentTreeWidgetItem->child(0);
@@ -5257,7 +5249,7 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 
 	if ( !softwareValid ) {
 		if ( qName == "software" ) {
-			softwareValid = ( attributes.value("name") == softwareName );
+			softwareValid = ( attributes.value("name").toString() == softwareName );
 			if ( softwareValid ) {
 				qmc2SoftwareList->successfulLookups.clear();
 				parentTreeWidgetItem->child(0)->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Updating"));
@@ -5272,9 +5264,9 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 	if ( qName == "part" ) {
 		if ( partItem == 0 ) {
 			partItem = new SoftwareItem((QTreeWidget *)0);
-			partItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Part:") + " " + attributes.value("name"));
-			partItem->setText(QMC2_SWLIST_COLUMN_PART, attributes.value("name"));
-			partItem->setText(QMC2_SWLIST_COLUMN_INTERFACE, attributes.value("interface"));
+			partItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Part:") + " " + attributes.value("name").toString());
+			partItem->setText(QMC2_SWLIST_COLUMN_PART, attributes.value("name").toString());
+			partItem->setText(QMC2_SWLIST_COLUMN_INTERFACE, attributes.value("interface").toString());
 			partItem->setText(QMC2_SWLIST_COLUMN_LIST, parentTreeWidgetItem->text(QMC2_SWLIST_COLUMN_LIST));
 			QStringList mountList;
 			QString mountDev(qmc2SoftwareList->lookupMountDevice(partItem->text(QMC2_SWLIST_COLUMN_PART), partItem->text(QMC2_SWLIST_COLUMN_INTERFACE), &mountList));
@@ -5311,22 +5303,22 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 
 	if ( qName == "feature" ) {
 		if ( partItem != 0 ) {
-			QString featureName = attributes.value("name");
+			QString featureName = attributes.value("name").toString();
 			if ( featureName == "part id" || featureName == "part_id" ) {
-				QString partTitle = attributes.value("value");
+				QString partTitle = attributes.value("value").toString();
 				if ( !partTitle.isEmpty() )
 					partItem->setText(QMC2_SWLIST_COLUMN_TITLE, partItem->text(QMC2_SWLIST_COLUMN_TITLE) + " (" + partTitle + ")");
 				return true;
 			}
 			if ( featureName == "requirement" ) {
 				requirementItem = new SoftwareItem((QTreeWidget *)0);
-				requirementItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Requirement:") + " " + attributes.value("value"));
+				requirementItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Requirement:") + " " + attributes.value("value").toString());
 				requirementItems << requirementItem;
 				return true;
 			}
 			if ( !compatItem && featureName == "compatibility" ) {
 				compatItem = new SoftwareItem((QTreeWidget *)0);
-				compatItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Compatibility:") + " " + attributes.value("value"));
+				compatItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Compatibility:") + " " + attributes.value("value").toString());
 			}
 		}
 
@@ -5336,8 +5328,8 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 	if ( qName == "dataarea" ) {
 		if ( partItem != 0 ) {
 			dataareaItem = new SoftwareItem(partItem);
-			dataareaItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Data area:") + " " + attributes.value("name"));
-			QString s = attributes.value("size");
+			dataareaItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Data area:") + " " + attributes.value("name").toString());
+			QString s = attributes.value("size").toString();
 			if ( !s.isEmpty() )
 				dataareaItem->setText(QMC2_SWLIST_COLUMN_NAME, QObject::tr("Size:") + " " + s);
 		}
@@ -5348,8 +5340,8 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 	if ( qName == "diskarea" ) {
 		if ( partItem != 0 ) {
 			dataareaItem = new SoftwareItem(partItem);
-			dataareaItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Disk area:") + " " + attributes.value("name"));
-			QString s = attributes.value("size");
+			dataareaItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Disk area:") + " " + attributes.value("name").toString());
+			QString s = attributes.value("size").toString();
 			if ( !s.isEmpty() )
 				dataareaItem->setText(QMC2_SWLIST_COLUMN_NAME, QObject::tr("Size:") + " " + s);
 		}
@@ -5359,14 +5351,14 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 
 	if ( qName == "rom" ) {
 		if ( dataareaItem != 0 ) {
-			QString romName = attributes.value("name");
+			QString romName = attributes.value("name").toString();
 			if ( !romName.isEmpty() ) {
 				romItem = new SoftwareItem(dataareaItem);
 				romItem->setText(QMC2_SWLIST_COLUMN_TITLE, romName);
-				QString s = attributes.value("size");
+				QString s = attributes.value("size").toString();
 				if ( !s.isEmpty() )
 					romItem->setText(QMC2_SWLIST_COLUMN_NAME, QObject::tr("Size:") + " " + s);
-				s = attributes.value("crc");
+				s = attributes.value("crc").toString();
 				if ( !s.isEmpty() )
 					romItem->setText(QMC2_SWLIST_COLUMN_PUBLISHER, QObject::tr("CRC:") + " " + s);
 			}
@@ -5377,11 +5369,11 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 
 	if ( qName == "disk" ) {
 		if ( dataareaItem != 0 ) {
-			QString diskName = attributes.value("name");
+			QString diskName = attributes.value("name").toString();
 			if ( !diskName.isEmpty() ) {
 				romItem = new SoftwareItem(dataareaItem);
 				romItem->setText(QMC2_SWLIST_COLUMN_TITLE, diskName);
-				QString s = attributes.value("sha1");
+				QString s = attributes.value("sha1").toString();
 				if ( !s.isEmpty() )
 					romItem->setText(QMC2_SWLIST_COLUMN_NAME, QObject::tr("SHA1:") + " " + s);
 			}
@@ -5392,11 +5384,11 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 
 	if ( qName == "info" ) {
 		infoItem = new SoftwareItem((QTreeWidget *)0);
-		infoItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Info:") + " " + attributes.value("name"));
+		infoItem->setText(QMC2_SWLIST_COLUMN_TITLE, QObject::tr("Info:") + " " + attributes.value("name").toString());
 #if defined(QMC2_OS_WIN)
-		infoItem->setText(QMC2_SWLIST_COLUMN_NAME, QString::fromUtf8(attributes.value("value").toUtf8()));
+		infoItem->setText(QMC2_SWLIST_COLUMN_NAME, QString::fromUtf8(attributes.value("value").toString().toUtf8()));
 #else
-		infoItem->setText(QMC2_SWLIST_COLUMN_NAME, attributes.value("value"));
+		infoItem->setText(QMC2_SWLIST_COLUMN_NAME, attributes.value("value").toString());
 #endif
 		infoItems << infoItem;
 	}
@@ -5404,7 +5396,7 @@ bool SoftwareEntryXmlHandler::startElement(const QString &/*namespaceURI*/, cons
 	return true;
 }
 
-bool SoftwareEntryXmlHandler::endElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName)
+bool SoftwareEntryXmlHandler::endElement(const QString &qName)
 {
 	if ( !softwareValid )
 		return true;

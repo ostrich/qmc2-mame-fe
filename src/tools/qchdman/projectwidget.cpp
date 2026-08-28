@@ -749,7 +749,7 @@ void ProjectWidget::readyReadStandardOutput()
 	int i;
 	for (i = 0; i < sl.count(); i++) {
 		s = sl[i];
-		s.remove(QRegExp("\\s+$"));
+		s.remove(QRegularExpression("\\s+$"));
 		if ( !s.isEmpty() ) {
 			if ( globalConfig->preferencesLogChannelNames() )
 				log(tr("stdout") + ": " + s);
@@ -763,12 +763,12 @@ void ProjectWidget::readyReadStandardError()
 {
 	QString s = chdmanProc->readAllStandardError();
 	stderrOutput += s;
-	QStringList sl = s.split(QRegExp("(\\\n|\\\r)"), QString::SkipEmptyParts);
+	QStringList sl = s.split(QRegularExpression("(\\\n|\\\r)"), Qt::SkipEmptyParts);
 	sl.removeDuplicates();
 	int percent = 0;
 	for (int i = 0; i < sl.count(); i++) {
 		s = sl[i];
-		s.remove(QRegExp("\\s+$"));
+		s.remove(QRegularExpression("\\s+$"));
 		if ( !s.isEmpty() ) {
 			if ( globalConfig->preferencesLogChannelNames() )
 				log(tr("stderr") + ": " + s);
@@ -785,8 +785,8 @@ void ProjectWidget::readyReadStandardError()
 			case QCHDMAN_PRJ_EXTRACT_HD:
 			case QCHDMAN_PRJ_EXTRACT_CD:
 			case QCHDMAN_PRJ_EXTRACT_LD:
-				if ( s.contains(QRegExp(", \\d+\\.\\d+\\%\\ complete\\.\\.\\.")) ) {
-					QRegExp rx(", (\\d+)\\.(\\d+)\\%\\ complete\\.\\.\\.");
+				if ( s.contains(QRegularExpression(", \\d+\\.\\d+\\%\\ complete\\.\\.\\.")) ) {
+					QRegularExpression rx(", (\\d+)\\.(\\d+)\\%\\ complete\\.\\.\\.");
 					int pos = rx.indexIn(s);
 					if ( pos > -1 ) {
 						int decimal = rx.cap(2).toInt();
@@ -1037,9 +1037,9 @@ void ProjectWidget::on_comboBoxCreateHDCompression_currentIndexChanged(int index
 void ProjectWidget::on_comboBoxCreateHDFromTemplate_currentIndexChanged(int index)
 {
 	if ( index > 0 ) {
-		QStringList entryInfo = ui->comboBoxCreateHDFromTemplate->currentText().split(": ", QString::SkipEmptyParts);
+		QStringList entryInfo = ui->comboBoxCreateHDFromTemplate->currentText().split(": ", Qt::SkipEmptyParts);
 		QString vendorName = entryInfo[0];
-		QString diskName = entryInfo[1].remove(QRegExp(" \\(.*\\)$"));
+		QString diskName = entryInfo[1].remove(QRegularExpression(" \\(.*\\)$"));
 		QList<DiskGeometry> geoList = MainWindow::hardDiskTemplates[vendorName];
 		bool found = false;
 		DiskGeometry geo;
@@ -1397,7 +1397,7 @@ void ProjectWidget::copyCommandToClipboard()
 	on_toolButtonRun_clicked(true);
 	QString command = globalConfig->preferencesChdmanBinary();
 	foreach (QString arg, arguments) {
-		if ( arg.contains(QRegExp("\\s")) )
+		if ( arg.contains(QRegularExpression("\\s")) )
 			command += " \"" + arg + "\"";
 		else
 			command += " " + arg;
@@ -1433,7 +1433,7 @@ void ProjectWidget::updateCompression(QComboBox *cb, QStringList *cmp, int index
 		}
 		for (int i = 5; i < cb->count(); i++)
 			if ( cb->itemData(i, Qt::WhatsThisRole).toString() == QCHDMAN_ITEM_ACTIVE )
-				*cmp << cb->itemText(i).split(" ", QString::SkipEmptyParts)[0];
+				*cmp << cb->itemText(i).split(" ", Qt::SkipEmptyParts)[0];
 	}
 
 	if ( isDefault )
@@ -1526,7 +1526,7 @@ void ProjectWidget::load(const QString &fileName, QString *buffer)
 							ui->comboBoxCopyCompression->setCurrentIndex(3);
 						else if ( compression != "default" ) {
 							copyCompressors.clear();
-							foreach (QString cmp, compression.split(",", QString::SkipEmptyParts)) {
+							foreach (QString cmp, compression.split(",", Qt::SkipEmptyParts)) {
 								if ( mainWindow->compressionTypes.contains(cmp) ) {
 									int index = ui->comboBoxCopyCompression->findText(cmp + " ", Qt::MatchStartsWith);
 									if ( index > 4 ) {
@@ -1569,7 +1569,7 @@ void ProjectWidget::load(const QString &fileName, QString *buffer)
 							ui->comboBoxCreateRawCompression->setCurrentIndex(3);
 						else if ( compression != "default" ) {
 							createRawCompressors.clear();
-							foreach (QString cmp, compression.split(",", QString::SkipEmptyParts)) {
+							foreach (QString cmp, compression.split(",", Qt::SkipEmptyParts)) {
 								if ( mainWindow->compressionTypes.contains(cmp) ) {
 									int index = ui->comboBoxCreateRawCompression->findText(cmp + " ", Qt::MatchStartsWith);
 									if ( index > 4 ) {
@@ -1610,7 +1610,7 @@ void ProjectWidget::load(const QString &fileName, QString *buffer)
 							ui->comboBoxCreateHDCompression->setCurrentIndex(3);
 						else if ( compression != "default" ) {
 							createHDCompressors.clear();
-							foreach (QString cmp, compression.split(",", QString::SkipEmptyParts)) {
+							foreach (QString cmp, compression.split(",", Qt::SkipEmptyParts)) {
 								if ( mainWindow->compressionTypes.contains(cmp) ) {
 									int index = ui->comboBoxCreateHDCompression->findText(cmp + " ", Qt::MatchStartsWith);
 									if ( index > 4 ) {
@@ -1653,7 +1653,7 @@ void ProjectWidget::load(const QString &fileName, QString *buffer)
 							ui->comboBoxCreateCDCompression->setCurrentIndex(3);
 						else if ( compression != "default" ) {
 							createCDCompressors.clear();
-							foreach (QString cmp, compression.split(",", QString::SkipEmptyParts)) {
+							foreach (QString cmp, compression.split(",", Qt::SkipEmptyParts)) {
 								if ( mainWindow->compressionTypes.contains(cmp) ) {
 									int index = ui->comboBoxCreateCDCompression->findText(cmp + " ", Qt::MatchStartsWith);
 									if ( index > 4 ) {
@@ -1690,7 +1690,7 @@ void ProjectWidget::load(const QString &fileName, QString *buffer)
 							ui->comboBoxCreateLDCompression->setCurrentIndex(3);
 						else if ( compression != "default" ) {
 							createLDCompressors.clear();
-							foreach (QString cmp, compression.split(",", QString::SkipEmptyParts)) {
+							foreach (QString cmp, compression.split(",", Qt::SkipEmptyParts)) {
 								if ( mainWindow->compressionTypes.contains(cmp) ) {
 									int index = ui->comboBoxCreateLDCompression->findText(cmp + " ", Qt::MatchStartsWith);
 									if ( index > 4 ) {
@@ -2129,7 +2129,7 @@ void ProjectWidget::clone()
 						projectWidget->createLDCompressors.clear();
 						break;
 					}
-					foreach (QString cmp, compression.split(",", QString::SkipEmptyParts)) {
+					foreach (QString cmp, compression.split(",", Qt::SkipEmptyParts)) {
 						if ( mainWindow->compressionTypes.contains(cmp) ) {
 							int index = cb->findText(cmp + " ", Qt::MatchStartsWith);
 							if ( index > 4 ) {
@@ -2235,7 +2235,7 @@ void ProjectWidget::morph()
 						createLDCompressors.clear();
 						break;
 					}
-					foreach (QString cmp, compression.split(",", QString::SkipEmptyParts)) {
+					foreach (QString cmp, compression.split(",", Qt::SkipEmptyParts)) {
 						if ( mainWindow->compressionTypes.contains(cmp) ) {
 							int index = cb->findText(cmp + " ", Qt::MatchStartsWith);
 							if ( index > 4 ) {

@@ -107,9 +107,9 @@ class DirectoryScannerThread : public QThread
 #if defined(QMC2_OS_WIN)
 					WIN32_FIND_DATA ffd;
 					QString dirName = QDir::toNativeSeparators(QDir::cleanPath(dirPath + "/*"));
-					QList<QRegExp> nameFilterRegExps;
+					QList<QRegularExpression> nameFilterRegExps;
 					foreach (QString filter, nameFilters)
-						nameFilterRegExps << QRegExp(filter, Qt::CaseSensitive, QRegExp::Wildcard);
+						nameFilterRegExps << QRegularExpression(filter, Qt::CaseSensitive, QRegularExpression::Wildcard);
 
 					if ( !stopScanning && !quitFlag ) {
 #ifdef UNICODE
@@ -128,7 +128,7 @@ class DirectoryScannerThread : public QThread
 #endif
 								if ( fName != "." ) {
 									if ( !nameFilterRegExps.isEmpty() ) {
-										foreach (QRegExp filterRx, nameFilterRegExps) {
+										foreach (QRegularExpression filterRx, nameFilterRegExps) {
 											if ( filterRx.indexIn(fName) >= 0 ) {
 												dirEntries << fName;
 												break;
@@ -335,7 +335,7 @@ class FileSystemItem : public QObject
 			}
 
 			if ( sortOrder == Qt::DescendingOrder )
-				for (int k = 0; k < mFiles.size() / 2; k++) mFiles.swap(k, mFiles.size() - (1 + k));
+				for (int k = 0; k < mFiles.size() / 2; k++) mFiles.swapItemsAt(k, mFiles.size() - (1 + k));
 
 			if ( foldersFirst ) {
 				int lastInsertIndex = 0;
@@ -527,7 +527,7 @@ class FileSystemModel : public QAbstractItemModel
 					data = humanReadable(item->fileSize());
 					break;
 				case DATE:
-					data = item->fileDate().toString(Qt::LocalDate);
+					data = QLocale().toString(item->fileDate(), QLocale::ShortFormat);
 					break;
 				default:
 					break;
@@ -701,7 +701,7 @@ class FileSystemModel : public QAbstractItemModel
 							t->tm_mday = (int)(zipInfo.dosDate >> 16) & 0x1f;
 							t->tm_mon  = ((int)(zipInfo.dosDate >> 21) & 0x0f) - 1;
 							t->tm_year = ((int)(zipInfo.dosDate >> 25) & 0x7f) + 80;
-							mZipEntryDates << QDateTime::fromTime_t(mktime(t));
+							mZipEntryDates << QDateTime::fromSecsSinceEpoch(mktime(t));
 							insertRows(row, 1, index);
 						}
 						mZipEntryList.clear();
@@ -793,7 +793,7 @@ class FileSystemModel : public QAbstractItemModel
 					return false;
 				else {
 					QFileInfo fileInfo(item->fileName());
-					return (fileInfo.suffix().indexOf(QRegExp("[Pp][Dd][Ff]")) >= 0);
+					return (fileInfo.suffix().indexOf(QRegularExpression("[Pp][Dd][Ff]")) >= 0);
 				}
 			} else
 				return false;
@@ -807,7 +807,7 @@ class FileSystemModel : public QAbstractItemModel
 					return false;
 				else {
 					QFileInfo fileInfo(item->fileName());
-					return (fileInfo.suffix().indexOf(QRegExp("[Hh][Tt][Mm][Ll]")) >= 0 || fileInfo.suffix().indexOf(QRegExp("[Hh][Tt][Mm]")) >= 0);
+					return (fileInfo.suffix().indexOf(QRegularExpression("[Hh][Tt][Mm][Ll]")) >= 0 || fileInfo.suffix().indexOf(QRegularExpression("[Hh][Tt][Mm]")) >= 0);
 				}
 			} else
 				return false;
@@ -821,7 +821,7 @@ class FileSystemModel : public QAbstractItemModel
 					return false;
 				else {
 					QFileInfo fileInfo(item->fileName());
-					return (fileInfo.suffix().indexOf(QRegExp("[Pp][Ss]")) >= 0);
+					return (fileInfo.suffix().indexOf(QRegularExpression("[Pp][Ss]")) >= 0);
 				}
 			} else
 				return false;
@@ -857,9 +857,9 @@ class FileSystemModel : public QAbstractItemModel
 				foreach (QString entry, entryList)
 					new FileSystemItem(entry, mRootItem);
 			} else {
-				QRegExp rx(filterPattern, Qt::CaseInsensitive, QRegExp::Wildcard);
+				QRegularExpression rx(QRegularExpression::wildcardToRegularExpression(filterPattern), QRegularExpression::CaseInsensitiveOption);
 				foreach (QString entry, entryList)
-					if ( rx.indexIn(entry) >= 0 ) {
+					if ( rx.match(entry).hasMatch() ) {
 						new FileSystemItem(entry, mRootItem);
 						filteredCount++;
 					}

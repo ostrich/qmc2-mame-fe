@@ -118,7 +118,7 @@ extern QList<QTreeWidgetItem *> qmc2ExpandedMachineListItems;
 extern MachineList *qmc2MachineList;
 extern bool qmc2TemplateCheck;
 extern bool qmc2ParentImageFallback;
-extern QTime qmc2StartupTimer;
+extern QElapsedTimer qmc2StartupTimer;
 extern QSplashScreen *qmc2SplashScreen;
 
 QStringList MachineList::phraseTranslatorList;
@@ -220,7 +220,7 @@ MachineList::MachineList(QObject *parent) :
 
 	switch ( qmc2Options->iconFileType() ) {
 		case QMC2_ICON_FILETYPE_ZIP:
-			foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", QString::SkipEmptyParts)) {
+			foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", Qt::SkipEmptyParts)) {
 				unzFile iconFile = unzOpen(filePath.toUtf8().constData());
 				if ( iconFile == 0 )
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open icon file, please check access permissions for %1").arg(filePath));
@@ -229,7 +229,7 @@ MachineList::MachineList(QObject *parent) :
 			}
 			break;
 		case QMC2_ICON_FILETYPE_7Z:
-			foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", QString::SkipEmptyParts)) {
+			foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", Qt::SkipEmptyParts)) {
 				SevenZipFile *iconFile = new SevenZipFile(filePath);
 				if ( !iconFile->open() ) {
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open icon file %1").arg(filePath) + " - " + tr("7z error") + ": " + iconFile->lastError());
@@ -240,7 +240,7 @@ MachineList::MachineList(QObject *parent) :
 			break;
 #if defined(QMC2_LIBARCHIVE_ENABLED)
 		case QMC2_ICON_FILETYPE_ARCHIVE:
-			foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", QString::SkipEmptyParts)) {
+			foreach (QString filePath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconFile").toString().split(";", Qt::SkipEmptyParts)) {
 				ArchiveFile *archiveFile = new ArchiveFile(filePath, true);
 				if ( !archiveFile->open() ) {
 					qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open icon file %1").arg(filePath) + " - " + tr("libarchive error") + ": " + archiveFile->errorString());
@@ -526,11 +526,11 @@ void MachineList::load()
 	QString execFile(qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/ExecutableFile").toString());
 	QFileInfo fi(execFile);
 	uint cacheTime = qmc2Config->value(QMC2_EMULATOR_PREFIX + "Cache/Time", 0).toUInt();
-	if ( !qmc2Config->value(QMC2_EMULATOR_PREFIX + "SkipEmuIdent", true).toBool() || fi.lastModified().toTime_t() != cacheTime || cacheTime == 0 ) {
+	if ( !qmc2Config->value(QMC2_EMULATOR_PREFIX + "SkipEmuIdent", true).toBool() || fi.lastModified().toSecsSinceEpoch() != cacheTime || cacheTime == 0 ) {
 		QTime elapsedTime(0, 0, 0, 0);
 		qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("determining emulator version and supported sets"));
 		parseTimer.start();
-		qmc2Config->setValue(QMC2_EMULATOR_PREFIX + "Cache/Time", fi.lastModified().toTime_t());
+		qmc2Config->setValue(QMC2_EMULATOR_PREFIX + "Cache/Time", fi.lastModified().toSecsSinceEpoch());
 		QProcess commandProc;
 		bool started = false, commandProcStarted = false;
 		int retries = 0;
@@ -1232,7 +1232,7 @@ void MachineList::parse()
 		tsRomCache.readLine(); // ignore the first line
 		QChar splitChar(' ');
 		while ( !tsRomCache.atEnd() ) {
-			QStringList words(tsRomCache.readLine().split(splitChar, QString::SkipEmptyParts));
+			QStringList words(tsRomCache.readLine().split(splitChar, Qt::SkipEmptyParts));
 			machineStatusHash.insert(words.at(QMC2_RSC_INDEX_NAME), words.at(QMC2_RSC_INDEX_STATE).at(0).toLatin1());
 		}
 		numCorrectMachines = numMostlyCorrectMachines = numIncorrectMachines = numNotFoundMachines = 0;
@@ -1257,7 +1257,7 @@ void MachineList::parse()
 	machineListCache.setFileName(qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/MachineListCacheFile").toString());
 	if ( machineListCache.open(QIODevice::ReadOnly | QIODevice::Text) ) {
 		tsMachineListCache.setDevice(&machineListCache);
-		tsMachineListCache.setCodec(QTextCodec::codecForName("UTF-8"));
+		tsMachineListCache.setEncoding(QStringConverter::Utf8);
 		tsMachineListCache.seek(0);
 		if ( !tsMachineListCache.atEnd() ) {
 			QString line(tsMachineListCache.readLine());
@@ -1305,7 +1305,7 @@ void MachineList::parse()
 			while ( (!tsMachineListCache.atEnd() || !readBuffer.isEmpty()) && !qmc2LoadingInterrupted ) {
 				readBuffer.append(tsMachineListCache.read(QMC2_FILE_BUFFER_SIZE));
 				bool endsWithNewLine = readBuffer.endsWith(lineSplitChar);
-				QStringList lines(readBuffer.split(lineSplitChar, QString::SkipEmptyParts));
+				QStringList lines(readBuffer.split(lineSplitChar, Qt::SkipEmptyParts));
 				int lc = endsWithNewLine ? lines.count() : lines.count() - 1;
 				for (int l = 0; l < lc; l++) {
 					QStringList machineData(lines.at(l).split(columnSplitChar));
@@ -1531,7 +1531,7 @@ void MachineList::parse()
 			machineListDb()->setQmc2Version(XSTR(QMC2_VERSION));
 			machineListDb()->setMachineListVersion(QMC2_MACHINELIST_DB_VERSION);
 			tsMachineListCache.setDevice(&machineListCache);
-			tsMachineListCache.setCodec(QTextCodec::codecForName("UTF-8"));
+			tsMachineListCache.setEncoding(QStringConverter::Utf8);
 			tsMachineListCache.reset();
 			tsMachineListCache << "# THIS FILE IS AUTO-GENERATED - PLEASE DO NOT EDIT!\n";
 			tsMachineListCache << "MAME_VERSION\t" + emulatorVersion + "\tMLC_VERSION\t" + QString::number(QMC2_MLC_VERSION) + "\n";
@@ -2315,11 +2315,10 @@ void MachineList::loadReadyReadStandardOutput()
 	static QString dtdBuffer;
 	static QString setXmlBuffer;
 	static QString currentSetName;
-	static QRegExp rxDescYearManu("\\<description\\>$|\\<year\\>$|\\<manufacturer\\>$");
+	static QRegularExpression rxDescYearManu("\\<description\\>$|\\<year\\>$|\\<manufacturer\\>$");
 
 	// this makes the GUI much more responsive, but is HAS to be called before loadProc->readAllStandardOutput()!
-	if ( QCoreApplication::hasPendingEvents() )
-		qApp->processEvents();
+	qApp->processEvents();
 #if defined(QMC2_OS_WIN)
 	QString readBuffer(QString::fromUtf8(loadProc->readAllStandardOutput()));
 #else
@@ -2460,8 +2459,10 @@ void MachineList::verifyFinished(int exitCode, QProcess::ExitStatus exitStatus)
 		// the progress text may have changed in the meantime...
 		if ( qmc2Config->value(QMC2_FRONTEND_PREFIX + "GUI/ProgressTexts").toBool() )
 			mainProgressBar->setFormat(tr("ROM check - %p%"));
-		QSet<QString> gameSet(QSet<QString>::fromList(qmc2MachineListItemHash.uniqueKeys()));
-		QList<QString> remainingMachines(gameSet.subtract(QSet<QString>::fromList(verifiedList)).values());
+		const QStringList machineKeys = qmc2MachineListItemHash.keys();
+		QSet<QString> gameSet(machineKeys.begin(), machineKeys.end());
+		QSet<QString> verifiedSet(verifiedList.begin(), verifiedList.end());
+		QList<QString> remainingMachines(gameSet.subtract(verifiedSet).values());
 		int counter = mainProgressBar->value();
 		if ( qmc2LoadingInterrupted || !cleanExit ) {
 			for (int i = 0; i < remainingMachines.count(); i++) {
@@ -3028,7 +3029,8 @@ bool MachineList::loadIcon(const QString &machineName, QTreeWidgetItem *item)
 			qmc2MainWindow->treeWidgetMachineList->setUpdatesEnabled(true);
 		return false;
 	}
-	QTime preloadTimer, elapsedTime(0, 0, 0, 0);
+	QElapsedTimer preloadTimer;
+	QTime elapsedTime(0, 0, 0, 0);
 	int currentMax = mainProgressBar->maximum();
 	QString oldFormat(mainProgressBar->format());
 	if ( qmc2Config->value(QMC2_FRONTEND_PREFIX + "GUI/ProgressTexts").toBool() )
@@ -3052,7 +3054,7 @@ bool MachineList::loadIcon(const QString &machineName, QTreeWidgetItem *item)
 #endif
 		case QMC2_ICON_FILETYPE_NONE:
 		default:
-			importPaths = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconDirectory").toString().split(';', QString::SkipEmptyParts);
+			importPaths = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconDirectory").toString().split(';', Qt::SkipEmptyParts);
 			break;
 	}
 	if ( useIconCacheDb )
@@ -3204,7 +3206,7 @@ bool MachineList::loadIcon(const QString &machineName, QTreeWidgetItem *item)
 			default:
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("pre-caching icons from directory"));
 				preloadTimer.start();
-				foreach(QString icoDir, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconDirectory").toString().split(';', QString::SkipEmptyParts)) {
+				foreach(QString icoDir, qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/IconDirectory").toString().split(';', Qt::SkipEmptyParts)) {
 					mainProgressBar->setRange(0, 0);
 					mainProgressBar->reset();
 					QDirIterator icoDirIter(icoDir);
@@ -3246,7 +3248,7 @@ bool MachineList::loadIcon(const QString &machineName, QTreeWidgetItem *item)
 		iconCacheDb()->commitTransaction();
 		QStringList importDates;
 		foreach (QString path, importPaths)
-			importDates << QString::number(QFileInfo(path).lastModified().toTime_t());
+			importDates << QString::number(QFileInfo(path).lastModified().toSecsSinceEpoch());
 		qmc2Config->setValue(QMC2_EMULATOR_PREFIX + "IconCacheDatabase/ImportPaths", importPaths);
 		qmc2Config->setValue(QMC2_EMULATOR_PREFIX + "IconCacheDatabase/ImportDates", importDates);
 	} else {
@@ -3289,7 +3291,8 @@ void MachineList::loadCategoryIni()
 		clearCategoryNames();
 		categoryHash.clear();
 	}
-	QTime loadTimer, elapsedTime(0, 0, 0, 0);
+	QElapsedTimer loadTimer;
+	QTime elapsedTime(0, 0, 0, 0);
 	loadTimer.start();
 	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("loading category.ini"));
 	int currentMax = mainProgressBar->maximum();
@@ -3305,7 +3308,7 @@ void MachineList::loadCategoryIni()
 		mainProgressBar->setRange(0, categoryIniFile.size());
 		QTextStream tsCategoryIni(&categoryIniFile);
 		QString categoryName;
-		QRegExp rxCategoryName("^\\[.*\\]$");
+		QRegularExpression rxCategoryName("^\\[.*\\]$");
 		QString guiLanguage(qmc2Config->value(QMC2_FRONTEND_PREFIX + "GUI/Language", "us").toString());
 		QString trStart("tr[");
 		QChar trEnd(']');
@@ -3544,7 +3547,8 @@ void MachineList::loadCatverIni()
 	categoryHash.clear();
 	clearVersionNames();
 	versionHash.clear();
-	QTime loadTimer, elapsedTime(0, 0, 0, 0);
+	QElapsedTimer loadTimer;
+	QTime elapsedTime(0, 0, 0, 0);
 	loadTimer.start();
 	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("loading catver.ini"));
 	int currentMax = mainProgressBar->maximum();
@@ -3569,7 +3573,7 @@ void MachineList::loadCatverIni()
 			}
 			if ( catverLine.isEmpty() )
 				continue;
-			QStringList tokens(catverLine.split(splitChar, QString::SkipEmptyParts));
+			QStringList tokens(catverLine.split(splitChar, Qt::SkipEmptyParts));
 			if ( tokens.count() > 1 ) {
 				QString token1(tokens.at(1).trimmed());
 				switch ( catVerSwitch ) {

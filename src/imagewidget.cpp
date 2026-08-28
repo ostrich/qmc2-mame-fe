@@ -117,7 +117,7 @@ void ImageWidget::reloadArtworkFormats()
 void ImageWidget::openSource()
 {
 	if ( useZip() ) {
-		foreach (QString filePath, imageZip().split(';', QString::SkipEmptyParts)) {
+		foreach (QString filePath, imageZip().split(';', Qt::SkipEmptyParts)) {
 			unzFile imageFile = unzOpen(filePath.toUtf8().constData());
 			if ( imageFile == 0 )
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open %1 file, please check access permissions for %2").arg(imageType()).arg(imageZip()));
@@ -125,7 +125,7 @@ void ImageWidget::openSource()
 				imageFileMap.insert(filePath, imageFile);
 		}
 	} else if ( useSevenZip() ) {
-		foreach (QString filePath, imageZip().split(';', QString::SkipEmptyParts)) {
+		foreach (QString filePath, imageZip().split(';', Qt::SkipEmptyParts)) {
 			SevenZipFile *imageFile = new SevenZipFile(filePath);
 			if ( !imageFile->open() )
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open %1 file, please check access permissions for %2").arg(imageType()).arg(imageZip()));
@@ -137,7 +137,7 @@ void ImageWidget::openSource()
 	}
 #if defined(QMC2_LIBARCHIVE_ENABLED)
 	else if ( useArchive() ) {
-		foreach (QString filePath, imageZip().split(';', QString::SkipEmptyParts)) {
+		foreach (QString filePath, imageZip().split(';', Qt::SkipEmptyParts)) {
 			ArchiveFile *imageFile = new ArchiveFile(filePath);
 			if ( !imageFile->open() )
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open %1 file, please check access permissions for %2").arg(imageType()).arg(imageZip()));
@@ -197,7 +197,7 @@ void ImageWidget::reloadActiveFormats()
 QString ImageWidget::cleanDir(QString dirs)
 {
 	QStringList dirList;
-	foreach (QString dir, dirs.split(';', QString::SkipEmptyParts)) {
+	foreach (QString dir, dirs.split(';', Qt::SkipEmptyParts)) {
 		if ( !dir.endsWith('/') )
 			dir += '/';
 		dirList << dir;
@@ -319,7 +319,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 		int len;
 		foreach (int format, activeFormats) {
 			QString formatName(formatNames.value(format));
-			foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+			foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 				QString machineFile(machineName + '.' + extension);
 				if ( fileName )
 					*fileName = machineFile;
@@ -347,7 +347,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 #if defined(QMC2_DEBUG)
 						QMC2_PRINT_STRTXT(QString("ZIP: Image loaded for %1").arg(cacheKey));
 #endif
-						qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().byteCount());
+						qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 						currentPixmap = pm;
 					} else {
 						QString parentName(qmc2ParentHash.value(machineName));
@@ -356,7 +356,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 						} else {
 							currentPixmap = qmc2MainWindow->qmc2GhostImagePixmap;
 							if ( !qmc2RetryLoadingImages )
-								qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().byteCount()); 
+								qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().sizeInBytes());
 #if defined(QMC2_DEBUG)
 							QMC2_PRINT_STRTXT(QString("ZIP: Using ghost image for %1").arg(cacheKey));
 #endif
@@ -374,7 +374,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 		QByteArray imageData;
 		foreach (int format, activeFormats) {
 			QString formatName(formatNames.value(format));
-			foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+			foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 				QString machineFile(machineName + '.' + extension);
 				if ( fileName )
 					*fileName = machineFile;
@@ -406,7 +406,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 #if defined(QMC2_DEBUG)
 						QMC2_PRINT_STRTXT(QString("7z: Image loaded for %1").arg(cacheKey));
 #endif
-						qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().byteCount());
+						qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 						currentPixmap = pm;
 					} else {
 						QString parentName = qmc2ParentHash.value(machineName);
@@ -415,12 +415,12 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 						} else {
 							currentPixmap = qmc2MainWindow->qmc2GhostImagePixmap;
 							if ( !qmc2RetryLoadingImages && !isFillingDictionary )
-								qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().byteCount()); 
+								qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().sizeInBytes());
 							else {
 								QPainter p;
 								QString message = tr("Decompressing archive, please wait...");
 								p.begin(&currentPixmap);
-								p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing | QPainter::SmoothPixmapTransform);
+								p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform | QPainter::SmoothPixmapTransform);
 								QFont f(qApp->font());
 								f.setWeight(QFont::Bold);
 								f.setPointSize(f.pointSize() * 2);
@@ -457,7 +457,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 		QByteArray imageData;
 		foreach (int format, activeFormats) {
 			QString formatName(formatNames.value(format));
-			foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+			foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 				QString machineFile(machineName + '.' + extension);
 				if ( fileName )
 					*fileName = machineFile;
@@ -476,7 +476,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 #if defined(QMC2_DEBUG)
 						QMC2_PRINT_STRTXT(QString("Archive: Image loaded for %1").arg(cacheKey));
 #endif
-						qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().byteCount());
+						qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 						currentPixmap = pm;
 					} else {
 						QString parentName(qmc2ParentHash.value(machineName));
@@ -485,7 +485,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 						} else {
 							currentPixmap = qmc2MainWindow->qmc2GhostImagePixmap;
 							if ( !qmc2RetryLoadingImages )
-								qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().byteCount()); 
+								qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().sizeInBytes());
 #if defined(QMC2_DEBUG)
 							QMC2_PRINT_STRTXT(QString("Archive: Using ghost image for %1").arg(cacheKey));
 #endif
@@ -502,11 +502,11 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 #endif
 	else {
 		// try loading image from (semicolon-separated) folder(s)
-		foreach (QString baseDirectory, imageDir().split(';', QString::SkipEmptyParts)) {
+		foreach (QString baseDirectory, imageDir().split(';', Qt::SkipEmptyParts)) {
 			QString imgDir(QDir::cleanPath(baseDirectory + '/' + machineName));
 			foreach (int format, activeFormats) {
 				QString formatName(formatNames.value(format));
-				foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+				foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 					QString imagePath(imgDir + '.' + extension);
 					if ( fileName )
 						*fileName = imagePath;
@@ -542,7 +542,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 #if defined(QMC2_DEBUG)
 							QMC2_PRINT_STRTXT(QString("Folder: Image loaded for %1").arg(cacheKey));
 #endif
-							qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().byteCount());
+							qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(pm), pm.toImage().sizeInBytes());
 							currentPixmap = pm;
 							fileOk = true;
 						} else {
@@ -552,7 +552,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 							} else {
 								currentPixmap = qmc2MainWindow->qmc2GhostImagePixmap;
 								if ( !qmc2RetryLoadingImages )
-									qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().byteCount()); 
+									qmc2ImagePixmapCache.insert(cacheKey, new ImagePixmap(currentPixmap), currentPixmap.toImage().sizeInBytes());
 #if defined(QMC2_DEBUG)
 								QMC2_PRINT_STRTXT(QString("Folder: Using ghost image for %1").arg(cacheKey));
 #endif
@@ -576,7 +576,7 @@ bool ImageWidget::loadImage(const QString &machineName, const QString &onBehalfO
 QString ImageWidget::primaryPathFor(QString machineName)
 {
 	if ( !useZip() && !useSevenZip() ) {
-		QStringList fl(imageDir().split(';', QString::SkipEmptyParts));
+		QStringList fl(imageDir().split(';', Qt::SkipEmptyParts));
 		QString baseDirectory;
 		if ( !fl.isEmpty() )
 			baseDirectory = fl.first();
@@ -642,7 +642,7 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 		int len;
 		foreach (int format, activeFormats) {
 			QString formatName(formatNames.value(format));
-			foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+			foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 				QString machineFile(machineName + '.' + extension);
 				if ( fileName )
 					*fileName = machineFile;
@@ -683,7 +683,7 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 						if ( sizeReturn )
 							*sizeReturn = image.size();
 						if ( bytesUsed )
-							*bytesUsed = image.byteCount();
+							*bytesUsed = image.sizeInBytes();
 					} else if ( readerError != 0 && imageReader.error() != QImageReader::FileNotFoundError )
 						*readerError = imageReader.errorString();
 				}
@@ -698,7 +698,7 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 		QByteArray imageData;
 		foreach (int format, activeFormats) {
 			QString formatName(formatNames.value(format));
-			foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+			foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 				QString machineFile(machineName + '.' + extension);
 				if ( fileName )
 					*fileName = machineFile;
@@ -749,7 +749,7 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 						if ( sizeReturn )
 							*sizeReturn = image.size();
 						if ( bytesUsed )
-							*bytesUsed = image.byteCount();
+							*bytesUsed = image.sizeInBytes();
 					} else if ( readerError != 0 && imageReader.error() != QImageReader::FileNotFoundError )
 						*readerError = imageReader.errorString();
 				}
@@ -766,7 +766,7 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 		QByteArray imageData;
 		foreach (int format, activeFormats) {
 			QString formatName(formatNames.value(format));
-			foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+			foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 				QString machineFile(machineName + '.' + extension);
 				if ( fileName )
 					*fileName = machineFile;
@@ -793,7 +793,7 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 						if ( sizeReturn )
 							*sizeReturn = image.size();
 						if ( bytesUsed )
-							*bytesUsed = image.byteCount();
+							*bytesUsed = image.sizeInBytes();
 					} else if ( readerError != 0 && imageReader.error() != QImageReader::FileNotFoundError )
 						*readerError = imageReader.errorString();
 				}
@@ -807,11 +807,11 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 #endif
 	else {
 		// try loading image from (semicolon-separated) folder(s)
-		foreach (QString baseDirectory, imageDir().split(';', QString::SkipEmptyParts)) {
+		foreach (QString baseDirectory, imageDir().split(';', Qt::SkipEmptyParts)) {
 			QString imgDir(baseDirectory + machineName);
 			foreach (int format, activeFormats) {
 				QString formatName(formatNames.value(format));
-				foreach (QString extension, formatExtensions.value(format).split(", ", QString::SkipEmptyParts)) {
+				foreach (QString extension, formatExtensions.value(format).split(", ", Qt::SkipEmptyParts)) {
 					QString localImagePath(imgDir + '.' + extension);
 					if ( fileName )
 						*fileName = QDir::toNativeSeparators(localImagePath);
@@ -821,7 +821,7 @@ bool ImageWidget::checkImage(QString machineName, unzFile zip, SevenZipFile *sev
 						if ( sizeReturn )
 							*sizeReturn = image.size();
 						if ( bytesUsed )
-							*bytesUsed = image.byteCount();
+							*bytesUsed = image.sizeInBytes();
 						break;
 					} else if ( readerError != 0 && imageReader.error() != QImageReader::FileNotFoundError )
 						*readerError = imageReader.errorString();
@@ -871,7 +871,7 @@ void ImageWidget::drawCenteredImage(QPixmap *pm, QPainter *p)
 
 	if ( drawMachineName ) {
 		// draw game/machine title
-		p->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::HighQualityAntialiasing | QPainter::SmoothPixmapTransform);
+		p->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform | QPainter::SmoothPixmapTransform);
 		QString title = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_MACHINE);
 		QFont f(qApp->font());
 		f.setWeight(QFont::Bold);

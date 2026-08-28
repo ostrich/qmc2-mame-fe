@@ -1,4 +1,5 @@
 #include <QDateTime>
+#include <QRandomGenerator>
 #include "cryptedbytearray.h"
 
 CryptedByteArray::CryptedByteArray() :
@@ -36,12 +37,11 @@ QByteArray &CryptedByteArray::encryptedData()
 void CryptedByteArray::crypt()
 {
 	reset();
-	qsrand(keyToValue());
+	QRandomGenerator generator(keyToValue());
 	for (int i = 0; i < length(); i++) {
-		char randChar = qrand() % 256;
+		char randChar = char(generator.bounded(256));
 		m_cryptoData.append(at(i) ^ randChar);
 	}
-	qsrand((uint)QDateTime::currentDateTime().toTime_t());
 }
 
 uint CryptedByteArray::keyToValue()

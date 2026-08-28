@@ -14,7 +14,7 @@
 #include <QDate>
 #include <QTime>
 #include <QPalette>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QChar>
 #if defined(QMC2_OS_WIN)
 #include <windows.h>
@@ -499,7 +499,7 @@ void ROMAlyzer::showEvent(QShowEvent *e)
 	static bool initialCall = true;
 
 	QString userScopePath = Options::configPath();
-	QString variantName = QMC2_VARIANT_NAME.toLower().replace(QRegExp("\\..*$"), "");
+	QString variantName = QMC2_VARIANT_NAME.toLower().replace(QRegularExpression("\\..*$"), "");
 
 	// restore settings
 	checkBoxAppendReport->setChecked(qmc2Config->value(QMC2_FRONTEND_PREFIX + m_settingsKey + "/AppendReport", false).toBool());
@@ -623,11 +623,11 @@ void ROMAlyzer::analyze()
 
 	myRomPath.replace("~", QDir::homePath());
 	myRomPath.replace("$HOME", QDir::homePath());
-	romPaths = myRomPath.split(";", QString::SkipEmptyParts);
+	romPaths = myRomPath.split(";", Qt::SkipEmptyParts);
 
 	QStringList analyzerList;
-	QStringList softwareListPatternList = lineEditSoftwareLists->text().simplified().split(" ", QString::SkipEmptyParts);
-	QStringList setPatternList = lineEditSets->text().simplified().split(" ", QString::SkipEmptyParts);
+	QStringList softwareListPatternList = lineEditSoftwareLists->text().simplified().split(" ", Qt::SkipEmptyParts);
+	QStringList setPatternList = lineEditSets->text().simplified().split(" ", Qt::SkipEmptyParts);
 
 	if ( !checkBoxAppendReport->isChecked() ) {
 		treeWidgetChecksums->clear();
@@ -656,16 +656,17 @@ void ROMAlyzer::analyze()
 	toolButtonToolsMenu->setEnabled(false);
 	if ( checkBoxCalculateSHA1->isChecked() )
 		tabChecksumWizard->setEnabled(false);
-	QTime analysisTimer, elapsedTime(0, 0, 0, 0);
+	QElapsedTimer analysisTimer;
+	QTime elapsedTime(0, 0, 0, 0);
 	analysisTimer.start();
 	log(tr("analysis started"));
 	log(tr("determining list of sets to analyze"));
 
 	int i = 0;
-	QRegExp wildcardRx("(\\*|\\?)");
+	QRegularExpression wildcardRx("(\\*|\\?)");
 	switch ( mode() ) {
 		case QMC2_ROMALYZER_MODE_SOFTWARE:
-			if ( wizardSearch || quickSearch || (wildcardRx.indexIn(lineEditSets->text().simplified()) == -1 && wildcardRx.indexIn(lineEditSoftwareLists->text().simplified()) == -1 )) {
+			if ( wizardSearch || quickSearch || (!lineEditSets->text().contains(wildcardRx) && !lineEditSoftwareLists->text().contains(wildcardRx)) ) {
 				// no wild-cards => no need to search!
 				if ( wizardSearch ) {
 					for (int j = 0; j < softwareListPatternList.count(); j++) {
@@ -701,8 +702,8 @@ void ROMAlyzer::analyze()
 							bool swlMatched = matchAllSoftwareLists;
 							if ( !swlMatched ) {
 								foreach (QString pattern, softwareListPatternList) {
-									QRegExp regexp(pattern, Qt::CaseSensitive, QRegExp::Wildcard);
-									if ( regexp.exactMatch(softList) ) {
+					QRegularExpression regexp(QRegularExpression::wildcardToRegularExpression(pattern));
+					if ( regexp.match(softList).hasMatch() ) {
 										swlMatched = true;
 										break;
 									}
@@ -715,8 +716,8 @@ void ROMAlyzer::analyze()
 									if ( matchAllSets )
 										analyzerList << softwareKey;
 									else foreach (QString pattern, setPatternList) {
-										QRegExp regexp(pattern, Qt::CaseSensitive, QRegExp::Wildcard);
-										if ( regexp.exactMatch(setName) )
+									QRegularExpression regexp(QRegularExpression::wildcardToRegularExpression(pattern));
+									if ( regexp.match(setName).hasMatch() )
 											analyzerList << softwareKey;
 									}
 								}
@@ -731,7 +732,7 @@ void ROMAlyzer::analyze()
 			break;
 		case QMC2_ROMALYZER_MODE_SYSTEM:
 		default:
-			if ( wizardSearch || quickSearch || wildcardRx.indexIn(lineEditSets->text().simplified()) == -1 ) {
+			if ( wizardSearch || quickSearch || !lineEditSets->text().contains(wildcardRx) ) {
 				// no wild-cards => no need to search!
 				foreach (QString id, setPatternList)
 					if ( qmc2MachineList->xmlDb()->exists(id) )
@@ -757,8 +758,8 @@ void ROMAlyzer::analyze()
 						if ( matchAll )
 							analyzerList << gameID;
 						else foreach (QString pattern, setPatternList) {
-							QRegExp regexp(pattern, Qt::CaseSensitive, QRegExp::Wildcard);
-							if ( regexp.exactMatch(gameID) )
+							QRegularExpression regexp(QRegularExpression::wildcardToRegularExpression(pattern));
+							if ( regexp.match(gameID).hasMatch() )
 								if ( !analyzerList.contains(gameID) )
 									analyzerList << gameID;
 						}
@@ -785,7 +786,7 @@ void ROMAlyzer::analyze()
 			QStringList setKeyTokens;
 			switch ( mode() ) {
 				case QMC2_ROMALYZER_MODE_SOFTWARE:
-					setKeyTokens = setKey.split(":", QString::SkipEmptyParts);
+					setKeyTokens = setKey.split(":", Qt::SkipEmptyParts);
 					if ( setKeyTokens.count() < 2 )
 						continue;
 					softListName = setKeyTokens[0];
@@ -825,7 +826,7 @@ void ROMAlyzer::analyze()
 					for (int j = 0; j < setsToBeRemoved; j++) {
 						QTreeWidgetItem *ti = treeWidgetChecksums->topLevelItem(0);
 						if ( ti ) {
-							analyzerBadSets.removeAll(ti->text(QMC2_ROMALYZER_COLUMN_SET).split(splitChar, QString::SkipEmptyParts)[0]);
+							analyzerBadSets.removeAll(ti->text(QMC2_ROMALYZER_COLUMN_SET).split(splitChar, Qt::SkipEmptyParts)[0]);
 							if ( ti->isSelected() )
 								treeWidgetChecksums->selectionModel()->clear();
 							delete treeWidgetChecksums->takeTopLevelItem(0);
@@ -940,7 +941,7 @@ void ROMAlyzer::analyze()
 					QString fileStatus;
 					bool somethingsWrong = false;
 					bool goodDump = false;
-					bool isCHD = childItem->text(QMC2_ROMALYZER_COLUMN_TYPE).split(" ", QString::SkipEmptyParts)[0] == QObject::tr("CHD");
+					bool isCHD = childItem->text(QMC2_ROMALYZER_COLUMN_TYPE).split(" ", Qt::SkipEmptyParts)[0] == QObject::tr("CHD");
 					bool isROM = childItem->text(QMC2_ROMALYZER_COLUMN_TYPE).startsWith(tr("ROM"));
 					bool hasDump = childItem->text(QMC2_ROMALYZER_COLUMN_EMUSTATUS) != QObject::tr("no dump");
 					QTreeWidgetItem *fileItem = 0;
@@ -1419,7 +1420,7 @@ QString &ROMAlyzer::getEffectiveFile(QTreeWidgetItem *myItem, QString listName, 
 
 	bool calcMD5 = checkBoxCalculateMD5->isChecked();
 	bool calcSHA1 = checkBoxCalculateSHA1->isChecked();
-	bool isCHD = type.split(" ", QString::SkipEmptyParts)[0] == tr("CHD");
+	bool isCHD = type.split(" ", Qt::SkipEmptyParts)[0] == tr("CHD");
 	bool sizeLimited = spinBoxMaxFileSize->value() > 0;
 	bool chdManagerVerifyCHDs = checkBoxVerifyCHDs->isChecked();
 	bool chdManagerUpdateCHDs = checkBoxUpdateCHDs->isChecked();
@@ -2372,7 +2373,7 @@ void ROMAlyzer::on_treeWidgetChecksums_itemSelectionChanged()
 			QTreeWidgetItem *item = items[0];
 			while ( (void*)item->parent() != (void *)treeWidgetChecksums && item->parent() != 0 )
 				item = item->parent();
-			QStringList words = item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", QString::SkipEmptyParts);
+			QStringList words = item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", Qt::SkipEmptyParts);
 			selectItem(words[0]);
 		}
 	}
@@ -2562,12 +2563,12 @@ void ROMAlyzer::chdManagerReadyReadStandardError()
 		if ( !s.isEmpty() ) {
 			log(tr("CHD manager: stderr: %1").arg(s));
 #if QMC2_CHD_CURRENT_VERSION >= 5
-			if ( s.contains(QRegExp(", \\d+\\.\\d+\\%\\ complete\\.\\.\\.")) ) {
-				QRegExp rx(", (\\d+)\\.(\\d+)\\%\\ complete\\.\\.\\.");
-				int pos = rx.indexIn(s);
-				if ( pos > -1 ) {
-					chdManagerCurrentHunk = rx.cap(1).toInt(); // 'current hunk' is misused as a percentage value, and 'total hunks' is thus set to 100 constantly
-					int decimal = rx.cap(2).toInt();
+			if ( s.contains(QRegularExpression(", \\d+\\.\\d+\\%\\ complete\\.\\.\\.")) ) {
+				QRegularExpression rx(", (\\d+)\\.(\\d+)\\%\\ complete\\.\\.\\.");
+				const QRegularExpressionMatch match = rx.match(s);
+				if ( match.hasMatch() ) {
+					chdManagerCurrentHunk = match.captured(1).toInt(); // 'current hunk' is misused as a percentage value, and 'total hunks' is thus set to 100 constantly
+					int decimal = match.captured(2).toInt();
 					if ( decimal >= 5 ) chdManagerCurrentHunk += 1;
 				}
 			} else {
@@ -2575,8 +2576,8 @@ void ROMAlyzer::chdManagerReadyReadStandardError()
 					chdManagerSHA1Success = true;
 			}
 #else
-			if ( s.contains(QRegExp("hunk \\d+/\\d+\\.\\.\\.")) ) {
-				QRegExp rx("(\\d+)/(\\d+)");
+			if ( s.contains(QRegularExpression("hunk \\d+/\\d+\\.\\.\\.")) ) {
+				QRegularExpression rx("(\\d+)/(\\d+)");
 				int pos = rx.indexIn(s);
 				if ( pos > -1 ) {
 					chdManagerCurrentHunk = rx.cap(1).toInt();
@@ -2882,7 +2883,7 @@ void ROMAlyzer::runSetRewriter()
 					groupBoxSetRewriter->setEnabled(false);
 					bool savedSRWA = checkBoxSetRewriterWhileAnalyzing->isChecked();
 					checkBoxSetRewriterWhileAnalyzing->setChecked(false);
-					QStringList setKeyTokens = item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", QString::SkipEmptyParts)[0].split(":", QString::SkipEmptyParts);
+					QStringList setKeyTokens = item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", Qt::SkipEmptyParts)[0].split(":", Qt::SkipEmptyParts);
 					switch ( mode() ) {
 						case QMC2_ROMALYZER_MODE_SOFTWARE:
 							lineEditSoftwareLists->setText(setKeyTokens[0]);
@@ -2934,7 +2935,7 @@ void ROMAlyzer::runSetRewriter()
 	QStringList setKeyTokens;
 	switch ( mode() ) {
 		case QMC2_ROMALYZER_MODE_SOFTWARE:
-			setKeyTokens = setRewriterSetName.split(":", QString::SkipEmptyParts);
+			setKeyTokens = setRewriterSetName.split(":", Qt::SkipEmptyParts);
 			if ( setKeyTokens.count() > 1 ) {
 				listName = setKeyTokens[0];
 				setName = setKeyTokens[1];
@@ -2978,7 +2979,7 @@ void ROMAlyzer::runSetRewriter()
 
 	bool loadOkay = true;
 	bool ignoreErrors = !checkBoxSetRewriterAbortOnError->isChecked();
-	QMapIterator<QString, QStringList> it(setRewriterFileMap);
+	QMultiMapIterator<QString, QStringList> it(setRewriterFileMap);
 	QMap<QString, QByteArray> outputDataMap;
 	int count = 0;
 	QStringList uniqueCRCs;
@@ -3119,7 +3120,7 @@ void ROMAlyzer::analyzeDeviceRefs()
 {
 	QList<QTreeWidgetItem *> il = treeWidgetChecksums->selectedItems();
 	if ( !il.isEmpty() ) {
-		QStringList deviceRefs = il[0]->whatsThis(QMC2_ROMALYZER_COLUMN_SET).split(",", QString::SkipEmptyParts);
+		QStringList deviceRefs = il[0]->whatsThis(QMC2_ROMALYZER_COLUMN_SET).split(",", Qt::SkipEmptyParts);
 		deviceRefs.removeDuplicates();
 		if ( !deviceRefs.isEmpty() ) {
 			lineEditSets->setText(deviceRefs.join(" "));
@@ -3194,7 +3195,7 @@ void ROMAlyzer::exportToDataFile()
 					qApp->processEvents();
 				}
 				QTreeWidgetItem *item = treeWidgetChecksums->topLevelItem(i);
-				QString name = item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", QString::SkipEmptyParts)[0];
+				QString name = item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", Qt::SkipEmptyParts)[0];
 				if ( analyzerBadSets.contains(name) ) {
 					QString sourcefile, isbios, cloneof, romof, sampleof;
 					XmlMachine machine(ROMAlyzer::getXmlData(name, true).toUtf8());
@@ -3290,7 +3291,7 @@ void ROMAlyzer::copyToClipboard(bool onlyBadOrMissing)
 				QString t = item->text(header->logicalIndex(i));
 				if ( i == 0 )
 					if ( onlyBadOrMissing )
-						t = t.split(" ", QString::SkipEmptyParts)[0];
+						t = t.split(" ", Qt::SkipEmptyParts)[0];
 				firstRow << t;
 				columnWidths.append(QMC2_MAX(t.length(), h.length()));
 			}
@@ -3324,7 +3325,7 @@ void ROMAlyzer::copyToClipboard(bool onlyBadOrMissing)
 		}
 
 		QString cbText, cbLine;
-		QRegExp removeTrailingSpacesRx("\\s+$");
+		QRegularExpression removeTrailingSpacesRx("\\s+$");
 		for (int i = 0; i < columnTitles.count(); i++) {
 			if ( i == columnTitles.count() - 1 )
 				cbLine += columnTitles[i].leftJustified(columnWidths[i], ' ');
@@ -3389,7 +3390,7 @@ void ROMAlyzer::on_pushButtonChecksumWizardAnalyzeSelectedSets_clicked()
 		case QMC2_ROMALYZER_MODE_SOFTWARE: {
 				QStringList lists, sets;
 				foreach (QString setKey, wizardSelectedSets) {
-					QStringList setKeyTokens = setKey.split(":", QString::SkipEmptyParts);
+					QStringList setKeyTokens = setKey.split(":", Qt::SkipEmptyParts);
 					if ( setKeyTokens.count() < 2 )
 						continue;
 					lists << setKeyTokens[0];
@@ -3640,7 +3641,7 @@ bool ROMAlyzer::writeAllZipData(QString fileName, QMap<QString, QByteArray> *fil
 				success = false;
 		}
 		if ( checkBoxSetRewriterAddZipComment->isChecked() )
-			zipClose(zip, tr("Created by QMC2 v%1 (%2)").arg(XSTR(QMC2_VERSION)).arg(cDT.toString(Qt::SystemLocaleShortDate)).toUtf8().constData());
+			zipClose(zip, tr("Created by QMC2 v%1 (%2)").arg(XSTR(QMC2_VERSION)).arg(QLocale().toString(cDT, QLocale::ShortFormat)).toUtf8().constData());
 		else
 			zipClose(zip, "");
 	} else
@@ -3730,22 +3731,22 @@ void ROMAlyzer::on_treeWidgetChecksums_customContextMenuRequested(const QPoint &
 			currentFilesCrcChecksum = item->text(QMC2_ROMALYZER_COLUMN_CRC);
 			currentFilesSize = item->text(QMC2_ROMALYZER_COLUMN_SIZE).toULongLong();
 			if ( !currentFilesSHA1Checksum.isEmpty() || !currentFilesCrcChecksum.isEmpty() ) {
-				treeWidgetChecksums->setItemSelected(item, true);
+				item->setSelected(true);
 				romFileContextMenu->move(qmc2MainWindow->adjustedWidgetPosition(treeWidgetChecksums->viewport()->mapToGlobal(p), romFileContextMenu));
 				romFileContextMenu->show();
 			}
 		} else {
-			bool hasBadOrMissingDumps = analyzerBadSets.contains(item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", QString::SkipEmptyParts)[0]);
+			bool hasBadOrMissingDumps = analyzerBadSets.contains(item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", Qt::SkipEmptyParts)[0]);
 			actionCopyBadToClipboard->setVisible(hasBadOrMissingDumps);
 			actionCopyBadToClipboard->setEnabled(hasBadOrMissingDumps);
 			actionRewriteSet->setVisible(groupBoxSetRewriter->isChecked());
 			actionRewriteSet->setEnabled(groupBoxSetRewriter->isChecked());
-			QStringList deviceRefs = item->whatsThis(QMC2_ROMALYZER_COLUMN_SET).split(",", QString::SkipEmptyParts);
+			QStringList deviceRefs = item->whatsThis(QMC2_ROMALYZER_COLUMN_SET).split(",", Qt::SkipEmptyParts);
 			deviceRefs.removeDuplicates();
 			actionAnalyzeDeviceRefs->setText(tr("Analyse referenced devices") + QString(" [%1]").arg(deviceRefs.count()));
 			actionAnalyzeDeviceRefs->setVisible(!deviceRefs.isEmpty());
 			actionAnalyzeDeviceRefs->setEnabled(!deviceRefs.isEmpty());
-			treeWidgetChecksums->setItemSelected(item, true);
+			item->setSelected(true);
 			setRewriterItem = 0;
 			romSetContextMenu->move(qmc2MainWindow->adjustedWidgetPosition(treeWidgetChecksums->viewport()->mapToGlobal(p), romSetContextMenu));
 			romSetContextMenu->show();
@@ -3977,7 +3978,7 @@ void ROMAlyzer::updateCheckSumDbStatus()
 		lastRowCount = 0;
 	}
 	statusString += "<tr><td nowrap width=\"50%\" valign=\"top\" align=\"right\"><b>" + tr("Database size") + "</b></td><td nowrap width=\"50%\" valign=\"top\">" + humanReadable(checkSumDb()->databaseSize()) + "</td></tr>";
-	QDateTime scanTime = QDateTime::fromTime_t(checkSumDb()->scanTime());
+	QDateTime scanTime = QDateTime::fromSecsSinceEpoch(checkSumDb()->scanTime());
 	QString ageString;
 	int days = scanTime.daysTo(now);
 	if ( days > 0 )
@@ -4101,11 +4102,11 @@ bool ROMAlyzerXmlHandler::startElement(const QString &qName, const QXmlStreamAtt
 	if ( qName == mainEntityName ) {
 		switch ( romalyzerMode ) {
 			case QMC2_ROMALYZER_MODE_SOFTWARE:
-				parentItem->setText(QMC2_ROMALYZER_COLUMN_MERGE, attributes.value("cloneof"));
+				parentItem->setText(QMC2_ROMALYZER_COLUMN_MERGE, attributes.value("cloneof").toString());
 				break;
 			case QMC2_ROMALYZER_MODE_SYSTEM:
 			default:
-				parentItem->setText(QMC2_ROMALYZER_COLUMN_MERGE, attributes.value("romof"));
+				parentItem->setText(QMC2_ROMALYZER_COLUMN_MERGE, attributes.value("romof").toString());
 				break;
 		}
 		parentItem->setExpanded(false);
@@ -4116,14 +4117,14 @@ bool ROMAlyzerXmlHandler::startElement(const QString &qName, const QXmlStreamAtt
 		deviceReferences.clear();
 		optionalROMs.clear();
 	} else if ( qName == "rom" || qName == "disk" ) {
-		if ( !attributes.value("name").isEmpty() ) {
+		if ( !attributes.value("name").toString().isEmpty() ) {
 			fileCounter++;
 			childItem = new QTreeWidgetItem(parentItem);
 			childItems << childItem;
-			childItem->setText(QMC2_ROMALYZER_COLUMN_SET, attributes.value("name"));
+			childItem->setText(QMC2_ROMALYZER_COLUMN_SET, attributes.value("name").toString());
 			childItem->setText(QMC2_ROMALYZER_COLUMN_TYPE, qName == "rom" ? QObject::tr("ROM") : QObject::tr("CHD"));
-			childItem->setText(QMC2_ROMALYZER_COLUMN_MERGE, attributes.value("merge"));
-			s = attributes.value("status");
+			childItem->setText(QMC2_ROMALYZER_COLUMN_MERGE, attributes.value("merge").toString());
+			s = attributes.value("status").toString();
 			if ( s.isEmpty() || s == "good" ) {
 				childItem->setText(QMC2_ROMALYZER_COLUMN_EMUSTATUS, QObject::tr("good"));
 				childItem->setForeground(QMC2_ROMALYZER_COLUMN_EMUSTATUS, greenBrush);
@@ -4141,15 +4142,15 @@ bool ROMAlyzerXmlHandler::startElement(const QString &qName, const QXmlStreamAtt
 				childItem->setForeground(QMC2_ROMALYZER_COLUMN_EMUSTATUS, blueBrush);
 				emuStatus |= QMC2_ROMALYZER_EMUSTATUS_UNKNOWN;
 			}
-			childItem->setText(QMC2_ROMALYZER_COLUMN_SIZE, attributes.value("size"));
-			childItem->setText(QMC2_ROMALYZER_COLUMN_CRC, attributes.value("crc"));
-			childItem->setText(QMC2_ROMALYZER_COLUMN_SHA1, attributes.value("sha1"));
-			childItem->setText(QMC2_ROMALYZER_COLUMN_MD5, attributes.value("md5"));
-			if ( attributes.value("optional") == "yes" )
-				optionalROMs << attributes.value("crc");
+			childItem->setText(QMC2_ROMALYZER_COLUMN_SIZE, attributes.value("size").toString());
+			childItem->setText(QMC2_ROMALYZER_COLUMN_CRC, attributes.value("crc").toString());
+			childItem->setText(QMC2_ROMALYZER_COLUMN_SHA1, attributes.value("sha1").toString());
+			childItem->setText(QMC2_ROMALYZER_COLUMN_MD5, attributes.value("md5").toString());
+			if ( attributes.value("optional").toString() == "yes" )
+				optionalROMs << attributes.value("crc").toString();
 		}
 	} else if ( qName == "device_ref" )
-		deviceReferences << attributes.value("name");
+		deviceReferences << attributes.value("name").toString();
 
 	return true;
 }
@@ -4305,7 +4306,7 @@ void CheckSumScannerThread::prepareIncrementalScan(QStringList *fileList)
 		for (int i = 0; i < fileList->count() && !exitThread && !stopScan; i++) {
 			emit progressChanged(count++);
 			QFileInfo fi(fileList->at(i));
-			if ( fi.lastModified().toTime_t() < scanTime && pathsInDatabase.contains(fileList->at(i)) ) {
+			if ( fi.lastModified().toSecsSinceEpoch() < scanTime && pathsInDatabase.contains(fileList->at(i)) ) {
 				fileList->removeAt(i);
 				filesRemoved++;
 				i--;
@@ -4542,7 +4543,7 @@ void CheckSumScannerThread::run()
 									emitlog(tr("database update") + ": " + tr("an object with SHA-1 '%1' and CRC '%2' already exists in the database").arg(sha1List[i]).arg(crcList[i]) + ", " + tr("member '%1' from archive '%2' ignored").arg(memberList[i]).arg(filePath));
 								if ( m_pendingUpdates >= QMC2_CHECKSUM_DB_MAX_TRANSACTIONS ) {
 									emitlog(tr("committing database transaction"));
-									checkSumDb()->setScanTime(QDateTime::currentDateTime().toTime_t());
+									checkSumDb()->setScanTime(QDateTime::currentDateTime().toSecsSinceEpoch());
 									checkSumDb()->commitTransaction();
 									m_pendingUpdates = 0;
 									emitlog(tr("starting database transaction"));
@@ -4581,7 +4582,7 @@ void CheckSumScannerThread::run()
 				}
 				if ( m_pendingUpdates >= QMC2_CHECKSUM_DB_MAX_TRANSACTIONS ) {
 					emitlog(tr("committing database transaction"));
-					checkSumDb()->setScanTime(QDateTime::currentDateTime().toTime_t());
+					checkSumDb()->setScanTime(QDateTime::currentDateTime().toSecsSinceEpoch());
 					checkSumDb()->commitTransaction();
 					m_pendingUpdates = 0;
 					emitlog(tr("starting database transaction"));
@@ -4622,7 +4623,7 @@ void CheckSumScannerThread::run()
 			if ( exitThread || stopScan )
 				emitlog(tr("scanner interrupted"));
 			emitlog(tr("committing database transaction"));
-			checkSumDb()->setScanTime(QDateTime::currentDateTime().toTime_t());
+			checkSumDb()->setScanTime(QDateTime::currentDateTime().toSecsSinceEpoch());
 			checkSumDb()->commitTransaction();
 			if ( useHashCache ) {
 				m_hashCache.clear();
@@ -4685,9 +4686,9 @@ void CheckSumScannerThread::recursiveFileList(const QString &sDir, QStringList *
 
 int CheckSumScannerThread::fileType(QString fileName, bool &isZip, bool &is7z)
 {
-	static QRegExp zipRx("[Zz][Ii][Pp]");
-	static QRegExp sevenZipRx("7[Zz]");
-	static QRegExp chdRx("[Cc][Hh][Dd]");
+	static QRegularExpression zipRx("[Zz][Ii][Pp]");
+	static QRegularExpression sevenZipRx("7[Zz]");
+	static QRegularExpression chdRx("[Cc][Hh][Dd]");
 
 	QFileInfo fileInfo(fileName);
 	if ( fileInfo.isReadable() ) {

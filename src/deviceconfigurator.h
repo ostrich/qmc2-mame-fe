@@ -3,7 +3,7 @@
 
 #include <QItemDelegate>
 #include <QModelIndex>
-#include <QXmlDefaultHandler>
+#include <QXmlStreamReader>
 #include <QStringList>
 #include <QString>
 #include <QMovie>
@@ -153,12 +153,13 @@ class DeviceTreeNode
 		QStringList m_deviceExtensions;
 };
 
-class DeviceTreeXmlHandler : public QXmlDefaultHandler
+class DeviceTreeXmlHandler
 {
 	public:
 		DeviceTreeXmlHandler(DeviceTreeNode *devNode) : m_devNode(devNode) {}
-		bool startElement(const QString &, const QString &, const QString &, const QXmlAttributes &);
-		bool endElement(const QString &, const QString &, const QString &);
+		bool parse(const QString &);
+		bool startElement(const QString &, const QXmlStreamAttributes &);
+		bool endElement(const QString &);
 
 		QString lookupDescription(const QString &);
 		QString lookupBiosOptions(const QString &, QStringList *, QStringList *);

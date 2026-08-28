@@ -7,6 +7,7 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QTime>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QMap>
 #include <QHash>
@@ -185,7 +186,7 @@ class CheckSumScannerThread : public QThread
 		QMutex logSyncMutex;
 		QWaitCondition waitCondition;
 		QStringList scannedPaths;
-		QTime scanTimer;
+		QElapsedTimer scanTimer;
 
 		CheckSumScannerThread(CheckSumScannerLog *scannerLog, QString settingsKey, QObject *parent = 0);
 		~CheckSumScannerThread();
@@ -272,7 +273,7 @@ class ROMAlyzer : public QDialog, public Ui::ROMAlyzer
 	public:
 		QTimer animTimer;
 		QTimer checkSumDbStatusTimer;
-		QTime miscTimer;
+		QElapsedTimer miscTimer;
 		int animSeq;
 		QStringList romPaths;
 		QStringList chdCompressionTypes;

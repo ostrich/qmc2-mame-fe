@@ -6,6 +6,7 @@
 #include <QTreeWidgetItem>
 #include <QHash>
 #include <QList>
+#include <QElapsedTimer>
 
 #include "xmldbmgr.h"
 #include "userdatadbmgr.h"
@@ -53,10 +54,10 @@ class MachineList : public QObject
 		QIcon qmc2NotFoundDeviceImageIcon;
 		QProcess *loadProc;
 		QProcess *verifyProc;
-		QTime loadTimer;
-		QTime verifyTimer;
-		QTime parseTimer;
-		QTime miscTimer;
+		QElapsedTimer loadTimer;
+		QElapsedTimer verifyTimer;
+		QElapsedTimer parseTimer;
+		QElapsedTimer miscTimer;
 		QFile romStateCache;
 		QFile machineListCache;
 		QTextStream tsRomCache;

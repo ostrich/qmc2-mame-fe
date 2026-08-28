@@ -6,7 +6,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QUuid>
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "macros.h"
 #include "settings.h"
@@ -23,7 +23,7 @@ CheckSumDatabaseManager::CheckSumDatabaseManager(QObject *parent, QString settin
 	m_fileTypes << "ZIP" << "7Z" << "CHD" << "FILE";
 	m_connectionName = QString("checksum-db-connection-%1").arg(QUuid::createUuid().toString());
 	m_db = QSqlDatabase::addDatabase("QSQLITE", m_connectionName);
-	QString variantName(QMC2_VARIANT_NAME.toLower().replace(QRegExp("\\..*$"), ""));
+	QString variantName(QMC2_VARIANT_NAME.toLower().replace(QRegularExpression("\\..*$"), ""));
 	if ( m_settingsKey == "ROMAlyzer" )
 		m_db.setDatabaseName(qmc2Config->value(QMC2_FRONTEND_PREFIX + m_settingsKey + "/CheckSumDbDatabasePath", QString(Options::configPath() + "/%1-checksum.db").arg(variantName)).toString());
 	else
@@ -509,7 +509,7 @@ void CheckSumDatabaseManager::recreateDatabase()
 		emitlog(tr("WARNING: failed to create check-sum database: query = '%1', error = '%2'").arg(query.lastQuery()).arg(query.lastError().text()));
 		return;
 	}
-	setScanTime(QDateTime::currentDateTime().toTime_t());
+	setScanTime(QDateTime::currentDateTime().toSecsSinceEpoch());
 	setQmc2Version(XSTR(QMC2_VERSION));
 	setCheckSumDbVersion(QMC2_CHECKSUM_DB_VERSION);
 	emitlog(tr("check-sum database '%1' initialized").arg(databasePath()));

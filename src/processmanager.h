@@ -3,7 +3,7 @@
 
 #include <QProcess>
 #include <QMap>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include "macros.h"
@@ -43,7 +43,7 @@ class ProcessManager : public QObject
 		void kill(QProcess *);
 		void kill(ushort);
 		QString &exitCodeString(int, bool textOnly = false);
-		Q_PID getPid(int);
+		qint64 getPid(int);
 
 		static QString errorText(QProcess::ProcessError);
 
@@ -59,7 +59,7 @@ class ProcessManager : public QObject
 		void mameOutputNotifier(int emuId, const QString &name, const QString &value);
 
 	private:
-		QRegExp m_rxOutputNotifier;
+		QRegularExpression m_rxOutputNotifier;
 };
 
 #endif

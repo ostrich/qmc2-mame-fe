@@ -16,6 +16,7 @@
 #include <QHashIterator>
 #include <QStyleFactory>
 #include <QBitArray>
+#include <QRandomGenerator>
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QAction>
@@ -30,7 +31,7 @@
 #include <QColorDialog>
 #include <QChar>
 #include <QInputDialog>
-#include <QDesktopWidget>
+#include <QScreen>
 
 #include <algorithm> // std::sort()
 
@@ -281,7 +282,7 @@ bool qmc2CategoryInfoUsed = false;
 bool qmc2VersionInfoUsed = false;
 bool qmc2TemplateCheck = false;
 QMap<QWidget *, Qt::WindowStates> qmc2AutoMinimizedWidgets;
-QTime qmc2StartupTimer;
+QElapsedTimer qmc2StartupTimer;
 
 // game status colors 
 QColor MainWindow::qmc2StatusColorGreen = QColor("#00cc00");
@@ -307,7 +308,9 @@ MainWindow::MainWindow(QWidget *parent) :
 	phononAudioPlayer(0),
 	phononAudioOutput(0),
 #endif
+#if QMC2_MULTIMEDIA_ENABLED
 	mediaPlayer(0),
+#endif
 	m_ignoreSelectionChange(false),
 	m_ignoreDetailTabChange(false),
 #if defined(QMC2_YOUTUBE_ENABLED)
@@ -323,7 +326,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	qmc2Config->setValue(QString(QMC2_FRONTEND_PREFIX + "InstanceRunning"), true);
 	qmc2StartupDefaultFont = new QFont(qApp->font());
-	desktopGeometry = qApp->desktop()->geometry();
+	desktopGeometry = QGuiApplication::primaryScreen()->geometry();
 	isActiveState = launchForeignID = negatedMatch = isCreatingSoftList = searchActive = stopSearch = lastPageSoftware = false;
 	comboBoxEmuSelector = 0;
 	proxyStyle = 0;
@@ -1647,12 +1650,9 @@ void MainWindow::on_actionPlay_triggered(bool)
 				argString.replace("$ID$", "").replace("$DESCRIPTION$", "");
 			else
 				argString.replace("$ID$", foreignID).replace("$DESCRIPTION$", foreignDescription);
-			QRegExp rx("([^\\s]+|[^\\s]*\"[^\"]+\"[^\\s]*)");
-			int i = 0;
-			while ( (i = rx.indexIn(argString, i)) != -1 ) {
-				emuArgs << rx.cap(1).trimmed().remove("\"");
-				i += rx.matchedLength();
-			}
+			QRegularExpression rx("([^\\s]+|[^\\s]*\"[^\"]+\"[^\\s]*)");
+			QRegularExpressionMatchIterator matches = rx.globalMatch(argString);
+			while ( matches.hasNext() ) emuArgs << matches.next().captured(1).trimmed().remove("\"");
 			qmc2ProcessManager->process(qmc2ProcessManager->start(emuCommand, emuArgs, true, emuWorkDir));
 		} else if ( qmc2Config->contains(qmc2EmulatorOptions->settingsGroup + "/SelectedEmulator") ) {
 			QString selectedEmulator(qmc2Config->value(qmc2EmulatorOptions->settingsGroup + "/SelectedEmulator").toString());
@@ -1663,12 +1663,9 @@ void MainWindow::on_actionPlay_triggered(bool)
 				QString argString(qmc2Config->value(QString(QMC2_EMULATOR_PREFIX + "RegisteredEmulators/%1/Arguments").arg(selectedEmulator), QString()).toString());
 				QStringList emuArgs;
 				argString.replace("$ID$", machineName).replace("$DESCRIPTION$", qmc2MachineListItemHash.value(machineName)->text(QMC2_MACHINELIST_COLUMN_MACHINE));
-				QRegExp rx("([^\\s]+|[^\\s]*\"[^\"]+\"[^\\s]*)");
-				int i = 0;
-				while ( (i = rx.indexIn(argString, i)) != -1 ) {
-					emuArgs << rx.cap(1).trimmed().remove("\"");
-					i += rx.matchedLength();
-				}
+				QRegularExpression rx("([^\\s]+|[^\\s]*\"[^\"]+\"[^\\s]*)");
+				QRegularExpressionMatchIterator matches = rx.globalMatch(argString);
+				while ( matches.hasNext() ) emuArgs << matches.next().captured(1).trimmed().remove("\"");
 				qmc2ProcessManager->process(qmc2ProcessManager->start(emuCommand, emuArgs, true, emuWorkDir));
 			}
 		}
@@ -1707,7 +1704,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 		emuOptions = demoOpts;
 	}
 
-	foreach (sectionTitle, emuOptions->optionsMap.uniqueKeys()) {
+	foreach (sectionTitle, emuOptions->optionsMap.keys()) {
 		int i;
 		for (i = 0; i < emuOptions->optionsMap.value(sectionTitle).count(); i++) {
 			EmulatorOption option(emuOptions->optionsMap.value(sectionTitle).at(i));
@@ -1839,7 +1836,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 	}
 
 	foreach (QString extraOpt, extraOpts) {
-		QStringList optParams(extraOpt.split('-', QString::SkipEmptyParts));
+		QStringList optParams(extraOpt.split('-', Qt::SkipEmptyParts));
 		QString negOpt("-no" + optParams.at(1));
 		QString posOpt("-" + optParams.at(1));
 		if ( optParams.first() == "enable" ) {
@@ -1900,7 +1897,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 								QString biosChoice;
 								QComboBox *cbBIOS = (QComboBox *)qmc2DeviceConfigurator->treeWidgetSlotOptions->itemWidget(item, QMC2_SLOTCONFIG_COLUMN_BIOS);
 								if ( cbBIOS ) {
-									QStringList biosInfoList(cbBIOS->currentText().split(' ', QString::SkipEmptyParts));
+									QStringList biosInfoList(cbBIOS->currentText().split(' ', Qt::SkipEmptyParts));
 									if ( biosInfoList.count() == 3 && biosInfoList[2] == tr("default") )
 										biosChoice = tr("N/A");
 									else
@@ -1914,7 +1911,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 									defaultIndex = qmc2DeviceConfigurator->slotPreselectionMap.value(cb);
 								else if ( qmc2DeviceConfigurator->nestedSlotPreselectionMap.contains(cb) )
 									defaultIndex = qmc2DeviceConfigurator->nestedSlotPreselectionMap.value(cb);
-								QString slotDeviceString(QString("%1%2").arg(cb->currentText().split(' ', QString::SkipEmptyParts).first()).arg(biosChoice));
+								QString slotDeviceString(QString("%1%2").arg(cb->currentText().split(' ', Qt::SkipEmptyParts).first()).arg(biosChoice));
 								if ( cb->currentIndex() > 0 && defaultIndex == 0 )
 									args << QString("-%1").arg(slotName) << slotDeviceString;
 								else if ( cb->currentIndex() == 0 && defaultIndex > 0 )
@@ -1977,7 +1974,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 								if ( item ) {
 									QComboBox *cbBIOS = (QComboBox *)qmc2DeviceConfigurator->treeWidgetSlotOptions->itemWidget(item, QMC2_SLOTCONFIG_COLUMN_BIOS);
 									if ( cbBIOS ) {
-										QStringList biosInfoList(cbBIOS->currentText().split(' ', QString::SkipEmptyParts));
+										QStringList biosInfoList(cbBIOS->currentText().split(' ', Qt::SkipEmptyParts));
 										if ( biosInfoList.count() == 3 && biosInfoList.at(2) == tr("default") )
 											biosChoice = tr("N/A");
 										else
@@ -1992,7 +1989,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 									defaultIndex = qmc2DeviceConfigurator->slotPreselectionMap.value(cb);
 								else if ( qmc2DeviceConfigurator->nestedSlotPreselectionMap.contains(cb) )
 									defaultIndex = qmc2DeviceConfigurator->nestedSlotPreselectionMap.value(cb);
-								QString slotDeviceString(QString("%1%2").arg(cb->currentText().split(' ', QString::SkipEmptyParts).first()).arg(biosChoice));
+								QString slotDeviceString(QString("%1%2").arg(cb->currentText().split(' ', Qt::SkipEmptyParts).first()).arg(biosChoice));
 								if ( cb->currentIndex() > 0 && defaultIndex == 0 )
 									args << QString("-%1").arg(slotName) << slotDeviceString;
 								else if ( cb->currentIndex() == 0 && defaultIndex > 0 )
@@ -2028,7 +2025,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 								QString biosChoice;
 								QComboBox *cbBIOS = (QComboBox *)qmc2DeviceConfigurator->treeWidgetSlotOptions->itemWidget(item, QMC2_SLOTCONFIG_COLUMN_BIOS);
 								if ( cbBIOS ) {
-									QStringList biosInfoList(cbBIOS->currentText().split(' ', QString::SkipEmptyParts));
+									QStringList biosInfoList(cbBIOS->currentText().split(' ', Qt::SkipEmptyParts));
 									if ( biosInfoList.count() == 3 && biosInfoList.at(2) == tr("default") )
 										biosChoice = tr("N/A");
 									else
@@ -2042,7 +2039,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 									defaultIndex = qmc2DeviceConfigurator->slotPreselectionMap.value(cb);
 								else if ( qmc2DeviceConfigurator->nestedSlotPreselectionMap.contains(cb) )
 									defaultIndex = qmc2DeviceConfigurator->nestedSlotPreselectionMap.value(cb);
-								QString slotDeviceString(QString("%1%2").arg(cb->currentText().split(' ', QString::SkipEmptyParts).first()).arg(biosChoice));
+								QString slotDeviceString(QString("%1%2").arg(cb->currentText().split(' ', Qt::SkipEmptyParts).first()).arg(biosChoice));
 								if ( cb->currentIndex() > 0 && defaultIndex == 0 )
 									args << QString("-%1").arg(slotName) << slotDeviceString;
 								else if ( cb->currentIndex() == 0 && defaultIndex > 0 )
@@ -2348,7 +2345,7 @@ void MainWindow::viewHtml(QString filePath)
 		webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
 	else {
 		webBrowser->adjustSize();
-		webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
+		webBrowser->move(QGuiApplication::primaryScreen()->availableGeometry().center() - webBrowser->rect().center());
 	}
 	connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 	if ( !filePath.isEmpty() ) {
@@ -2391,7 +2388,7 @@ void MainWindow::viewPdf(QString filePath)
 			webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "PdfViewer/Geometry").toByteArray());
 		else {
 			webBrowser->adjustSize();
-			webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
+			webBrowser->move(QGuiApplication::primaryScreen()->availableGeometry().center() - webBrowser->rect().center());
 		}
 		connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 		if ( !filePath.isEmpty() ) {
@@ -3003,9 +3000,8 @@ void MainWindow::comboBoxSearch_editTextChanged_delayed()
 
 	// easy pattern match
 	int pos = 0;
-	QRegExp rxAsterisk("(\\*)");
-	while ( (pos = rxAsterisk.indexIn(pattern, pos)) != -1 ) {
-		int matchedLength = rxAsterisk.matchedLength();
+	while ( (pos = pattern.indexOf('*', pos)) != -1 ) {
+		int matchedLength = 1;
 		if ( pos > 0 ) {
 			if ( pattern[pos - 1] != '\\' ) {
 				pattern.replace(pos, 1, ".*");
@@ -3019,20 +3015,19 @@ void MainWindow::comboBoxSearch_editTextChanged_delayed()
 	}
 
 	pos = 0;
-	QRegExp rxQuestionMark("(\\?)");
-	while ( (pos = rxQuestionMark.indexIn(pattern, pos)) != -1 ) {
+	while ( (pos = pattern.indexOf('?', pos)) != -1 ) {
 		if ( pos > 0 ) {
 			if ( pattern[pos - 1] != '\\' )
 				pattern.replace(pos, 1, ".");
 		} else
 			pattern.replace(pos, 1, ".");
-		pos += rxQuestionMark.matchedLength();
+		pos++;
 	}
 
 	pattern.replace(' ', ".* .*").replace(".*^", QString()).replace("$.*", QString());
 	listWidgetSearch->clear();
 
-	QRegExp patternRx(pattern, Qt::CaseInsensitive, QRegExp::RegExp2);
+	QRegularExpression patternRx(pattern, QRegularExpression::CaseInsensitiveOption);
 	if ( !patternRx.isValid() ) {
 		lastSearchText.clear();
 		lastNegatedMatch = negatedMatch;
@@ -3603,7 +3598,7 @@ void MainWindow::on_tabWidgetSoftwareDetail_currentChanged(int currentIndex)
 #endif
 				QString swInfo = qmc2MachineList->datInfoDb()->softwareInfo(listName, entryName);
 				if ( !swInfo.isEmpty() ) {
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO$"] = swInfo.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
+					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO$"] = swInfo.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
 					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO_STATUS$"] = "OK";
 				} else {
 					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO$"] = tr("No data available");
@@ -3630,7 +3625,7 @@ void MainWindow::on_tabWidgetSoftwareDetail_currentChanged(int currentIndex)
 				QString entryName = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
 				QString swInfo = qmc2MachineList->datInfoDb()->softwareInfo(listName, entryName);
 				if ( !swInfo.isEmpty() )
-					textBrowserSoftwareInfo->setHtml(swInfo.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>")));
+					textBrowserSoftwareInfo->setHtml(swInfo.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>")));
 				else
 					textBrowserSoftwareInfo->setHtml("<p>" + tr("No data available") + "</p>");
 				qmc2LastSoftwareInfoItem = qmc2SoftwareList->currentItem;
@@ -4279,7 +4274,7 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 						if ( emulator == "MESS" )
 							textBrowserMachineInfo->setHtml(messWikiToHtml(gameInfoText));
 						else
-							textBrowserMachineInfo->setHtml(gameInfoText.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>")));
+							textBrowserMachineInfo->setHtml(gameInfoText.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>")));
 					} else
 						textBrowserMachineInfo->setHtml("<h2>" + qmc2MachineListItemHash.value(machineName)->text(QMC2_MACHINELIST_COLUMN_MACHINE) + "</h2>" + tr("<p>No data available</p>"));
 				} else
@@ -4305,7 +4300,7 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 				if ( !emuInfoKey.isEmpty() ) {
 					QString emuInfoText = qmc2MachineList->datInfoDb()->emuInfo(emuInfoKey);
 					if ( !emuInfoText.isEmpty() )
-						textBrowserEmuInfo->setHtml(emuInfoText.replace(QRegExp(QString("(\\w+://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>")));
+						textBrowserEmuInfo->setHtml(emuInfoText.replace(QRegularExpression(QString("(\\w+://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>")));
 					else
 						textBrowserEmuInfo->setHtml(tr("No data available"));
 				} else
@@ -4484,7 +4479,7 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 				if ( !emuInfoKey.isEmpty() ) {
 					QString emuInfoText = qmc2MachineList->datInfoDb()->emuInfo(emuInfoKey);
 					if ( !emuInfoText.isEmpty() ) {
-						qmc2SystemNotesEditor->templateMap["$EMU_INFO$"] = emuInfoText.replace(QRegExp(QString("(\\w+://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
+						qmc2SystemNotesEditor->templateMap["$EMU_INFO$"] = emuInfoText.replace(QRegularExpression(QString("(\\w+://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
 						qmc2SystemNotesEditor->templateMap["$EMU_INFO_STATUS$"] = "OK";
 					} else {
 						qmc2SystemNotesEditor->templateMap["$EMU_INFO$"] = tr("No data available");
@@ -4495,7 +4490,7 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 					qmc2SystemNotesEditor->templateMap["$EMU_INFO_STATUS$"] = "NO_DATA";
 				}
 				QString videoSnapUrl;
-				foreach (QString videoSnapFolder, qmc2Config->value("MAME/FilesAndDirectories/VideoSnapFolder", QMC2_DEFAULT_DATA_PATH + "/vdo/").toString().split(";", QString::SkipEmptyParts)) {
+				foreach (QString videoSnapFolder, qmc2Config->value("MAME/FilesAndDirectories/VideoSnapFolder", QMC2_DEFAULT_DATA_PATH + "/vdo/").toString().split(";", Qt::SkipEmptyParts)) {
 					foreach (QString formatExtension, videoSnapAllowedFormatExtensions) {
 						QFileInfo fi(QDir::cleanPath(videoSnapFolder + "/" + machineName + formatExtension));
 						if ( fi.exists() && fi.isReadable() ) {
@@ -4542,7 +4537,7 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 						if ( emulator == "MESS" )
 							qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = messWikiToHtml(gameInfoText);
 						else
-							qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = gameInfoText.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
+							qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = gameInfoText.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
 						qmc2SystemNotesEditor->templateMap["$GAME_INFO_STATUS$"] = "OK";
 					} else {
 						qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = tr("No data available");
@@ -4798,7 +4793,7 @@ void MainWindow::on_treeWidgetForeignIDs_customContextMenuRequested(const QPoint
 {
 	QTreeWidgetItem *item = treeWidgetForeignIDs->itemAt(p);
 	if ( item ) {
-		treeWidgetForeignIDs->setItemSelected(item, true);
+		item->setSelected(true);
 		qmc2ForeignIDsMenu->move(adjustedWidgetPosition(treeWidgetForeignIDs->viewport()->mapToGlobal(p), qmc2ForeignIDsMenu));
 		qmc2ForeignIDsMenu->show();
 	}
@@ -4947,7 +4942,7 @@ void MainWindow::on_treeWidgetEmulators_customContextMenuRequested(const QPoint 
 {
 	QTreeWidgetItem *item = treeWidgetEmulators->itemAt(p);
 	if ( item ) {
-		treeWidgetEmulators->setItemSelected(item, true);
+		item->setSelected(true);
 		qmc2EmulatorMenu->move(adjustedWidgetPosition(treeWidgetEmulators->viewport()->mapToGlobal(p), qmc2EmulatorMenu));
 		qmc2EmulatorMenu->show();
 	}
@@ -5019,7 +5014,7 @@ void MainWindow::action_embedEmulator_triggered()
 		QList<WId> winIdList;
 		int xwininfoRetries = 0;
 		while ( winIdList.isEmpty() && xwininfoRetries++ < QMC2_MAX_XWININFO_RETRIES ) {
-			WId windowId = x11FindWindowId(QRegExp::escape(QString("MAME: %1").arg(machineItem ? machineItem->text(QMC2_MACHINELIST_COLUMN_MACHINE) : "")), QRegExp::escape(QString("QMC2-MAME-ID-%1").arg(machineId)));
+			WId windowId = x11FindWindowId(QRegularExpression::escape(QString("MAME: %1").arg(machineItem ? machineItem->text(QMC2_MACHINELIST_COLUMN_MACHINE) : "")), QRegularExpression::escape(QString("QMC2-MAME-ID-%1").arg(machineId)));
 			if ( windowId )
 				winIdList << windowId;
 
@@ -5399,7 +5394,7 @@ void MainWindow::on_listWidgetSearch_customContextMenuRequested(const QPoint &p)
 {
 	QListWidgetItem *item = listWidgetSearch->itemAt(p);
 	if ( item ) {
-		listWidgetSearch->setItemSelected(item, true);
+		item->setSelected(true);
 		qmc2SearchMenu->move(adjustedWidgetPosition(listWidgetSearch->viewport()->mapToGlobal(p), qmc2SearchMenu));
 		qmc2SearchMenu->show();
 	}
@@ -5409,7 +5404,7 @@ void MainWindow::on_listWidgetFavorites_customContextMenuRequested(const QPoint 
 {
 	QListWidgetItem *item = listWidgetFavorites->itemAt(p);
 	if ( item ) {
-		listWidgetFavorites->setItemSelected(item, true);
+		item->setSelected(true);
 		qmc2FavoritesMenu->move(adjustedWidgetPosition(listWidgetFavorites->viewport()->mapToGlobal(p), qmc2FavoritesMenu));
 		qmc2FavoritesMenu->show();
 	}
@@ -5419,7 +5414,7 @@ void MainWindow::on_listWidgetPlayed_customContextMenuRequested(const QPoint &p)
 {
 	QListWidgetItem *item = listWidgetPlayed->itemAt(p);
 	if ( item ) {
-		listWidgetPlayed->setItemSelected(item, true);
+		item->setSelected(true);
 		qmc2PlayedMenu->move(adjustedWidgetPosition(listWidgetPlayed->viewport()->mapToGlobal(p), qmc2PlayedMenu));
 		qmc2PlayedMenu->show();
 	}
@@ -5432,7 +5427,7 @@ void MainWindow::on_treeWidgetMachineList_customContextMenuRequested(const QPoin
 		return;
 	if ( item->text(QMC2_MACHINELIST_COLUMN_MACHINE) == MachineList::trWaitingForData )
 		return;
-	treeWidgetMachineList->setItemSelected(item, true);
+	item->setSelected(true);
 	qmc2MachineMenu->move(adjustedWidgetPosition(treeWidgetMachineList->viewport()->mapToGlobal(p), qmc2MachineMenu));
 	qmc2MachineMenu->show();
 }
@@ -5445,7 +5440,7 @@ void MainWindow::on_treeWidgetHierarchy_customContextMenuRequested(const QPoint 
 	if ( item->text(QMC2_MACHINELIST_COLUMN_MACHINE) == MachineList::trWaitingForData )
 		return;
 	if ( item ) {
-		treeWidgetHierarchy->setItemSelected(item, true);
+		item->setSelected(true);
 		qmc2MachineMenu->move(adjustedWidgetPosition(treeWidgetHierarchy->viewport()->mapToGlobal(p), qmc2MachineMenu));
 		qmc2MachineMenu->show();
 	}
@@ -5579,7 +5574,7 @@ void MainWindow::pushButtonGlobalEmulatorOptionsImportFromFile_clicked(QString u
 
 void MainWindow::pushButtonCurrentEmulatorOptionsSelectExportFile_clicked()
 {
-	QStringList iniPaths(qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath", QDir::homePath()).toString().split(';', QString::SkipEmptyParts));
+	QStringList iniPaths(qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath", QDir::homePath()).toString().split(';', Qt::SkipEmptyParts));
 	QString iniPath;
 	if ( iniPaths.count() > 0 )
 		iniPath = iniPaths[0].replace("~", QDir::homePath());
@@ -5602,7 +5597,7 @@ void MainWindow::pushButtonCurrentEmulatorOptionsSelectImportFile_clicked()
 	if ( !qmc2CurrentItem )
 		return;
 
-	QStringList iniPaths(qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath", QDir::homePath()).toString().split(';', QString::SkipEmptyParts));
+	QStringList iniPaths(qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/inipath", QDir::homePath()).toString().split(';', Qt::SkipEmptyParts));
 	QString iniPath;
 	if ( iniPaths.count() > 0 ) {
 		iniPath = iniPaths[0].replace("~", QDir::homePath());
@@ -7200,10 +7195,10 @@ void MainWindow::audioFinished()
 	else if ( checkBoxAudioShuffle->isChecked() ) {
 		if ( shuffleSelectionList.count() >= listWidgetAudioPlaylist->count() )
 			shuffleSelectionList.clear();
-		int newTrackIndex = qrand() % listWidgetAudioPlaylist->count();
+		int newTrackIndex = QRandomGenerator::global()->bounded(listWidgetAudioPlaylist->count());
 		while ( shuffleSelectionList.contains(listWidgetAudioPlaylist->item(newTrackIndex)->text()) ) {
 			qApp->processEvents();
-			newTrackIndex = qrand() % listWidgetAudioPlaylist->count();
+			newTrackIndex = QRandomGenerator::global()->bounded(listWidgetAudioPlaylist->count());
 		}
 		shuffleSelectionList << listWidgetAudioPlaylist->item(newTrackIndex)->text();
 		listWidgetAudioPlaylist->setCurrentRow(newTrackIndex);
@@ -7981,7 +7976,7 @@ void MainWindow::on_treeWidgetCategoryView_customContextMenuRequested(const QPoi
 		return;
 	if ( item->text(QMC2_MACHINELIST_COLUMN_MACHINE) == MachineList::trWaitingForData || item->text(QMC2_MACHINELIST_COLUMN_NAME).isEmpty() )
 		return;
-	treeWidgetCategoryView->setItemSelected(item, true);
+	item->setSelected(true);
 	qmc2MachineMenu->move(adjustedWidgetPosition(treeWidgetCategoryView->viewport()->mapToGlobal(p), qmc2MachineMenu));
 	qmc2MachineMenu->show();
 }
@@ -8061,7 +8056,7 @@ void MainWindow::on_treeWidgetVersionView_customContextMenuRequested(const QPoin
 		return;
 	if ( item->text(QMC2_MACHINELIST_COLUMN_MACHINE) == MachineList::trWaitingForData || item->text(QMC2_MACHINELIST_COLUMN_NAME).isEmpty() )
 		return;
-	treeWidgetVersionView->setItemSelected(item, true);
+	item->setSelected(true);
 	qmc2MachineMenu->move(adjustedWidgetPosition(treeWidgetVersionView->viewport()->mapToGlobal(p), qmc2MachineMenu));
 	qmc2MachineMenu->show();
 }
@@ -9357,8 +9352,8 @@ void MainWindow::commonWebSearch(QString baseUrl, QTreeWidgetItem *item)
 		searchPattern = item->text(QMC2_MACHINELIST_COLUMN_MACHINE) + " " + manu;
 	else
 		searchPattern = item->text(QMC2_MACHINELIST_COLUMN_MACHINE);
-	searchPattern = searchPattern.replace(QRegExp("\\((.*)\\)"), "\\1").replace(QRegExp("[\\\\,\\.\\;\\:\\'\\/\\(\\)\\[\\]\\{\\}]"), " ").replace("&", "%26").replace(" - ", " ").simplified().trimmed();
-	QStringList wordList(searchPattern.split(' ', QString::SkipEmptyParts));
+	searchPattern = searchPattern.replace(QRegularExpression("\\((.*)\\)"), "\\1").replace(QRegularExpression("[\\\\,\\.\\;\\:\\'\\/\\(\\)\\[\\]\\{\\}]"), " ").replace("&", "%26").replace(" - ", " ").simplified().trimmed();
+	QStringList wordList(searchPattern.split(' ', Qt::SkipEmptyParts));
 	wordList.removeAll("<unknown>");
 	wordList.removeAll("<generic>");
 	wordList.removeDuplicates();
@@ -9372,7 +9367,7 @@ void MainWindow::commonWebSearch(QString baseUrl, QTreeWidgetItem *item)
 			webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
 		else {
 			webBrowser->adjustSize();
-			webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
+			webBrowser->move(QGuiApplication::primaryScreen()->availableGeometry().center() - webBrowser->rect().center());
 		}
 		connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 		webBrowser->show();
@@ -9547,11 +9542,11 @@ QString &MainWindow::messWikiToHtml(QString &wikiText)
 	wikiText.clear();
 	foreach (QString wikiLine, wikiLines) {
 		QString wikiLineTrimmed = wikiLine.trimmed();
-		if ( wikiLine.indexOf(QRegExp("\\s*<code>")) == 0 ) {
+		if ( wikiLine.indexOf(QRegularExpression("\\s*<code>")) == 0 ) {
 			codeOn = true;
 			continue;
 		} 
-		if ( wikiLine.indexOf(QRegExp("\\s*</code>")) == 0 )
+		if ( wikiLine.indexOf(QRegularExpression("\\s*</code>")) == 0 )
 			codeOn = false;
 		bool listDetected = ( (wikiLineTrimmed.startsWith("* ") && wikiLine[wikiLine.indexOf("*") + 2] != ' ') || wikiLineTrimmed.startsWith("- ") );
 		if ( wikiLine == "  * " || wikiLine == "  - " || wikiLine == "  *" || wikiLine == "  -" ) continue; // this is an "artifact"... ignore :)
@@ -9578,7 +9573,7 @@ QString &MainWindow::messWikiToHtml(QString &wikiText)
 			preOn = codeOn = false;
 		}
 		int listDepth = 0;
-		if ( listDetected ) listDepth = wikiLine.indexOf(QRegExp("[\\-\\*]")) / 2;
+		if ( listDetected ) listDepth = wikiLine.indexOf(QRegularExpression("[\\-\\*]")) / 2;
 		if ( !preOn ) {
 			wikiLine = wikiLineTrimmed;
 			preCounter = 0;
@@ -9591,19 +9586,19 @@ QString &MainWindow::messWikiToHtml(QString &wikiText)
 			wikiLine.replace(wikiLine.length() - 2, 2, "</i>");
 		}
 		foreach (QString snippet, wikiLine.split("//")) {
-			if ( snippet.indexOf(QRegExp("^.*(http:|https:|ftp:)$")) < 0 )
+			if ( snippet.indexOf(QRegularExpression("^.*(http:|https:|ftp:)$")) < 0 )
 				wikiLine.replace(QString("//%1//").arg(snippet), QString("<i>%1</i>").arg(snippet));
 		}
-		wikiLine.replace(QRegExp("\\*\\*(.*)\\*\\*"), "<b>\\1</b>");
-		wikiLine.replace(QRegExp("__(.*)__"), "<u>\\1</u>");
-		wikiLine.replace(QRegExp("\\[\\[wp>([^\\]]*)\\]\\]"), QLatin1String("\\1 -- http://en.wikipedia.org/wiki/\\1"));
+		wikiLine.replace(QRegularExpression("\\*\\*(.*)\\*\\*"), "<b>\\1</b>");
+		wikiLine.replace(QRegularExpression("__(.*)__"), "<u>\\1</u>");
+		wikiLine.replace(QRegularExpression("\\[\\[wp>([^\\]]*)\\]\\]"), QLatin1String("\\1 -- http://en.wikipedia.org/wiki/\\1"));
 		foreach (QString snippet, wikiLine.split("[[")) {
-			if ( snippet.indexOf(QRegExp("\\]\\]|\\|")) > 0 ) {
-				QStringList subSnippets(snippet.split(QRegExp("\\]\\]|\\|")));
+			if ( snippet.indexOf(QRegularExpression("\\]\\]|\\|")) > 0 ) {
+				QStringList subSnippets(snippet.split(QRegularExpression("\\]\\]|\\|")));
 				wikiLine.replace(QString("[[%1]]").arg(snippet), subSnippets[0]);
 			}
 		}
-		wikiLine.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
+		wikiLine.replace(QRegularExpression(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
 		if ( wikiLine.startsWith("&lt;h2&gt;======") && wikiLine.endsWith("======&lt;/h2&gt;") ) {
 			if ( tableOpen ) { wikiText += "</table><p>"; tableOpen = false; }
 			if ( ulLevel > 0 ) { for (int i = 0; i < ulLevel; i++) wikiText += "</ul>"; ulLevel = 0; wikiText += "<p>"; }
@@ -9629,7 +9624,7 @@ QString &MainWindow::messWikiToHtml(QString &wikiText)
 			if ( ulLevel > 0 ) { for (int i = 0; i < ulLevel; i++) wikiText += "</ul>"; ulLevel = 0; wikiText += "<p>"; }
 			if ( olLevel > 0 ) { for (int i = 0; i < olLevel; i++) wikiText += "</ol>"; olLevel = 0; wikiText += "<p>"; }
 			wikiText += "<b>" + wikiLine.mid(3, wikiLine.length() - 6) + "</b>";
-		} else if ( wikiLine.indexOf(QRegExp("\\* \\S")) == 0 ) {
+		} else if ( wikiLine.indexOf(QRegularExpression("\\* \\S")) == 0 ) {
 			if ( tableOpen ) { wikiText += "</table><p>"; tableOpen = false; }
 			if ( olLevel > 0 ) { for (int i = 0; i < olLevel; i++) wikiText += "</ol>"; olLevel = 0; wikiText += "<p>"; }
 			if ( listDepth > ulLevel ) {
@@ -9640,7 +9635,7 @@ QString &MainWindow::messWikiToHtml(QString &wikiText)
 				ulLevel--;
 			}
 			wikiText += "<li>" + wikiLine.mid(2) + "</li>";
-		} else if ( wikiLine.indexOf(QRegExp("\\- \\S")) == 0 ) {
+		} else if ( wikiLine.indexOf(QRegularExpression("\\- \\S")) == 0 ) {
 			if ( tableOpen ) { wikiText += "</table><p>"; tableOpen = false; }
 			if ( ulLevel > 0 ) { for (int i = 0; i < ulLevel; i++) wikiText += "</ul>"; ulLevel = 0; wikiText += "<p>"; }
 			if ( listDepth > olLevel ) {
@@ -9656,14 +9651,14 @@ QString &MainWindow::messWikiToHtml(QString &wikiText)
 			if ( olLevel > 0 ) { for (int i = 0; i < olLevel; i++) wikiText += "</ol>"; olLevel = 0; wikiText += "<p>"; }
 			if ( !tableOpen ) { wikiText += "<p><table border=\"1\">"; tableOpen = true; }
 			wikiText += "<tr>";
-			foreach (QString cell, wikiLine.split(QRegExp("\\^|\\|"), QString::SkipEmptyParts)) wikiText += "<td>" + cell + "</td>";
+			foreach (QString cell, wikiLine.split(QRegularExpression("\\^|\\|"), Qt::SkipEmptyParts)) wikiText += "<td>" + cell + "</td>";
 			wikiText += "</tr>";
 		} else if ( wikiLine.startsWith("^ ") && wikiLine.endsWith(" ^") ) {
 			if ( ulLevel > 0 ) { for (int i = 0; i < ulLevel; i++) wikiText += "</ul>"; ulLevel = 0; wikiText += "<p>"; }
 			if ( olLevel > 0 ) { for (int i = 0; i < olLevel; i++) wikiText += "</ol>"; olLevel = 0; wikiText += "<p>"; }
 			if ( !tableOpen ) { wikiText += "<p><table border=\"1\">"; tableOpen = true; }
 			wikiText += "<tr>";
-			foreach (QString cell, wikiLine.split("^", QString::SkipEmptyParts)) wikiText += "<td><b>" + cell + "</b></td>";
+			foreach (QString cell, wikiLine.split("^", Qt::SkipEmptyParts)) wikiText += "<td><b>" + cell + "</b></td>";
 			wikiText += "</tr>";
 		} else {
 			if ( tableOpen ) { wikiText += "</table><p>"; tableOpen = false; }
@@ -10492,7 +10487,7 @@ void MainWindow::checkRomPath()
 
 	if ( qmc2Config->contains(QMC2_EMULATOR_PREFIX + "Configuration/Global/rompath") ) {
 		QStringList romPaths;
-		foreach (QString romPath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/rompath").toString().split(";", QString::SkipEmptyParts)) {
+		foreach (QString romPath, qmc2Config->value(QMC2_EMULATOR_PREFIX + "Configuration/Global/rompath").toString().split(";", Qt::SkipEmptyParts)) {
 			QDir romDir(romPath);
 			if ( romDir.isRelative() ) {
 				if ( qmc2Config->contains(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/WorkingDirectory") ) {
@@ -10514,7 +10509,7 @@ void MainWindow::checkRomPath()
 	bool allRomPathsOk = true;
 	QStringList pathsToCheck;
 
-	foreach (QString romPath, myRomPath.split(";", QString::SkipEmptyParts)) {
+	foreach (QString romPath, myRomPath.split(";", Qt::SkipEmptyParts)) {
 		QDir romDir(romPath);
 		if ( !romDir.exists() ) {
 			log(QMC2_LOG_FRONTEND, tr("WARNING: ROM path '%1' doesn't exist").arg(romPath));
@@ -10784,8 +10779,6 @@ int main(int argc, char **argv)
 		QCoreApplication::addLibraryPath(fi.absoluteDir().absolutePath() + "/../PlugIns");
 	}
 #endif
-
-	qsrand(QDateTime::currentDateTime().toTime_t());
 
 	// install message handler
 	qInstallMessageHandler(myQtMessageHandler);
