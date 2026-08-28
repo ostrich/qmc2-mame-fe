@@ -6,7 +6,7 @@
 #include <QProgressBar>
 #include <QNetworkReply>
 #include <QString>
-#include <QFile>
+#include <QSaveFile>
 #include <QTimer>
 #include "macros.h"
 
@@ -35,11 +35,12 @@ class ItemDownloader : public QObject
 		QNetworkReply *networkReply;
 		QProgressBar *progressWidget;
 		QString localPath;
-		QFile localFile;
+		QSaveFile localFile;
 		DownloadItem *downloadItem;
 		QTimer errorCheckTimer;
 
 		ItemDownloader(QNetworkReply *, QString, QProgressBar *, DownloadItem *);
+		~ItemDownloader() override;
 
 	public slots:
 		void init();
@@ -48,7 +49,6 @@ class ItemDownloader : public QObject
 		void downloadProgress(qint64, qint64);
 		void metaDataChanged();
 		void finished();
-		void managerFinished(QNetworkReply *);
 		void reload();
 		void checkError();
 };

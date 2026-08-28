@@ -165,7 +165,6 @@ void FtpReply::receiveFinished(int result, const QString &payload, qint64 conten
 		expectedSize = contentLength >= 0 ? contentLength : content.size();
 		setHeader(QNetworkRequest::ContentLengthHeader, expectedSize);
 		emit downloadProgress(content.size(), expectedSize);
-		emit readyRead();
 		emit finished();
 	}
 }

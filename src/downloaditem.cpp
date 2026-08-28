@@ -59,7 +59,19 @@ ItemDownloader::ItemDownloader(QNetworkReply *reply, QString file, QProgressBar 
 	downloadPercent = 0.0;
 
 	connect(&errorCheckTimer, SIGNAL(timeout()), this, SLOT(checkError()));
-	QTimer::singleShot(0, this, SLOT(reload()));
+	QTimer::singleShot(0, this, SLOT(init()));
+}
+
+ItemDownloader::~ItemDownloader()
+{
+	errorCheckTimer.stop();
+	if ( localFile.isOpen() )
+		localFile.cancelWriting();
+	if ( networkReply ) {
+		networkReply->disconnect(this);
+		networkReply->abort();
+		networkReply->deleteLater();
+	}
 }
 
 void ItemDownloader::init()
@@ -74,16 +86,13 @@ void ItemDownloader::init()
 	}
 
 	if ( localFile.isOpen() )
-		localFile.close();
+		localFile.cancelWriting();
 
 	localFile.setFileName(localPath);
 
-	if ( localFile.exists() )
-		localFile.remove();
-
 	if ( !localFile.open(QIODevice::WriteOnly) ) {
 		qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't open '%1' for writing").arg(localPath));
-		finished();
+		error(QNetworkReply::UnknownNetworkError);
 		return;
 	}
 
@@ -112,10 +121,11 @@ void ItemDownloader::init()
 	connect(networkReply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(downloadProgress(qint64, qint64)));
 	connect(networkReply, SIGNAL(metaDataChanged()), this, SLOT(metaDataChanged()));
 	connect(networkReply, SIGNAL(finished()), this, SLOT(finished()));
-	qmc2NetworkAccessManager->disconnect(this);
-	connect(qmc2NetworkAccessManager, SIGNAL(finished(QNetworkReply *)), this, SLOT(managerFinished(QNetworkReply *)));
-
 	errorCheckTimer.start(QMC2_DOWNLOAD_CHECK_TIMEOUT);
+	if ( networkReply->bytesAvailable() > 0 )
+		readyRead();
+	if ( networkReply->isFinished() )
+		QTimer::singleShot(0, this, SLOT(finished()));
 }
 
 void ItemDownloader::checkError()
@@ -123,12 +133,14 @@ void ItemDownloader::checkError()
 	if ( networkReply->error() != QNetworkReply::NoError ) {
 		error(networkReply->error());
 		finished();
+		return;
 	}
 
 	if ( dataReceived == 0 ) {
-		if ( retryCount < QMC2_DOWNLOAD_OPCANCEL_RETRY )
+		if ( retryCount < QMC2_DOWNLOAD_OPCANCEL_RETRY ) {
+			errorCheckTimer.stop();
 			QTimer::singleShot((QRandomGenerator::global()->bounded(6) + 5) * QMC2_DOWNLOAD_RETRY_DELAY, this, SLOT(reload()));
-		else {
+		} else {
 			error(QNetworkReply::TimeoutError);
 			finished();
 		}
@@ -141,21 +153,20 @@ void ItemDownloader::readyRead()
 	if ( buffer.length() > 0 ) {
 		dataReceived += buffer.length();
 		downloadBytesTotal = networkReply->size();
-		if ( localFile.isOpen() )
-			localFile.write(buffer);
-		retryCount = 0;
-	} else if ( networkReply->url().scheme() == "ftp" ) {
-		dataReceived = networkReply->bytesAvailable();
-		downloadBytesTotal = ((FtpReply *)networkReply)->totalSize(networkReply->url().toString());
-		if ( downloadBytesTotal == -1 )
-			downloadBytesTotal = dataReceived;
-		downloadProgress(dataReceived, downloadBytesTotal);
+		if ( !localFile.isOpen() || localFile.write(buffer) != buffer.size() ) {
+			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't write downloaded data to '%1': %2").arg(localPath, localFile.errorString()));
+			networkReply->abort();
+			error(QNetworkReply::UnknownNetworkError);
+			return;
+		}
 		retryCount = 0;
 	}
 }
 
 void ItemDownloader::error(QNetworkReply::NetworkError code)
 {
+	if ( downloadItem->whatsThis(0) == "aborted" || downloadItem->whatsThis(0) == "finished" )
+		return;
 	if ( code == QNetworkReply::OperationCanceledError )
 		downloadItem->setIcon(QMC2_DOWNLOAD_COLUMN_STATUS, QIcon(QString::fromUtf8(":/data/img/stop_browser.png")));
 	else {
@@ -171,7 +182,7 @@ void ItemDownloader::error(QNetworkReply::NetworkError code)
 	errorCheckTimer.stop();
 
 	if ( localFile.isOpen() )
-		localFile.close();
+		localFile.cancelWriting();
 
 	QString idString = tr("Source URL: %1").arg(networkReply->url().toString()) + "\n" + tr("Local path: %1").arg(localPath);
 	downloadItem->setToolTip(QMC2_DOWNLOAD_COLUMN_PROGRESS,
@@ -192,8 +203,6 @@ void ItemDownloader::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 	downloadPercent = ((qreal)bytesReceived / (qreal)bytesTotal) * 100.0;
 
 	downloadBytesTotal = bytesTotal;
-	dataReceived = bytesReceived;
-
 	progressWidget->setRange(0, 100);
 	progressWidget->setValue(int(downloadPercent));
 
@@ -218,6 +227,18 @@ void ItemDownloader::finished()
 	errorCheckTimer.stop();
 
 	if ( downloadItem->whatsThis(0) != "aborted" && downloadItem->whatsThis(0) != "finished" ) {
+		if ( networkReply->error() != QNetworkReply::NoError ) {
+			error(networkReply->error());
+			return;
+		}
+		readyRead();
+		if ( downloadItem->whatsThis(0) == "aborted" )
+			return;
+		if ( localFile.isOpen() && !localFile.commit() ) {
+			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("FATAL: can't commit downloaded file '%1': %2").arg(localPath, localFile.errorString()));
+			error(QNetworkReply::UnknownNetworkError);
+			return;
+		}
 		downloadItem->setWhatsThis(0, "finished");
 		progressWidget->setValue(progressWidget->maximum());
 		downloadItem->setIcon(QMC2_DOWNLOAD_COLUMN_STATUS, QIcon(QString::fromUtf8(":/data/img/ok.png")));
@@ -225,11 +246,8 @@ void ItemDownloader::finished()
 		qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("download finished: URL = %1, local path = %2, reply ID = %3")
 				.arg(networkReply->url().toString()).arg(localPath).arg((qulonglong)networkReply));
 		QString idString = tr("Source URL: %1").arg(networkReply->url().toString()) + "\n" + tr("Local path: %1").arg(localPath);
-		if ( networkReply->url().scheme() == "ftp" ) {
-			dataReceived = dataReceived / 2;
+		if ( downloadBytesTotal <= 0 )
 			downloadBytesTotal = dataReceived;
-		} else
-			dataReceived = downloadBytesTotal;
 		downloadItem->setToolTip(QMC2_DOWNLOAD_COLUMN_PROGRESS,
 				idString + "\n" +
 				tr("Status: %1").arg(tr("download finished")) + "\n" +
@@ -244,20 +262,18 @@ void ItemDownloader::finished()
 
 	// close connection and file
 	networkReply->close();
-	if ( localFile.isOpen() )
-		localFile.close();
-}
-
-void ItemDownloader::managerFinished(QNetworkReply *reply)
-{
-	if ( reply == networkReply )
-		finished();
 }
 
 void ItemDownloader::reload()
 {
+	const QUrl retryUrl = networkReply->url();
+	networkReply->disconnect(this);
+	networkReply->abort();
 	networkReply->close();
+	networkReply->deleteLater();
 	errorCheckTimer.stop();
-	networkReply = qmc2NetworkAccessManager->get(QNetworkRequest(networkReply->url()));
+	if ( localFile.isOpen() )
+		localFile.cancelWriting();
+	networkReply = qmc2NetworkAccessManager->get(QNetworkRequest(retryUrl));
 	init();
 }
