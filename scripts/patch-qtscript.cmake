@@ -56,3 +56,40 @@ inline double wtf_ceil(double x) { return copysign(ceil(x), x); }
 #endif
 
 ]] "")
+
+replace_exact("src/3rdparty/javascriptcore/JavaScriptCore/runtime/Collector.cpp"
+[[#elif CPU(ARM)
+typedef arm_thread_state_t PlatformThreadRegisters;
+#else
+]]
+[[#elif CPU(ARM)
+typedef arm_thread_state_t PlatformThreadRegisters;
+#elif CPU(AARCH64)
+typedef arm_thread_state64_t PlatformThreadRegisters;
+#else
+]])
+
+replace_exact("src/3rdparty/javascriptcore/JavaScriptCore/runtime/Collector.cpp"
+[[#elif CPU(ARM)
+    unsigned user_count = ARM_THREAD_STATE_COUNT;
+    thread_state_flavor_t flavor = ARM_THREAD_STATE;
+#else
+]]
+[[#elif CPU(ARM)
+    unsigned user_count = ARM_THREAD_STATE_COUNT;
+    thread_state_flavor_t flavor = ARM_THREAD_STATE;
+#elif CPU(AARCH64)
+    unsigned user_count = ARM_THREAD_STATE64_COUNT;
+    thread_state_flavor_t flavor = ARM_THREAD_STATE64;
+#else
+]])
+
+replace_exact("src/3rdparty/javascriptcore/JavaScriptCore/runtime/Collector.cpp"
+[[#elif CPU(ARM)
+    return reinterpret_cast<void*>(regs.__sp);
+#else
+]]
+[[#elif CPU(ARM) || CPU(AARCH64)
+    return reinterpret_cast<void*>(regs.__sp);
+#else
+]])
