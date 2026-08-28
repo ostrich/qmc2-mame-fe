@@ -25,6 +25,18 @@ jobs:
         run: |
           make -j4
           make -j4 qchdman
+      - name: Run XML compatibility fixtures
+        run: |
+          mkdir build-xml-tests
+          cd build-xml-tests
+          qmake ../tests/xmlmachine/xmlmachine.pro
+          make -j2
+          ./tst_xmlmachine
+      - name: Verify runtime libraries
+        run: |
+          ! ldd qmc2-sdlmame | grep 'not found'
+          ! ldd src/tools/qchdman/qchdman | grep 'not found'
+          ldd src/tools/qchdman/qchdman | grep "$GITHUB_WORKSPACE/.deps/qtscript/lib/libQt6Script"
       - uses: actions/upload-artifact@v4
         with:
           name: qmc2-linux-qt-${{ matrix.qt }}-${{ github.sha }}

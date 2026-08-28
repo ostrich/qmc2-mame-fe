@@ -28,10 +28,28 @@ jobs:
         run: |
           make -j3
           make -j3 qchdman
+      - name: Run XML compatibility fixtures
+        run: |
+          mkdir build-xml-tests
+          cd build-xml-tests
+          qmake ../tests/xmlmachine/xmlmachine.pro
+          make -j2
+          ./tst_xmlmachine
+      - name: Deploy application bundles
+        run: |
+          macdeployqt qmc2-sdlmame.app
+          macdeployqt src/tools/qchdman/qchdman.app
+          mkdir -p src/tools/qchdman/qchdman.app/Contents/Frameworks
+          cp .deps/qtscript/lib/libQt6Script*.dylib src/tools/qchdman/qchdman.app/Contents/Frameworks/
+          install_name_tool -add_rpath @executable_path/../Frameworks src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman
+      - name: Verify bundled libraries
+        run: |
+          otool -L qmc2-sdlmame.app/Contents/MacOS/qmc2-sdlmame
+          otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman
+          ! otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman | grep "$GITHUB_WORKSPACE/.deps"
       - uses: actions/upload-artifact@v4
         with:
           name: qmc2-macos-${{ matrix.arch }}-${{ github.sha }}
           path: |
             qmc2-sdlmame.app
             src/tools/qchdman/qchdman.app
-            .deps/qtscript/lib/libQt6Script*.dylib

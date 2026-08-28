@@ -46,12 +46,28 @@ jobs:
         run: |
           nmake /f Makefile.qmake.release
           nmake qchdman
+      - name: Run XML compatibility fixtures
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory build-xml-tests
+          Set-Location build-xml-tests
+          qmake ..\tests\xmlmachine\xmlmachine.pro CONFIG+=release
+          nmake
+          .\release\tst_xmlmachine.exe
       - name: Deploy
         shell: pwsh
         run: |
           windeployqt release\qmc2-mame.exe
+          windeployqt src\tools\qchdman\release\qchdman.exe
           Copy-Item "${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll" release
-          Copy-Item .deps\qtscript\bin\Qt6Script*.dll release
+          Copy-Item .deps\qtscript\bin\Qt6Script*.dll src\tools\qchdman\release
+      - name: Verify deployed applications start
+        shell: pwsh
+        run: |
+          $qchdman = Start-Process src\tools\qchdman\release\qchdman.exe -PassThru
+          Start-Sleep -Seconds 3
+          if ($qchdman.HasExited) { throw "qchdman exited during startup with code $($qchdman.ExitCode)" }
+          Stop-Process -Id $qchdman.Id
       - uses: actions/upload-artifact@v4
         with:
           name: qmc2-windows-msvc2022-${{ github.sha }}
