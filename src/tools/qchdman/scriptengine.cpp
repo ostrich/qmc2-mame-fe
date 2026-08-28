@@ -212,13 +212,22 @@ int ScriptEngine::runShellCommand(QString command, bool detached)
 {
 	QCHDMAN_SCRIPT_ENGINE_DEBUG(log(QString("DEBUG: ScriptEngine::runShellCommand(QString command = %1, bool detached = %2)").arg(command).arg(detached)));
 
+	QString shell;
+	QStringList arguments;
+#if defined(Q_OS_WIN)
+	shell = qEnvironmentVariable("COMSPEC", QStringLiteral("cmd.exe"));
+	arguments << QStringLiteral("/C") << command;
+#else
+	shell = QStringLiteral("/bin/sh");
+	arguments << QStringLiteral("-c") << command;
+#endif
 	if ( detached ) {
-		if ( QProcess::startDetached(command) )
+		if ( QProcess::startDetached(shell, arguments) )
 			return 0;
 		else
 			return 1;
 	} else
-		return QProcess::execute(command);
+		return QProcess::execute(shell, arguments);
 }
 
 bool ScriptEngine::createPath(QString path)
