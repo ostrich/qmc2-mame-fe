@@ -2,6 +2,7 @@ QT += core testlib widgets
 CONFIG += testcase console c++17
 TEMPLATE = app
 TARGET = tst_qtscript
+greaterThan(QMAKE_GCC_MAJOR_VERSION, 15): QMAKE_CXXFLAGS_WARN_ON += -Wno-sfinae-incomplete
 
 QTSCRIPT_PREFIX = $$(QTSCRIPT_PREFIX)
 !isEmpty(QTSCRIPT_PREFIX) {
