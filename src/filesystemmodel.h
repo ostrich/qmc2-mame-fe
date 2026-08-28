@@ -109,7 +109,7 @@ class DirectoryScannerThread : public QThread
 					QString dirName = QDir::toNativeSeparators(QDir::cleanPath(dirPath + "/*"));
 					QList<QRegularExpression> nameFilterRegExps;
 					foreach (QString filter, nameFilters)
-						nameFilterRegExps << QRegularExpression(filter, Qt::CaseSensitive, QRegularExpression::Wildcard);
+						nameFilterRegExps << QRegularExpression(QRegularExpression::wildcardToRegularExpression(filter));
 
 					if ( !stopScanning && !quitFlag ) {
 #ifdef UNICODE
@@ -129,7 +129,7 @@ class DirectoryScannerThread : public QThread
 								if ( fName != "." ) {
 									if ( !nameFilterRegExps.isEmpty() ) {
 										foreach (QRegularExpression filterRx, nameFilterRegExps) {
-											if ( filterRx.indexIn(fName) >= 0 ) {
+											if ( filterRx.match(fName).hasMatch() ) {
 												dirEntries << fName;
 												break;
 											}

@@ -81,7 +81,7 @@ private:
 	static size_t writeCallback(char *data, size_t size, size_t count, void *userdata)
 	{
 		auto *self = static_cast<CurlFtpTransfer *>(userdata);
-		if ( size != 0 && count > size_t(std::numeric_limits<qsizetype>::max()) / size )
+		if ( size != 0 && count > size_t((std::numeric_limits<qsizetype>::max)()) / size )
 			return 0;
 		const qsizetype length = qsizetype(size * count);
 		if ( self->directoryRequest && length > maximumFtpListingSize - self->listing.size() )

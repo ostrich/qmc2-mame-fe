@@ -701,11 +701,7 @@ void ProjectWidget::started()
 	projectTimer.start();
 	lastRc = 0;
 	runningProjects++;
-#if defined(Q_OS_WIN)
-	log(tr("process started: PID = %1").arg(chdmanProc->pid()->dwProcessId));
-#else
 	log(tr("process started: PID = %1").arg(chdmanProc->processId()));
-#endif
 	status = QCHDMAN_PRJSTAT_RUNNING;
 	ui->toolButtonStop->setEnabled(true);
 	ui->progressBar->setFormat(tr("Running"));
