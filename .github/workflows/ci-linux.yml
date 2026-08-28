@@ -32,6 +32,15 @@ jobs:
           qmake ../tests/xmlmachine/xmlmachine.pro
           make -j2
           ./tst_xmlmachine
+      - name: Run QtScript compatibility fixtures
+        env:
+          QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript
+        run: |
+          mkdir build-qtscript-tests
+          cd build-qtscript-tests
+          qmake ../tests/qtscript/qtscript.pro
+          make -j2
+          QT_QPA_PLATFORM=offscreen ./tst_qtscript
       - name: Verify runtime libraries
         run: |
           ! ldd qmc2-sdlmame | grep 'not found'

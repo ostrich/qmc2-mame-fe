@@ -54,6 +54,16 @@ jobs:
           qmake ..\tests\xmlmachine\xmlmachine.pro CONFIG+=release
           nmake
           .\release\tst_xmlmachine.exe
+      - name: Run QtScript compatibility fixtures
+        shell: pwsh
+        env:
+          QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
+        run: |
+          New-Item -ItemType Directory build-qtscript-tests
+          Set-Location build-qtscript-tests
+          qmake ..\tests\qtscript\qtscript.pro CONFIG+=release
+          nmake
+          .\release\tst_qtscript.exe
       - name: Deploy
         shell: pwsh
         run: |
