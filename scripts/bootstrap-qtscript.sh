@@ -34,8 +34,8 @@ git -C "$port_dir" fetch --quiet origin "$PORT_REV"
 git -C "$port_dir" checkout --quiet --detach "$PORT_REV"
 rm -rf "$source_dir" "$build_dir"
 bash "$port_dir/scripts/apply-patches.sh" "$source_dir"
-dependency_patch="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/patches/qtscript-disable-werror.patch"
-git -C "$source_dir" apply "$dependency_patch"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cmake -DSOURCE_DIR="$source_dir" -P "$script_dir/patch-qtscript.cmake"
 
 qt_cmake=""
 for candidate in "$qt_root/bin/qt-cmake-private" "$qt_root/libexec/qt-cmake-private"; do

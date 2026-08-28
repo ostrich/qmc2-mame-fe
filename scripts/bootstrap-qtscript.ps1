@@ -18,8 +18,7 @@ if (-not (Test-Path (Join-Path $portDir '.git'))) {
 git -C $portDir fetch --quiet origin $portRevision
 git -C $portDir checkout --quiet --detach $portRevision
 & (Join-Path $portDir 'scripts\apply-patches.ps1') -SourceDir $sourceDir
-$dependencyPatch = Join-Path $PSScriptRoot 'patches\qtscript-disable-werror.patch'
-git -C $sourceDir apply $dependencyPatch
+cmake "-DSOURCE_DIR=$($sourceDir.Replace('\', '/'))" -P (Join-Path $PSScriptRoot 'patch-qtscript.cmake')
 if ($LASTEXITCODE) { throw 'QtScript dependency patch failed' }
 
 $qtCmake = Join-Path $QtRoot 'bin\qt-cmake-private.bat'
