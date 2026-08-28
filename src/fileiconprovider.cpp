@@ -5,7 +5,9 @@
 #include "fileiconprovider.h"
 
 #if defined(QMC2_OS_WIN)
-#include <QtWinExtras>
+#include <QImage>
+#include <qt_windows.h>
+#include <shellapi.h>
 #endif
 
 QCache<QString, QIcon> FileIconProvider::m_iconCache;
@@ -30,7 +32,7 @@ QIcon FileIconProvider::fileIcon(const QString &fileName)
 		SHFILEINFO shFileInfo;
 		unsigned long val = SHGetFileInfo((const wchar_t *)("dummy." + fileInfo.suffix()).utf16(), 0, &shFileInfo, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_USEFILEATTRIBUTES);
 		if ( val && shFileInfo.hIcon ) {
-			QPixmap pixmap = QtWin::fromHICON(shFileInfo.hIcon);
+			QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(shFileInfo.hIcon));
 			if ( !pixmap.isNull() ) {
 				icon = QIcon(pixmap);
 				m_iconCache.insert(fileInfo.suffix(), new QIcon(icon));

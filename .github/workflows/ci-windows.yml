@@ -49,7 +49,11 @@ jobs:
           QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
         run: |
           nmake /f Makefile.qmake.release
-          nmake qchdman
+          Push-Location src\tools\qchdman
+          qmake qchdman.pro CONFIG+=release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          nmake
+          Pop-Location
       - name: Run XML compatibility fixtures
         shell: pwsh
         run: |
@@ -79,7 +83,7 @@ jobs:
       - name: Run archive correctness fixtures
         shell: pwsh
         run: |
-          $vcpkgRoot = if ($env:VCPKG_ROOT) { $env:VCPKG_ROOT } else { $env:VCPKG_INSTALLATION_ROOT }
+          $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
           $env:PATH = "$vcpkgRoot\installed\x64-windows\bin;$env:PATH"
           foreach ($test in @("archivefile", "bigbytearray", "sevenzip")) {
             New-Item -ItemType Directory "build-$test-tests"
@@ -98,7 +102,7 @@ jobs:
           windeployqt release\qmc2-mame.exe
           windeployqt src\tools\qchdman\release\qchdman.exe
           Copy-Item "${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll" release
-          $vcpkgRoot = if ($env:VCPKG_ROOT) { $env:VCPKG_ROOT } else { $env:VCPKG_INSTALLATION_ROOT }
+          $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
           Copy-Item "$vcpkgRoot\installed\x64-windows\bin\*.dll" release
           Copy-Item .deps\qtscript\bin\Qt6Script*.dll src\tools\qchdman\release
       - name: Verify deployed applications start

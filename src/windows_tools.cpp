@@ -75,14 +75,14 @@ void winRefreshWindowMap()
 	winFindWindowHandle("DUMMY");
 }
 
-HWND winFindWindowHandleOfProcess(Q_PID processInfo, QString subString)
+HWND winFindWindowHandleOfProcess(qint64 processId, QString subString)
 {
 	bool handleFound = false;
 	HWND windowHandle = GetTopWindow(0);
 	DWORD pid;
 	while ( windowHandle && !handleFound ) {
 		GetWindowThreadProcessId(windowHandle, &pid);
-		if ( pid == processInfo->dwProcessId ) {
+		if ( pid == static_cast<DWORD>(processId) ) {
 			if ( !subString.isEmpty() ) {
 				WCHAR winTitle[QMC2_WIN_MAX_NAMELEN];
 				GetWindowText(windowHandle, winTitle, QMC2_WIN_MAX_NAMELEN - 1);
