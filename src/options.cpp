@@ -35,7 +35,7 @@
 #include "machinelist.h"
 #include "imagechecker.h"
 #include "macros.h"
-#include "mz_compat.h"
+#include "unzip.h"
 #include "keyseqscan.h"
 #include "romalyzer.h"
 #include "romstatusexport.h"

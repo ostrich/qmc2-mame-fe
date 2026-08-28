@@ -35,7 +35,7 @@
 #include "miniwebbrowser.h"
 #include "romalyzer.h"
 #include "macros.h"
-#include "mz_compat.h"
+#include "unzip.h"
 #include "sevenzipfile.h"
 #include "demomode.h"
 #include "deviceconfigurator.h"

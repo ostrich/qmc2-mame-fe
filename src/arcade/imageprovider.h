@@ -8,7 +8,7 @@
 #include <QUuid>
 #include <QQuickImageProvider>
 
-#include "../minizip/mz_compat.h"
+#include "../minizip/compat/unzip.h"
 #include "../sevenzipfile.h"
 #if defined(QMC2_ARCADE_LIBARCHIVE_ENABLED)
 #include "../archivefile.h"

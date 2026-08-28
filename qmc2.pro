@@ -316,14 +316,20 @@ contains(DEFINES, QMC2_LIBARCHIVE_ENABLED) {
 }
 
 contains(DEFINES, QMC2_BUNDLED_MINIZIP) {
-	INCLUDEPATH += src/minizip
-	SOURCES += src/minizip/mz_compat.c \
-		src/minizip/mz_crypt.c \
+	INCLUDEPATH += src/minizip \
+		src/minizip/compat
+	SOURCES += src/minizip/mz_crypt.c \
 		src/minizip/mz_os.c \
 		src/minizip/mz_strm.c \
+		src/minizip/mz_strm_buf.c \
 		src/minizip/mz_strm_mem.c \
+		src/minizip/mz_strm_split.c \
 		src/minizip/mz_strm_zlib.c \
-		src/minizip/mz_zip.c
+		src/minizip/mz_zip.c \
+		src/minizip/mz_zip_rw.c \
+		src/minizip/compat/ioapi.c \
+		src/minizip/compat/unzip.c \
+		src/minizip/compat/zip.c
 	!win32 {
 		SOURCES += src/minizip/mz_os_posix.c \
 			src/minizip/mz_strm_os_posix.c
@@ -331,7 +337,7 @@ contains(DEFINES, QMC2_BUNDLED_MINIZIP) {
 		SOURCES += src/minizip/mz_os_win32.c \
 			src/minizip/mz_strm_os_win32.c
 	}
-	DEFINES += HAVE_ZLIB ZLIB_COMPAT
+	DEFINES += HAVE_ZLIB ZLIB_COMPAT MZ_ZIP_NO_CRYPTO MZ_ZIP_NO_ENCRYPTION
 } else {
 	CONFIG += link_pkgconfig
 	PKGCONFIG += minizip

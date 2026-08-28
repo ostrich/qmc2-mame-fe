@@ -17,7 +17,8 @@
 #include "collectionrebuilder.h"
 #include "settings.h"
 #include "options.h"
-#include "mz_compat.h"
+#include "unzip.h"
+#include "zip.h"
 #include "mz.h"
 #include "sevenzipfile.h"
 #if defined(QMC2_LIBARCHIVE_ENABLED)
