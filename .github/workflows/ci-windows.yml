@@ -101,7 +101,7 @@ jobs:
         shell: pwsh
         run: |
           windeployqt release\qmc2-mame.exe
-          windeployqt src\tools\qchdman\release\qchdman.exe
+          windeployqt --ignore-library-errors src\tools\qchdman\release\qchdman.exe
           Copy-Item "${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll" release
           $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
           Copy-Item "$vcpkgRoot\installed\x64-windows\bin\*.dll" release
