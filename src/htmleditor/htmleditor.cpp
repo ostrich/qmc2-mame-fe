@@ -413,9 +413,12 @@ void HtmlEditor::checkRevertStatus()
 	if ( !fileName.isEmpty() ) {
 		const bool htmlTab = ui->tabWidget->currentIndex() != 0;
 		const QString plainText = ui->plainTextEdit->toPlainText();
-		ui->webView->page()->toHtml([this, htmlTab, plainText](const QString &data) {
-			const bool wasModified = loadedContent != (htmlTab ? plainText : data);
-			ui->actionFileRevert->setVisible(data != emptyContent && wasModified && QFile::exists(fileName));
+		QPointer<HtmlEditor> guard(this);
+		ui->webView->page()->toHtml([guard, htmlTab, plainText](const QString &data) {
+			if ( !guard )
+				return;
+			const bool wasModified = guard->loadedContent != (htmlTab ? plainText : data);
+			guard->ui->actionFileRevert->setVisible(data != guard->emptyContent && wasModified && QFile::exists(guard->fileName));
 		});
 	} else
 		ui->actionFileRevert->setVisible(false);
@@ -773,9 +776,12 @@ void HtmlEditor::styleParagraph()
 {
 	execCommand("formatBlock", "p");
 	if ( generateEmptyContent ) {
-		ui->webView->page()->toHtml([this](const QString &data) {
-			emptyContent = data;
-			generateEmptyContent = false;
+		QPointer<HtmlEditor> guard(this);
+		ui->webView->page()->toHtml([guard](const QString &data) {
+			if ( !guard )
+				return;
+			guard->emptyContent = data;
+			guard->generateEmptyContent = false;
 		});
 	}
 }
@@ -911,9 +917,10 @@ void HtmlEditor::adjustActions()
 	FOLLOW_CHECK(ui->actionFormatUnderline, QWebEnginePage::ToggleUnderline);
 	*/
 
-	ui->webView->page()->runJavaScript("document.queryCommandState('strikeThrough')", [this](const QVariant &state) { ui->actionFormatStrikethrough->setChecked(state.toBool()); });
-	ui->webView->page()->runJavaScript("document.queryCommandState('insertOrderedList')", [this](const QVariant &state) { ui->actionFormatNumberedList->setChecked(state.toBool()); });
-	ui->webView->page()->runJavaScript("document.queryCommandState('insertUnorderedList')", [this](const QVariant &state) { ui->actionFormatBulletedList->setChecked(state.toBool()); });
+	QPointer<HtmlEditor> guard(this);
+	ui->webView->page()->runJavaScript("document.queryCommandState('strikeThrough')", [guard](const QVariant &state) { if ( guard ) guard->ui->actionFormatStrikethrough->setChecked(state.toBool()); });
+	ui->webView->page()->runJavaScript("document.queryCommandState('insertOrderedList')", [guard](const QVariant &state) { if ( guard ) guard->ui->actionFormatNumberedList->setChecked(state.toBool()); });
+	ui->webView->page()->runJavaScript("document.queryCommandState('insertUnorderedList')", [guard](const QVariant &state) { if ( guard ) guard->ui->actionFormatBulletedList->setChecked(state.toBool()); });
 }
 
 void HtmlEditor::adjustWYSIWYG()
@@ -943,10 +950,13 @@ void HtmlEditor::changeTab(int index)
 		case 1:
 			if ( htmlDirty ) {
 				ui->plainTextEdit->blockSignals(true);
-				ui->webView->page()->toHtml([this](const QString &data) {
-					ui->plainTextEdit->setPlainText(data);
-					ui->plainTextEdit->blockSignals(false);
-					htmlDirty = false;
+				QPointer<HtmlEditor> guard(this);
+				ui->webView->page()->toHtml([guard](const QString &data) {
+					if ( !guard )
+						return;
+					guard->ui->plainTextEdit->setPlainText(data);
+					guard->ui->plainTextEdit->blockSignals(false);
+					guard->htmlDirty = false;
 				});
 			}
 			break;
