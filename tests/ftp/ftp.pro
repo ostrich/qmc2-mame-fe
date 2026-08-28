@@ -1,5 +1,6 @@
 QT += core network testlib
 CONFIG += testcase console c++17
+macx: CONFIG -= app_bundle
 TEMPLATE = app
 TARGET = tst_ftp
 greaterThan(QMAKE_GCC_MAJOR_VERSION, 15): QMAKE_CXXFLAGS_WARN_ON += -Wno-sfinae-incomplete
