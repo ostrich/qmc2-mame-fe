@@ -40,5 +40,5 @@ HEADERS += ../../src/sevenzipfile.h ../../src/bigbytearray.h
     isEmpty(VCPKG_PREFIX): VCPKG_PREFIX = $$(VCPKG_ROOT)
     ZLIB_ROOT = $$VCPKG_PREFIX/installed/x64-windows
     INCLUDEPATH += $$ZLIB_ROOT/include
-    LIBS += /LIBPATH:$$ZLIB_ROOT/lib zlib.lib
+    LIBS += /LIBPATH:$$ZLIB_ROOT/lib z.lib
 }

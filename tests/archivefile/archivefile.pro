@@ -13,7 +13,7 @@ DEFINES += QMC2_ARCHIVE_MAX_ENTRY_SIZE=128 QMC2_BBA_CHUNK_SIZE=32 QMC2_QBYTEARRA
 	isEmpty(VCPKG_PREFIX): VCPKG_PREFIX = $$(VCPKG_ROOT)
 	ARCHIVE_ROOT = $$VCPKG_PREFIX/installed/x64-windows
 	INCLUDEPATH += $$ARCHIVE_ROOT/include
-	LIBS += /LIBPATH:$$ARCHIVE_ROOT/lib archive.lib zlib.lib
+	LIBS += /LIBPATH:$$ARCHIVE_ROOT/lib archive.lib z.lib
 }
 INCLUDEPATH += ../../src
 SOURCES += tst_archivefile.cpp ../../src/archivefile.cpp ../../src/bigbytearray.cpp
