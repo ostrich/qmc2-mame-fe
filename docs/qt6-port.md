@@ -14,10 +14,11 @@ migrated to Arcade Database; custom user URLs are never replaced.
 
 ## Building qchdman
 
-Qt 6 no longer ships QtScript. qchdman uses the Qt 6 compatibility port from
-<https://github.com/JulienMaille/qtscript-qt6>, pinned by the bootstrap scripts
-to commit `b38a30b0f2324d23aa172d47c174b3f770753c8c`. The port in turn pins the
-KDE QtScript source and its patch revision.
+Qt 6 no longer ships QtScript. qchdman uses the qmc2-maintained Qt 6
+compatibility port from <https://github.com/ostrich/qtscript-qt6>, pinned by
+the bootstrap scripts to commit
+`1122594ab02aeb07c7a862738ef36486bab1ed7a`. The port in turn pins the KDE
+QtScript source revision and applies its ordered compatibility patch series.
 
 Build QtScript into an isolated prefix, never into the Qt installation:
 

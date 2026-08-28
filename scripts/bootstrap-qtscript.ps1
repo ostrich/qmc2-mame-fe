@@ -7,19 +7,19 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$portRevision = 'b38a30b0f2324d23aa172d47c174b3f770753c8c'
+$portRepository = 'https://github.com/ostrich/qtscript-qt6.git'
+$portRevision = '1122594ab02aeb07c7a862738ef36486bab1ed7a'
 $portDir = Join-Path $WorkRoot 'port'
 $sourceDir = Join-Path $WorkRoot 'src'
 $buildDir = Join-Path $WorkRoot 'build'
 
 if (-not (Test-Path (Join-Path $portDir '.git'))) {
-    git clone https://github.com/JulienMaille/qtscript-qt6.git $portDir
+    git clone $portRepository $portDir
 }
+git -C $portDir remote set-url origin $portRepository
 git -C $portDir fetch --quiet origin $portRevision
 git -C $portDir checkout --quiet --detach $portRevision
 & (Join-Path $portDir 'scripts\apply-patches.ps1') -SourceDir $sourceDir
-cmake "-DSOURCE_DIR=$($sourceDir.Replace('\', '/'))" -P (Join-Path $PSScriptRoot 'patch-qtscript.cmake')
-if ($LASTEXITCODE) { throw 'QtScript dependency patch failed' }
 
 $qtCmake = Join-Path $QtRoot 'bin\qt-cmake-private.bat'
 if (-not (Test-Path $qtCmake)) { throw "qt-cmake-private not found below $QtRoot" }

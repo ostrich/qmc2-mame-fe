@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-readonly PORT_REV=b38a30b0f2324d23aa172d47c174b3f770753c8c
+readonly PORT_REPO=https://github.com/ostrich/qtscript-qt6.git
+readonly PORT_REV=1122594ab02aeb07c7a862738ef36486bab1ed7a
 qt_root="${QT_ROOT_DIR:-}"
 prefix="${QTSCRIPT_PREFIX:-}"
 work_root="${QTSCRIPT_WORK_ROOT:-}"
@@ -28,14 +29,13 @@ source_dir="$work_root/src"
 build_dir="$work_root/build"
 
 if [[ ! -d "$port_dir/.git" ]]; then
-	git clone https://github.com/JulienMaille/qtscript-qt6.git "$port_dir"
+	git clone "$PORT_REPO" "$port_dir"
 fi
+git -C "$port_dir" remote set-url origin "$PORT_REPO"
 git -C "$port_dir" fetch --quiet origin "$PORT_REV"
 git -C "$port_dir" checkout --quiet --detach "$PORT_REV"
 rm -rf "$source_dir" "$build_dir"
 bash "$port_dir/scripts/apply-patches.sh" "$source_dir"
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cmake -DSOURCE_DIR="$source_dir" -P "$script_dir/patch-qtscript.cmake"
 
 qt_cmake=""
 for candidate in "$qt_root/bin/qt-cmake-private" "$qt_root/libexec/qt-cmake-private"; do
