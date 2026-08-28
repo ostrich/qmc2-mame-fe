@@ -29,9 +29,10 @@ CustomSettings::CustomSettings(QSettings *cfg, QObject *parent) :
 void CustomSettings::loadFrom(QSettings *cfg)
 {
 	clear();
-	if ( cfg )
+	if ( cfg ) {
 		foreach (QString key, cfg->allKeys())
 			m_settingsHash.insert(key, cfg->value(key));
+	}
 }
 
 void CustomSettings::saveTo(QSettings *cfg)

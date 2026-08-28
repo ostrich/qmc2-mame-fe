@@ -323,6 +323,7 @@ QVariant MachineListModel::data(const QModelIndex &index, int role) const
 								case QMC2_MACHINETYPE_DEVICE:
 									return ml->qmc2CorrectDeviceImageIcon;
 							}
+							Q_UNREACHABLE();
 						case 'M':
 							switch ( machineType ) {
 								case QMC2_MACHINETYPE_NORMAL:
@@ -332,6 +333,7 @@ QVariant MachineListModel::data(const QModelIndex &index, int role) const
 								case QMC2_MACHINETYPE_DEVICE:
 									return ml->qmc2MostlyCorrectDeviceImageIcon;
 							}
+							Q_UNREACHABLE();
 						case 'I':
 							switch ( machineType ) {
 								case QMC2_MACHINETYPE_NORMAL:
@@ -341,6 +343,7 @@ QVariant MachineListModel::data(const QModelIndex &index, int role) const
 								case QMC2_MACHINETYPE_DEVICE:
 									return ml->qmc2IncorrectDeviceImageIcon;
 							}
+							Q_UNREACHABLE();
 						case 'N':
 							switch ( machineType ) {
 								case QMC2_MACHINETYPE_NORMAL:
@@ -350,6 +353,7 @@ QVariant MachineListModel::data(const QModelIndex &index, int role) const
 								case QMC2_MACHINETYPE_DEVICE:
 									return ml->qmc2NotFoundDeviceImageIcon;
 							}
+							Q_UNREACHABLE();
 						case 'U':
 						default:
 							switch ( machineType ) {

@@ -14,6 +14,7 @@ class BigByteArray
 	public:
 		explicit BigByteArray() { ; }
 		explicit BigByteArray(const BigByteArray &bba);
+		BigByteArray &operator=(const BigByteArray &) = default;
 		explicit BigByteArray(const char *rawData, quint64 len);
 		~BigByteArray() { clear(); }
 

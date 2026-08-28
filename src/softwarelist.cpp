@@ -1012,7 +1012,6 @@ QString &SoftwareList::lookupMountDevice(QString device, QString deviceInterface
 	QStringList xmlLines(qmc2MachineList->xmlDb()->xml(systemName).split('\n', Qt::SkipEmptyParts));
 	QStringList *xmlData = &xmlLines;
 	QStringList dynamicXmlData;
-	QXmlStreamReader xmlMachineEntry(qmc2MachineList->xmlDb()->xml(systemName));
 	if ( comboBoxDeviceConfiguration->currentIndex() > 0 ) {
 		qmc2Config->beginGroup(QMC2_EMULATOR_PREFIX + QString("Configuration/Devices/%1/%2").arg(systemName).arg(comboBoxDeviceConfiguration->currentText()));
 		QStringList instances(qmc2Config->value("Instances").toStringList());
@@ -1047,6 +1046,7 @@ QString &SoftwareList::lookupMountDevice(QString device, QString deviceInterface
 		QMC2_PRINT_STRTXT(QString("SoftwareList::getXmlDataWithEnabledSlots(): XML data end"));
 #endif
 	}
+	QXmlStreamReader xmlMachineEntry(xmlData->join('\n'));
 
 	if ( xmlMachineEntry.readNextStartElement() ) {
 		if ( xmlMachineEntry.name() == "machine" ) {
@@ -4121,9 +4121,10 @@ SoftwareListXmlHandler::SoftwareListXmlHandler(QTreeWidget *parent, QStringList 
 
 SoftwareListXmlHandler::~SoftwareListXmlHandler()
 {
-	if ( !itemList().isEmpty() )
+	if ( !itemList().isEmpty() ) {
 		foreach (QTreeWidgetItem *item, itemList())
 			delete item;
+	}
 }
 
 void SoftwareListXmlHandler::loadSoftwareStates(QString listName)

@@ -808,8 +808,7 @@ void MachineList::verify(bool currentOnly)
 	if ( verifyCurrentOnly ) {
 		checkedItem = qmc2CurrentItem;
 		romStateCache.setFileName(qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/ROMStateCacheFile").toString());
-		romStateCache.open(QIODevice::WriteOnly | QIODevice::Text);
-		if ( !romStateCache.isOpen() ) {
+		if ( !romStateCache.open(QIODevice::WriteOnly | QIODevice::Text) ) {
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("ERROR: can't open ROM state cache for writing, path = %1").arg(romStateCache.fileName()));
 			qmc2VerifyActive = false;
 			QTimer::singleShot(0, this, SLOT(enableWidgets()));
@@ -846,8 +845,7 @@ void MachineList::verify(bool currentOnly)
 	} else {
 		checkedItem = 0;
 		romStateCache.setFileName(qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/ROMStateCacheFile").toString());
-		romStateCache.open(QIODevice::WriteOnly | QIODevice::Text);
-		if ( !romStateCache.isOpen() ) {
+		if ( !romStateCache.open(QIODevice::WriteOnly | QIODevice::Text) ) {
 			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("ERROR: can't open ROM state cache for writing, path = %1").arg(romStateCache.fileName()));
 			qmc2VerifyActive = false;
 			QTimer::singleShot(0, this, SLOT(enableWidgets()));

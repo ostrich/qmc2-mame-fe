@@ -4641,7 +4641,7 @@ QStringList &MainWindow::getXmlChoices(const QString &machineName, const QString
 				if ( xmlMachineEntry.name() == optionElement ) {
 					if ( optionAttribute.isEmpty() ) {
 						bool isDefaultChoice = false;
-						if ( defaultChoice && (xmlMachineEntry.attributes().hasAttribute("default") && xmlMachineEntry.attributes().value("default").toString() == defaultYes || xmlMachineEntry.attributes().value("default").toString() == defaultOne || defaultChoice->isEmpty()) )
+						if ( defaultChoice && ((xmlMachineEntry.attributes().hasAttribute("default") && xmlMachineEntry.attributes().value("default").toString() == defaultYes) || xmlMachineEntry.attributes().value("default").toString() == defaultOne || defaultChoice->isEmpty()) )
 							isDefaultChoice = true;
 						QTextDocument doc;
 						doc.setHtml(xmlMachineEntry.readElementText());
@@ -4655,7 +4655,7 @@ QStringList &MainWindow::getXmlChoices(const QString &machineName, const QString
 							doc.setHtml(xmlMachineEntry.attributes().value(optionAttribute).toString());
 							QString choice = doc.toPlainText();
 							xmlChoices << choice;
-							if ( defaultChoice && (xmlMachineEntry.attributes().hasAttribute("default") && xmlMachineEntry.attributes().value("default").toString() == defaultYes || xmlMachineEntry.attributes().value("default").toString() == defaultOne || defaultChoice->isEmpty()) )
+							if ( defaultChoice && ((xmlMachineEntry.attributes().hasAttribute("default") && xmlMachineEntry.attributes().value("default").toString() == defaultYes) || xmlMachineEntry.attributes().value("default").toString() == defaultOne || defaultChoice->isEmpty()) )
 								*defaultChoice = choice;
 							xmlMachineEntry.skipCurrentElement();
 						}

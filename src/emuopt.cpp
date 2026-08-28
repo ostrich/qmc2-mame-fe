@@ -1548,15 +1548,19 @@ void EmulatorOptions::checkTemplateMap()
 					}
 					case QMC2_EMUOPT_TYPE_COMBO:
 						assumedType = "combo";
+						Q_FALLTHROUGH();
 					case QMC2_EMUOPT_TYPE_COLOR:
 						if ( assumedType == "unknown" )
 							assumedType = "color";
+						Q_FALLTHROUGH();
 					case QMC2_EMUOPT_TYPE_FILE:
 						if ( assumedType == "unknown" )
 							assumedType = "file";
+						Q_FALLTHROUGH();
 					case QMC2_EMUOPT_TYPE_DIRECTORY:
 						if ( assumedType == "unknown" )
 							assumedType = "directory";
+						Q_FALLTHROUGH();
 					case QMC2_EMUOPT_TYPE_STRING:
 					default:
 						if ( assumedType == "unknown" )
