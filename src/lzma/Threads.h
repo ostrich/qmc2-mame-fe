@@ -1,5 +1,5 @@
 /* Threads.h -- multithreading library
-2024-03-28 : Igor Pavlov : Public domain */
+: Igor Pavlov : Public domain */
 
 #ifndef ZIP7_INC_THREADS_H
 #define ZIP7_INC_THREADS_H
@@ -117,15 +117,15 @@ typedef UInt64 CCpuSet;
    But only root function main() contains instructions that
    set 16-byte alignment for stack pointer. And another functions
    just keep alignment, if it was set in some parent function.
-   
+
    The problem:
     if we create new thread in MinGW (GCC) 32-bit x86 via _beginthreadex() or CreateThread(),
        the root function of thread doesn't set 16-byte alignment.
        And stack frames in all child functions also will be unaligned in that case.
-   
+
    Here we set (force_align_arg_pointer) attribute for root function of new thread.
    Do we need (force_align_arg_pointer) also for another systems?  */
-  
+
   #define THREAD_FUNC_ATTRIB_ALIGN_ARG __attribute__((force_align_arg_pointer))
   // #define THREAD_FUNC_ATTRIB_ALIGN_ARG // for debug : bad alignment in SSE functions
 #else
@@ -140,11 +140,21 @@ WRes Thread_Create_With_Affinity(CThread *p, THREAD_FUNC_TYPE func, LPVOID param
 WRes Thread_Wait_Close(CThread *p);
 
 #ifdef _WIN32
+WRes Thread_Create_With_Group(CThread *p, THREAD_FUNC_TYPE func, LPVOID param, unsigned group, CAffinityMask affinityMask);
 #define Thread_Create_With_CpuSet(p, func, param, cs) \
   Thread_Create_With_Affinity(p, func, param, *cs)
 #else
 WRes Thread_Create_With_CpuSet(CThread *p, THREAD_FUNC_TYPE func, LPVOID param, const CCpuSet *cpuSet);
 #endif
+
+typedef struct
+{
+  unsigned NumGroups;
+  unsigned NextGroup;
+} CThreadNextGroup;
+
+void ThreadNextGroup_Init(CThreadNextGroup *p, unsigned numGroups, unsigned startGroup);
+unsigned ThreadNextGroup_GetNext(CThreadNextGroup *p);
 
 
 #ifdef _WIN32

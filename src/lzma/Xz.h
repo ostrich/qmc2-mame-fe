@@ -1,5 +1,5 @@
 /* Xz.h - Xz interface
-2024-01-26 : Igor Pavlov : Public domain */
+Igor Pavlov : Public domain */
 
 #ifndef ZIP7_INC_XZ_H
 #define ZIP7_INC_XZ_H
@@ -121,6 +121,7 @@ typedef struct
   UInt64 startOffset;
 } CXzStream;
 
+#define Xz_CONSTRUCT(p) { (p)->numBlocks = 0;  (p)->blocks = NULL;  (p)->flags = 0; }
 void Xz_Construct(CXzStream *p);
 void Xz_Free(CXzStream *p, ISzAllocPtr alloc);
 
@@ -136,8 +137,13 @@ typedef struct
   CXzStream *streams;
 } CXzs;
 
+#define Xzs_CONSTRUCT(p) { (p)->num = 0;  (p)->numAllocated = 0;  (p)->streams = NULL; }
 void Xzs_Construct(CXzs *p);
 void Xzs_Free(CXzs *p, ISzAllocPtr alloc);
+/*
+Xzs_ReadBackward() must be called for empty CXzs object.
+Xzs_ReadBackward() can return non empty object with (p->num != 0) even in case of error.
+*/
 SRes Xzs_ReadBackward(CXzs *p, ILookInStreamPtr inStream, Int64 *startOffset, ICompressProgressPtr progress, ISzAllocPtr alloc);
 
 UInt64 Xzs_GetNumBlocks(const CXzs *p);
@@ -208,7 +214,7 @@ typedef struct
   SRes res;
   ECoderStatus status;
   // BoolInt SingleBufMode;
-  
+
   int finished[MIXCODER_NUM_FILTERS_MAX - 1];
   size_t pos[MIXCODER_NUM_FILTERS_MAX - 1];
   size_t size[MIXCODER_NUM_FILTERS_MAX - 1];
@@ -239,7 +245,7 @@ typedef struct
   unsigned indexPreSize;
 
   CXzStreamFlags streamFlags;
-  
+
   unsigned blockHeaderSize;
   UInt64 packSize;
   UInt64 unpackSize;
@@ -268,8 +274,8 @@ typedef struct
   size_t outBufSize;
   size_t outDataWritten; // the size of data in (outBuf) that were fully unpacked
 
-  Byte shaDigest[SHA256_DIGEST_SIZE];
-  Byte buf[XZ_BLOCK_HEADER_SIZE_MAX];
+  UInt32 shaDigest32[SHA256_DIGEST_SIZE / 4];
+  Byte buf[XZ_BLOCK_HEADER_SIZE_MAX]; // it must be aligned for 4-bytes
 } CXzUnpacker;
 
 /* alloc : aligned for cache line allocation is better */
@@ -300,7 +306,7 @@ void XzUnpacker_Free(CXzUnpacker *p);
       }
       XzUnpacker_IsStreamWasFinished()
     }
-    
+
   Interface-2 : Direct output buffer:
     Use it, if you know exact size of decoded data, and you need
     whole xz unpacked data in one output buffer.
@@ -376,7 +382,7 @@ XzUnpacker_GetExtraSize() returns then number of unconfirmed bytes,
  if it's in (XZ_STATE_STREAM_HEADER) state or in (XZ_STATE_STREAM_PADDING) state.
 These bytes can be some data after xz archive, or
 it can be start of new xz stream.
- 
+
 Call XzUnpacker_GetExtraSize() after XzUnpacker_Code() function to detect real size of
 xz stream in two cases, if XzUnpacker_Code() returns:
   res == SZ_OK && status == CODER_STATUS_NEEDS_MORE_INPUT
@@ -439,7 +445,7 @@ typedef struct
   size_t inBufSize_ST;    // size of input buffer for Single-Thread decoding
   size_t outStep_ST;      // size of output buffer for Single-Thread decoding
   BoolInt ignoreErrors;   // if set to 1, the decoder can ignore some errors and it skips broken parts of data.
-  
+
   #ifndef Z7_ST
   unsigned numThreads;    // the number of threads for Multi-Thread decoding. if (umThreads == 1) it will use Single-thread decoding
   size_t inBufSize_MT;    // size of small input data buffers for Multi-Thread decoding. Big number of such small buffers can be created
@@ -486,7 +492,7 @@ typedef struct
   SRes CombinedRes;       // Combined result error code that shows main rusult
                           // = S_OK, if there is no error.
                           // but check also (DataAfterEnd) that can show additional minor errors.
- 
+
   SRes CombinedRes_Type;  // = SZ_ERROR_READ,     if error from ISeqInStream
                           // = SZ_ERROR_PROGRESS, if error from ICompressProgress
                           // = SZ_ERROR_WRITE,    if error from ISeqOutStream

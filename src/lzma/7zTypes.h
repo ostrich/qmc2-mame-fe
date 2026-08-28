@@ -1,5 +1,5 @@
 /* 7zTypes.h -- Basic types
-2024-01-24 : Igor Pavlov : Public domain */
+: Igor Pavlov : Public domain */
 
 #ifndef ZIP7_7Z_TYPES_H
 #define ZIP7_7Z_TYPES_H
@@ -46,8 +46,9 @@ typedef int SRes;
 
 
 #ifdef _MSC_VER
+  #define MY_ALIGN_IN_STRUCT(n) __declspec(align(n))
   #if _MSC_VER > 1200
-    #define MY_ALIGN(n) __declspec(align(n))
+    #define MY_ALIGN(n) MY_ALIGN_IN_STRUCT(n)
   #else
     #define MY_ALIGN(n)
   #endif
@@ -58,6 +59,7 @@ typedef int SRes;
   #define MY_ALIGN(n) alignas(n)
   */
   #define MY_ALIGN(n) __attribute__ ((aligned(n)))
+  #define MY_ALIGN_IN_STRUCT(n) MY_ALIGN(n)
 #endif
 
 
@@ -258,8 +260,8 @@ typedef uintptr_t MY_uintptr_t;
 
 typedef int BoolInt;
 /* typedef BoolInt Bool; */
-#define True7z 1
-#define False7z 0
+#define True 1
+#define False 0
 
 
 #ifdef _WIN32
@@ -409,10 +411,10 @@ typedef struct
 {
   ILookInStream vt;
   ISeekInStreamPtr realStream;
- 
+
   size_t pos;
   size_t size; /* it's data size */
-  
+
   /* the following variables must be set outside */
   Byte *buf;
   size_t bufSize;

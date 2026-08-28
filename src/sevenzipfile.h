@@ -22,6 +22,11 @@ extern "C" {
 #include "lzma/7zFile.h"
 }
 
+// The LZMA SDK exposes C-style True/False macros. Do not leak them into Qt's
+// C++ headers, where they collide with QCborValue enum members.
+#undef True
+#undef False
+
 class SevenZipMetaData
 {
 	public:

@@ -46,14 +46,14 @@ SRes MtProgress_ProgressAdd(CMtProgress *p, UInt64 inSize, UInt64 outSize)
 {
   SRes res;
   CriticalSection_Enter(&p->cs);
-  
+
   p->totalInSize += inSize;
   p->totalOutSize += outSize;
   if (p->res == SZ_OK && p->progress)
     if (ICompressProgress_Progress(p->progress, p->totalInSize, p->totalOutSize) != SZ_OK)
       p->res = SZ_ERROR_PROGRESS;
   res = p->res;
-  
+
   CriticalSection_Leave(&p->cs);
   return res;
 }
@@ -194,7 +194,7 @@ static SRes MtDec_Progress_GetError_Spec(CMtDec *p, UInt64 inSize, UInt64 outSiz
 
   *wasInterrupted = (p->needInterrupt && interruptIndex > p->interruptIndex);
   res = p->mtProgress.res;
-  
+
   CriticalSection_Leave(&p->mtProgress.cs);
 
   return res;
@@ -206,7 +206,7 @@ static void MtDec_Interrupt(CMtDec *p, UInt64 interruptIndex)
   if (!p->needInterrupt || interruptIndex < p->interruptIndex)
   {
     p->interruptIndex = interruptIndex;
-    p->needInterrupt = True7z;
+    p->needInterrupt = True;
   }
   CriticalSection_Leave(&p->mtProgress.cs);
 }
@@ -248,23 +248,23 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
     BoolInt wasInterrupted, isAllocError, overflow, finish;
     SRes threadingErrorSRes;
     BoolInt needCode, needWrite, needContinue;
-    
+
     size_t inDataSize_Start;
     UInt64 inDataSize;
     // UInt64 inDataSize_Full;
-    
+
     UInt64 blockIndex;
 
     UInt64 inPrev = 0;
     UInt64 outPrev = 0;
     UInt64 inCodePos;
     UInt64 outCodePos;
-    
+
     Byte *afterEndData = NULL;
     size_t afterEndData_Size = 0;
-    BoolInt afterEndData_IsCross = False7z;
+    BoolInt afterEndData_IsCross = False;
 
-    BoolInt canCreateNewThread = False7z;
+    BoolInt canCreateNewThread = False;
     // CMtDecCallbackInfo parse;
     CMtDecThread *nextThread;
 
@@ -285,10 +285,10 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
     res = MtDec_Progress_GetError_Spec(p, 0, 0, blockIndex, &wasInterrupted);
 
     finish = p->readWasFinished;
-    needCode = False7z;
-    needWrite = False7z;
-    isAllocError = False7z;
-    overflow = False7z;
+    needCode = False;
+    needWrite = False;
+    isAllocError = False;
+    overflow = False;
 
     inDataSize_Start = 0;
     inDataSize = 0;
@@ -311,9 +311,9 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
             link = (CMtDecBufLink *)ISzAlloc_Alloc(p->alloc, MTDEC__LINK_DATA_OFFSET + p->inBufSize);
             if (!link)
             {
-              finish = True7z;
+              finish = True;
               // p->allocError_for_Read_BlockIndex = blockIndex;
-              isAllocError = True7z;
+              isAllocError = True;
               break;
             }
             link->next = NULL;
@@ -345,9 +345,9 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
             else
             {
               size = p->inBufSize;
-              
+
               res = SeqInStream_ReadMax(p->inStream, data, &size);
-              
+
               // size = 10; // test
 
               inDataSize += size;
@@ -358,8 +358,8 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
               p->readProcessed += size;
               finish = (size != p->inBufSize);
               if (finish)
-                p->readWasFinished = True7z;
-              
+                p->readWasFinished = True;
+
               // res = E_INVALIDARG; // test
 
               if (res != SZ_OK)
@@ -368,8 +368,8 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
                 // we want to decode all data before error
                 p->readRes = res;
                 // p->readError_BlockIndex = blockIndex;
-                p->readWasFinished = True7z;
-                finish = True7z;
+                p->readWasFinished = True;
+                finish = True;
                 res = SZ_OK;
                 // break;
               }
@@ -390,7 +390,7 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
               parse.src = parseData;
               parse.srcSize = size;
               parse.srcFinished = finish;
-              parse.canCreateNewThread = True7z;
+              parse.canCreateNewThread = True;
 
               PRF(printf("\nParse size = %d\n", (unsigned)size));
 
@@ -398,11 +398,11 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
 
               PRF(printf("   Parse processed = %d, state = %d \n", (unsigned)parse.srcSize, (unsigned)parse.state));
 
-              needWrite = True7z;
+              needWrite = True;
               canCreateNewThread = parse.canCreateNewThread;
 
               // printf("\n\n%12I64u %12I64u", (UInt64)p->mtProgress.totalInSize, (UInt64)p->mtProgress.totalOutSize);
-              
+
               if (
                   // parseRes != SZ_OK ||
                   // inDataSize - (size - parse.srcSize) > p->inBlockMax
@@ -412,15 +412,15 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
                   )
               {
                 // Overflow or Parse error - switch from MT decoding to ST decoding
-                finish = True7z;
-                overflow = True7z;
+                finish = True;
+                overflow = True;
 
                 {
                   PRF(printf("\n Overflow"));
                   // PRF(printf("\nisBlockFinished = %d", (unsigned)parse.blockWasFinished));
                   PRF(printf("\n inDataSize = %d", (unsigned)inDataSize));
                 }
-                
+
                 if (crossSize != 0)
                   memcpy(data, parseData, size);
                 p->crossStart = 0;
@@ -439,9 +439,9 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
                 // we don't need to parse in current thread anymore
 
                 if (parse.state == MTDEC_PARSE_END)
-                  finish = True7z;
+                  finish = True;
 
-                needCode = True7z;
+                needCode = True;
                 // p->crossFinished = finish;
 
                 if (parse.srcSize == size)
@@ -457,7 +457,7 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
                   afterEndData = parseData + parse.srcSize;
                   afterEndData_Size = size - parse.srcSize;
                   if (crossSize != 0)
-                    afterEndData_IsCross = True7z;
+                    afterEndData_IsCross = True;
                   // we reduce data size to required bytes (parsed only)
                   inDataSize -= afterEndData_Size;
                   if (!prev)
@@ -478,9 +478,9 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
                       {
                         PRF(printf("\ncross alloc error error\n"));
                         // res = SZ_ERROR_MEM;
-                        finish = True7z;
+                        finish = True;
                         // p->allocError_for_Read_BlockIndex = blockIndex;
-                        isAllocError = True7z;
+                        isAllocError = True;
                         break;
                       }
                     }
@@ -498,7 +498,7 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
                   if (!prev)
                     inDataSize_Start = parse.srcSize; // it's partial size (parsed only)
 
-                  finish = False7z;
+                  finish = False;
                   break;
                 }
               }
@@ -511,7 +511,7 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
               }
             }
           }
-          
+
           prev = link;
           link = link->next;
 
@@ -535,17 +535,17 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
       codeRes = p->mtCallback->PreCode(p->mtCallbackObject, t->index);
       if (codeRes != SZ_OK)
       {
-        needCode = False7z;
-        finish = True7z;
+        needCode = False;
+        finish = True;
         // SZ_ERROR_MEM is expected error here.
         //   if (codeRes == SZ_ERROR_MEM) - we will try single-thread decoding later.
         //   if (codeRes != SZ_ERROR_MEM) - we can stop decoding or try single-thread decoding.
       }
     }
-    
+
     if (res != SZ_OK || wasInterrupted)
-      finish = True7z;
-    
+      finish = True;
+
     nextThread = NULL;
     threadingErrorSRes = SZ_OK;
 
@@ -565,15 +565,15 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
           if (p->numStartedThreads == 1)
           {
             // if only one thread is possible, we leave muti-threading code
-            finish = True7z;
-            needCode = False7z;
+            finish = True;
+            needCode = False;
             threadingErrorSRes = res2;
           }
           else
             p->numStartedThreads_Limit = p->numStartedThreads;
         }
       }
-      
+
       if (!finish)
       {
         unsigned nextIndex = t->index + 1;
@@ -602,7 +602,7 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
 
     if (res == SZ_OK && needCode && codeRes == SZ_OK)
     {
-      BoolInt isStartBlock = True7z;
+      BoolInt isStartBlock = True;
       CMtDecBufLink *link = (CMtDecBufLink *)t->inBuf;
 
       for (;;)
@@ -621,13 +621,13 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
         }
 
         inCodePos += inSize;
-        stop = True7z;
+        stop = True;
 
         codeRes = p->mtCallback->Code(p->mtCallbackObject, t->index,
             (const Byte *)MTDEC__DATA_PTR_FROM_LINK(link), inSize,
             (inCodePos == inDataSize), // srcFinished
             &inCodePos, &outCodePos, &stop);
-        
+
         if (codeRes != SZ_OK)
         {
           PRF(printf("\nCode Interrupt error = %x\n", codeRes));
@@ -638,7 +638,7 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
 
         if (stop || inCodePos == inDataSize)
           break;
-  
+
         {
           const UInt64 inDelta = inCodePos - inPrev;
           const UInt64 outDelta = outCodePos - outPrev;
@@ -654,51 +654,51 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
         }
 
         link = link->next;
-        isStartBlock = False7z;
+        isStartBlock = False;
       }
     }
 
 
     // ---------- WRITE ----------
-   
+
     RINOK_THREAD(Event_Wait(&t->canWrite))
 
   {
-    BoolInt isErrorMode = False7z;
-    BoolInt canRecode = True7z;
+    BoolInt isErrorMode = False;
+    BoolInt canRecode = True;
     BoolInt needWriteToStream = needWrite;
 
     if (p->exitThread) return 0; // it's never executed in normal cases
 
     if (p->wasInterrupted)
-      wasInterrupted = True7z;
+      wasInterrupted = True;
     else
     {
       if (codeRes != SZ_OK) // || !needCode // check it !!!
       {
-        p->wasInterrupted = True7z;
+        p->wasInterrupted = True;
         p->codeRes = codeRes;
         if (codeRes == SZ_ERROR_MEM)
-          isAllocError = True7z;
+          isAllocError = True;
       }
-      
+
       if (threadingErrorSRes)
       {
-        p->wasInterrupted = True7z;
+        p->wasInterrupted = True;
         p->threadingErrorSRes = threadingErrorSRes;
-        needWriteToStream = False7z;
+        needWriteToStream = False;
       }
       if (isAllocError)
       {
-        p->wasInterrupted = True7z;
-        p->isAllocError = True7z;
-        needWriteToStream = False7z;
+        p->wasInterrupted = True;
+        p->isAllocError = True;
+        needWriteToStream = False;
       }
       if (overflow)
       {
-        p->wasInterrupted = True7z;
-        p->overflow = True7z;
-        needWriteToStream = False7z;
+        p->wasInterrupted = True;
+        p->overflow = True;
+        needWriteToStream = False;
       }
     }
 
@@ -740,8 +740,8 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
       if (res != SZ_OK)
       {
         PRF(printf("\nWrite error = %d\n", res));
-        isErrorMode = True7z;
-        p->wasInterrupted = True7z;
+        isErrorMode = True;
+        p->wasInterrupted = True;
       }
       if (res != SZ_OK
           || (!needContinue && !finish))
@@ -788,7 +788,7 @@ static WRes MtDec_ThreadFunc2(CMtDecThread *t)
         // we exit from decoding
         if (t->index == 0)
           return SZ_OK;
-        p->exitThread = True7z;
+        p->exitThread = True;
       }
       RINOK_THREAD(Event_Set(&p->threads[0].canRead))
     }
@@ -837,7 +837,7 @@ static THREAD_FUNC_DECL MtDec_ThreadFunc1(void *pp)
     if (p->exitThreadWRes == 0)
       p->exitThreadWRes = res;
     PRF(printf("\nthread exit error = %d\n", res));
-    p->exitThread = True7z;
+    p->exitThread = True;
     Event_Set(&p->threads[0].canRead);
     Event_Set(&p->threads[0].canWrite);
     MtProgress_SetError(&p->mtProgress, MY_SRes_HRESULT_FROM_WRes(res));
@@ -863,7 +863,7 @@ int MtDec_PrepareRead(CMtDec *p)
     ISzAlloc_Free(p->alloc, p->crossBlock);
     p->crossBlock = NULL;
   }
-    
+
   {
     unsigned i;
     for (i = 0; i < MTDEC_THREADS_MAX; i++)
@@ -878,13 +878,13 @@ int MtDec_PrepareRead(CMtDec *p)
   return (p->numFilledThreads != 0) || (p->crossStart != p->crossEnd);
 }
 
-    
+
 const Byte *MtDec_Read(CMtDec *p, size_t *inLim)
 {
   while (p->numFilledThreads != 0)
   {
     CMtDecThread *t = &p->threads[p->filledThreadStart];
-    
+
     if (*inLim != 0)
     {
       {
@@ -893,7 +893,7 @@ const Byte *MtDec_Read(CMtDec *p, size_t *inLim)
         ISzAlloc_Free(p->alloc, link);
         t->inBuf = next;
       }
-      
+
       if (t->inDataSize == 0)
       {
         MtDecThread_FreeInBufs(t);
@@ -904,7 +904,7 @@ const Byte *MtDec_Read(CMtDec *p, size_t *inLim)
         t = &p->threads[p->filledThreadStart];
       }
     }
-    
+
     {
       size_t lim = t->inDataSize_Start;
       if (lim != 0)
@@ -946,13 +946,13 @@ const Byte *MtDec_Read(CMtDec *p, size_t *inLim)
 void MtDec_Construct(CMtDec *p)
 {
   unsigned i;
-  
+
   p->inBufSize = (size_t)1 << 18;
 
   p->numThreadsMax = 0;
 
   p->inStream = NULL;
-  
+
   // p->inData = NULL;
   // p->inDataSize = 0;
 
@@ -991,7 +991,7 @@ static void MtDec_Free(CMtDec *p)
 {
   unsigned i;
 
-  p->exitThread = True7z;
+  p->exitThread = True;
 
   for (i = 0; i < MTDEC_THREADS_MAX; i++)
     MtDecThread_Destruct(&p->threads[i]);
@@ -1021,20 +1021,20 @@ SRes MtDec_Code(CMtDec *p)
   p->inProcessed = 0;
 
   p->blockIndex = 1; // it must be larger than not_defined index (0)
-  p->isAllocError = False7z;
-  p->overflow = False7z;
+  p->isAllocError = False;
+  p->overflow = False;
   p->threadingErrorSRes = SZ_OK;
 
-  p->needContinue = True7z;
+  p->needContinue = True;
 
-  p->readWasFinished = False7z;
-  p->needInterrupt = False7z;
+  p->readWasFinished = False;
+  p->needInterrupt = False;
   p->interruptIndex = (UInt64)(Int64)-1;
 
   p->readProcessed = 0;
   p->readRes = SZ_OK;
   p->codeRes = SZ_OK;
-  p->wasInterrupted = False7z;
+  p->wasInterrupted = False;
 
   p->crossStart = 0;
   p->crossEnd = 0;
@@ -1070,7 +1070,7 @@ SRes MtDec_Code(CMtDec *p)
   MtProgress_Init(&p->mtProgress, p->progress);
 
   // RINOK_THREAD(AutoResetEvent_OptCreate_And_Reset(&p->finishedEvent))
-  p->exitThread = False7z;
+  p->exitThread = False;
   p->exitThreadWRes = 0;
 
   {
@@ -1085,7 +1085,7 @@ SRes MtDec_Code(CMtDec *p)
     wres = (WRes)(MY_uintptr_t)res;
     if (wres != 0)
     {
-      p->needContinue = False7z;
+      p->needContinue = False;
       MtDec_CloseThreads(p);
     }}}}
 
@@ -1105,11 +1105,11 @@ SRes MtDec_Code(CMtDec *p)
         || p->threadingErrorSRes != SZ_OK
         || p->overflow)
     {
-      // p->needContinue = True7z;
+      // p->needContinue = True;
     }
     else
-      p->needContinue = False7z;
-    
+      p->needContinue = False;
+
     if (p->needContinue)
       return SZ_OK;
 

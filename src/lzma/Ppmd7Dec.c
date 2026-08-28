@@ -19,7 +19,7 @@ BoolInt Ppmd7z_RangeDec_Init(CPpmd7_RangeDec *p)
   p->Code = 0;
   p->Range = 0xFFFFFFFF;
   if (READ_BYTE(p) != 0)
-    return False7z;
+    return False;
   for (i = 0; i < 4; i++)
     p->Code = (p->Code << 8) | READ_BYTE(p);
   return (p->Code < 0xFFFFFFFF);
@@ -42,7 +42,7 @@ Z7_FORCE_INLINE
 static void Ppmd7z_RD_Decode(CPpmd7 *p, UInt32 start, UInt32 size)
 {
 
-  
+
   R->Code -= start * R->Range;
   R->Range *= size;
   RC_NORM_LOCAL(R)
@@ -72,12 +72,12 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
     UInt32 count, hiCnt;
     const UInt32 summFreq = p->MinContext->Union2.SummFreq;
 
-    
-    
-    
+
+
+
     count = RC_GetThreshold(summFreq);
     hiCnt = count;
-    
+
     if ((Int32)(count -= s->Freq) < 0)
     {
       Byte sym;
@@ -87,10 +87,10 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
       Ppmd7_Update1_0(p);
       return sym;
     }
-  
+
     p->PrevSuccess = 0;
     i = (unsigned)p->MinContext->NumStats - 1;
-    
+
     do
     {
       if ((Int32)(count -= (++s)->Freq) < 0)
@@ -104,10 +104,10 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
       }
     }
     while (--i);
-    
+
     if (hiCnt >= summFreq)
       return PPMD7_SYM_ERROR;
-    
+
     hiCnt -= count;
     RC_Decode(hiCnt, summFreq - hiCnt)
 
@@ -141,7 +141,7 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
     {
       Byte sym;
       *prob = (UInt16)(pr + (1 << PPMD_INT_BITS));
-      
+
       // RangeDec_DecodeBit0(size0);
       R->Range = size0;
       RC_NORM_1(R)
@@ -171,11 +171,11 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
     p->InitEsc = p->ExpEscape[pr >> 10];
 
     // RangeDec_DecodeBit1(size0);
-    
+
     R->Code -= size0;
     R->Range -= size0;
     RC_NORM_LOCAL(R)
-    
+
     PPMD_SetAllBitsIn256Bytes(charMask)
     MASK(Ppmd7Context_OneState(p->MinContext)->Symbol) = 0;
     p->PrevSuccess = 0;
@@ -201,13 +201,13 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
       mc = Ppmd7_GetContext(p, mc->Suffix);
     }
     while (mc->NumStats == numMasked);
-    
+
     s = Ppmd7_GetStats(p, mc);
 
     {
       unsigned num = mc->NumStats;
       unsigned num2 = num / 2;
-      
+
       num &= 1;
       hiCnt = (s->Freq & (UInt32)(MASK(s->Symbol))) & (0 - (UInt32)num);
       s += num;
@@ -231,7 +231,7 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
 
 
     count = RC_GetThreshold(freqSum);
-    
+
     if (count < hiCnt)
     {
       Byte sym;
@@ -260,7 +260,7 @@ int Ppmd7z_DecodeSymbol(CPpmd7 *p)
 
     if (count >= freqSum)
       return PPMD7_SYM_ERROR;
-    
+
     RC_Decode(hiCnt, freqSum - hiCnt)
 
     // We increase (see->Summ) for sum of Freqs of all non_Masked symbols.

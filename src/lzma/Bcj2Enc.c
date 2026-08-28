@@ -65,7 +65,7 @@ static BoolInt Bcj2_RangeEnc_ShiftLow(CBcj2Enc *p)
       {
         p->state = BCJ2_STREAM_RC;
         p->bufs[BCJ2_STREAM_RC] = buf;
-        return True7z;
+        return True;
       }
       *buf++ = (Byte)(p->cache + high);
       p->cache = 0xff;
@@ -76,7 +76,7 @@ static BoolInt Bcj2_RangeEnc_ShiftLow(CBcj2Enc *p)
   }
   p->cacheSize++;
   p->low = low << 8;
-  return False7z;
+  return False;
 }
 
 
@@ -170,7 +170,7 @@ static void Bcj2Enc_Encode_2(CBcj2Enc *p)
     p->state = BCJ2_ENC_STATE_ORIG; // for main reason of exit
     src = p->src;
     v = p->context;
-    
+
     // #define WRITE_CONTEXT  p->context = v; // for marker version
     #define WRITE_CONTEXT           p->context = (Byte)v;
     #define WRITE_CONTEXT_AND_SRC   p->src = src;  WRITE_CONTEXT
@@ -228,7 +228,7 @@ static void Bcj2Enc_Encode_2(CBcj2Enc *p)
           ONE_ITER
           ONE_ITER
         }
-        
+
         ip = p->ip64 + (CBcj2Enc_ip_unsigned)(SizeT)(dest - p->bufs[BCJ2_STREAM_MAIN]);
         p->bufs[BCJ2_STREAM_MAIN] = dest;
         p->ip64 = ip;
@@ -270,7 +270,7 @@ static void Bcj2Enc_Encode_2(CBcj2Enc *p)
           {
             /*
             if (relat != 0 || (Byte)v != 0xe8)
-            BoolInt isBigOffset = True7z;
+            BoolInt isBigOffset = True;
             */
             const UInt32 relat = GetUi32(src);
             /*
@@ -281,7 +281,7 @@ static void Bcj2Enc_Encode_2(CBcj2Enc *p)
               const UInt32 flag = (UInt32)1 << (p->relatExcludeBits - 1);
               isBigOffset = (((relat + flag) & (0 - flag * 2)) != 0);
             }
-            // isBigOffset = False7z; // for debug
+            // isBigOffset = False; // for debug
             */
             ip -= p->fileIp64;
             // Use the following if check, if (ip) is 64-bit:
@@ -467,7 +467,7 @@ void Bcj2Enc_Encode(CBcj2Enc *p)
   // (p->tempPos == 0)
   Bcj2Enc_Encode_2(p);
   PRF2("====")
-  
+
   if (p->state == BCJ2_ENC_STATE_ORIG)
   {
     const Byte *src = p->src;

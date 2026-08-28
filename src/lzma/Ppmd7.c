@@ -10,7 +10,7 @@ This code is based on PPMd var.H (2001): Dmitry Shkarin : Public domain */
 
 /* define PPMD7_ORDER_0_SUPPPORT to suport order-0 mode, unsupported by orignal PPMd var.H. code */
 // #define PPMD7_ORDER_0_SUPPPORT
- 
+
 MY_ALIGN(16)
 static const Byte PPMD7_kExpEscape[16] = { 25, 14, 9, 7, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 2 };
 MY_ALIGN(16)
@@ -96,10 +96,10 @@ BoolInt Ppmd7_Alloc(CPpmd7 *p, UInt32 size, ISzAllocPtr alloc)
     Ppmd7_Free(p, alloc);
     p->AlignOffset = (4 - size) & 3;
     if ((p->Base = (Byte *)ISzAlloc_Alloc(alloc, p->AlignOffset + size)) == NULL)
-      return False7z;
+      return False;
     p->Size = size;
   }
-  return True7z;
+  return True;
 }
 
 
@@ -170,10 +170,10 @@ static void Ppmd7_GlueFreeBlocks(CPpmd7 *p)
     Last 12-bytes UNIT in array is always contains 12-bytes order-0 CPpmd7_Context record.
   */
   CPpmd7_Node_Ref head, n = 0;
- 
+
   p->GlueCount = 255;
 
-  
+
   /* we set guard NODE at LoUnit */
   if (p->LoUnit != p->HiUnit)
     ((CPpmd7_Node *)(void *)p->LoUnit)->Stamp = 1;
@@ -254,16 +254,16 @@ Z7_NO_INLINE
 static void *Ppmd7_AllocUnitsRare(CPpmd7 *p, unsigned indx)
 {
   unsigned i;
-  
+
   if (p->GlueCount == 0)
   {
     Ppmd7_GlueFreeBlocks(p);
     if (p->FreeList[indx] != 0)
       return Ppmd7_RemoveNode(p, indx);
   }
-  
+
   i = indx;
-  
+
   do
   {
     if (++i == PPMD_NUM_INDEXES)
@@ -350,7 +350,7 @@ void Ppmd7_RestartModel(CPpmd7 *p)
   unsigned i, k;
 
   memset(p->FreeList, 0, sizeof(p->FreeList));
-  
+
   p->Text = p->Base + p->AlignOffset;
   p->HiUnit = p->Text + p->Size;
   p->LoUnit = p->UnitsStart = p->HiUnit - p->Size / 8 / UNIT_SIZE * 7 * UNIT_SIZE;
@@ -363,7 +363,7 @@ void Ppmd7_RestartModel(CPpmd7 *p)
   {
     CPpmd7_Context *mc = (PPMD7_CTX_PTR)(void *)(p->HiUnit -= UNIT_SIZE); /* AllocContext(p); */
     CPpmd_State *s = (CPpmd_State *)p->LoUnit; /* Ppmd7_AllocUnits(p, PPMD_NUM_INDEXES - 1); */
-    
+
     p->LoUnit += U2B(256 / 2);
     p->MaxContext = p->MinContext = mc;
     p->FoundState = s;
@@ -393,9 +393,9 @@ void Ppmd7_RestartModel(CPpmd7 *p)
   }
 
   for (i = 0; i < 128; i++)
-    
-    
-    
+
+
+
     for (k = 0; k < 8; k++)
     {
       unsigned m;
@@ -405,14 +405,14 @@ void Ppmd7_RestartModel(CPpmd7 *p)
         dest[m] = val;
     }
 
-    
+
   for (i = 0; i < 25; i++)
   {
 
     CPpmd_See *s = p->See[i];
-    
-    
-    
+
+
+
     unsigned summ = ((5 * i + 10) << (PPMD_PERIOD_BITS - 4));
     for (k = 0; k < 16; k++, s++)
     {
@@ -421,7 +421,7 @@ void Ppmd7_RestartModel(CPpmd7 *p)
       s->Count = 4;
     }
   }
-  
+
   p->DummySee.Summ = 0; /* unused */
   p->DummySee.Shift = PPMD_PERIOD_BITS;
   p->DummySee.Count = 64; /* unused */
@@ -444,7 +444,7 @@ void Ppmd7_Init(CPpmd7 *p, unsigned maxOrder)
   So we create Context records and write the links to
   FoundState->Successor and to identical RAW-Successors in suffix
   contexts of MinContex.
-  
+
   The function returns:
   if (OrderFall == 0) then MinContext is already at MAX order,
     { return pointer to new or existing context of same MAX order }
@@ -465,13 +465,13 @@ static PPMD7_CTX_PTR Ppmd7_CreateSuccessors(CPpmd7 *p)
 
   if (p->OrderFall != 0)
     ps[numPs++] = p->FoundState;
-  
+
   while (c->Suffix)
   {
     CPpmd_Void_Ref successor;
     CPpmd_State *s;
     c = SUFFIX(c);
-    
+
 
     if (c->NumStats != 1)
     {
@@ -499,15 +499,15 @@ static PPMD7_CTX_PTR Ppmd7_CreateSuccessors(CPpmd7 *p)
     }
     ps[numPs++] = s;
   }
-  
+
   // All created contexts will have single-symbol with new RAW-Successor
   // All new RAW-Successors will point to next position in RAW text
   // after FoundState->Successor
 
   newSym = *(const Byte *)Ppmd7_GetPtr(p, upBranch);
   upBranch++;
-  
-  
+
+
   if (c->NumStats == 1)
     newFreq = ONE_STATE(c)->Freq;
   else
@@ -543,7 +543,7 @@ static PPMD7_CTX_PTR Ppmd7_CreateSuccessors(CPpmd7 *p)
       if (!c1)
         return NULL;
     }
-    
+
     c1->NumStats = 1;
     ONE_STATE(c1)->Symbol = newSym;
     ONE_STATE(c1)->Freq = newFreq;
@@ -553,7 +553,7 @@ static PPMD7_CTX_PTR Ppmd7_CreateSuccessors(CPpmd7 *p)
     c = c1;
   }
   while (numPs != 0);
-  
+
   return c;
 }
 
@@ -578,7 +578,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
     /* Update Freqs in Suffix Context */
 
     c = SUFFIX(p->MinContext);
-    
+
     if (c->NumStats == 1)
     {
       CPpmd_State *s = ONE_STATE(c);
@@ -589,7 +589,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
     {
       CPpmd_State *s = STATS(c);
       Byte sym = p->FoundState->Symbol;
-      
+
       if (s->Symbol != sym)
       {
         do
@@ -598,7 +598,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
           s++;
         }
         while (s->Symbol != sym);
-        
+
         if (s[0].Freq >= s[-1].Freq)
         {
           SWAP_STATES(s)
@@ -614,7 +614,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
     }
   }
 
-  
+
   if (p->OrderFall == 0)
   {
     /* MAX ORDER context */
@@ -629,9 +629,9 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
     return;
   }
 
-  
+
   /* NON-MAX ORDER context */
-  
+
   {
     Byte *text = p->Text;
     *text++ = p->FoundState->Symbol;
@@ -643,14 +643,14 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
     }
     maxSuccessor = REF(text);
   }
-  
+
   minSuccessor = SUCCESSOR(p->FoundState);
 
   if (minSuccessor)
   {
     // there is Successor for FoundState in MinContext.
     // So the next context will be one order higher than MinContext.
-    
+
     if (minSuccessor <= maxSuccessor)
     {
       // minSuccessor is RAW-Successor. So we will create real contexts records:
@@ -664,7 +664,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
     }
 
     // minSuccessor now is real Context pointer that points to existing (Order+1) context
-    
+
     if (--p->OrderFall == 0)
     {
       /*
@@ -675,7 +675,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
       as succssors for both MinContext and MaxContext.
       */
       maxSuccessor = minSuccessor;
-      
+
       /*
       if (MaxContext != MinContext)
       {
@@ -714,7 +714,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
   {
     unsigned ns1;
     UInt32 sum;
-    
+
     if ((ns1 = c->NumStats) != 1)
     {
       if ((ns1 & 1) == 0)
@@ -773,7 +773,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
         sum = (UInt32)(freq + p->InitEsc + (ns > 3));
       }
     }
-    
+
     {
       CPpmd_State *s = STATS(c) + ns1;
       UInt32 cf = 2 * (sum + 6) * (UInt32)p->FoundState->Freq;
@@ -781,7 +781,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
       s->Symbol = p->FoundState->Symbol;
       c->NumStats = (UInt16)(ns1 + 1);
       SetSuccessor(s, maxSuccessor);
-      
+
       if (cf < 6 * sf)
       {
         cf = (UInt32)1 + (cf > sf) + (cf >= 4 * sf);
@@ -793,7 +793,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
         cf = (UInt32)4 + (cf >= 9 * sf) + (cf >= 12 * sf) + (cf >= 15 * sf);
         sum += cf;
       }
-     
+
       c->Union2.SummFreq = (UInt16)sum;
       s->Freq = (Byte)cf;
     }
@@ -801,7 +801,7 @@ void Ppmd7_UpdateModel(CPpmd7 *p)
   }
   while (c != mc);
 }
-  
+
 
 
 Z7_NO_INLINE
@@ -823,7 +823,7 @@ static void Ppmd7_Rescale(CPpmd7 *p)
 
   sumFreq = s->Freq;
   escFreq = p->MinContext->Union2.SummFreq - sumFreq;
-  
+
   /*
   if (p->OrderFall == 0), adder = 0 : it's     allowed to remove symbol from     MAX Order context
   if (p->OrderFall != 0), adder = 1 : it's NOT allowed to remove symbol from NON-MAX Order context
@@ -838,7 +838,7 @@ static void Ppmd7_Rescale(CPpmd7 *p)
   sumFreq = (sumFreq + 4 + adder) >> 1;
   i = (unsigned)p->MinContext->NumStats - 1;
   s->Freq = (Byte)sumFreq;
-  
+
   do
   {
     unsigned freq = (++s)->Freq;
@@ -859,15 +859,15 @@ static void Ppmd7_Rescale(CPpmd7 *p)
     }
   }
   while (--i);
-  
+
   if (s->Freq == 0)
   {
     /* Remove all items with Freq == 0 */
     CPpmd7_Context *mc;
     unsigned numStats, numStatsNew, n0, n1;
-    
+
     i = 0; do { i++; } while ((--s)->Freq == 0);
-    
+
     /* We increase (escFreq) for the number of removed symbols.
        So we will have (0.5) increase for Escape_Freq in avarage per
        removed symbol after Escape_Freq halving */
@@ -877,12 +877,12 @@ static void Ppmd7_Rescale(CPpmd7 *p)
     numStatsNew = numStats - i;
     mc->NumStats = (UInt16)(numStatsNew);
     n0 = (numStats + 1) >> 1;
-    
+
     if (numStatsNew == 1)
     {
       /* Create Single-Symbol context */
       unsigned freq = stats->Freq;
-      
+
       do
       {
         escFreq >>= 1;
@@ -897,7 +897,7 @@ static void Ppmd7_Rescale(CPpmd7 *p)
       Ppmd7_InsertNode(p, stats, U2I(n0));
       return;
     }
-    
+
     n1 = (numStatsNew + 1) >> 1;
     if (n0 != n1)
     {
