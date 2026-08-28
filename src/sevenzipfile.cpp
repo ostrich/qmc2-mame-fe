@@ -293,7 +293,13 @@ bool SevenZipFile::open(QString fileName)
 
 	if ( result == SZ_OK ) {
 		m_isOpen = true;
-		createEntryList();
+		if ( !createEntryList() ) {
+			const QString openError = m_lastError;
+			close();
+			m_lastError = openError;
+			emit error(lastError());
+			return false;
+		}
 		emit opened();
 		return true;
 	} else {
@@ -400,22 +406,34 @@ QDateTime SevenZipFile::convertFileTime(const CNtfsFileTime *ft)
 	return dateTime;
 }
 
-void SevenZipFile::createEntryList()
+bool SevenZipFile::createEntryList()
 {
 	entryList().clear();
 	m_nameToIndexCache.clear();
 	m_crcToIndexCache.clear();
 	m_crcDuplicates.clear();
 	if ( !isOpen() )
-		return;
+		return false;
 	for (uint i = 0; i < db()->NumFiles; i++)
 	{
 		if ( SzArEx_IsDir(db(), i) )
 			continue;
-		int fileItemLength = SzArEx_GetFileNameUtf16(db(), i, 0);
-		UInt16 *tempFileName = (UInt16 *)SzAlloc(0, fileItemLength * sizeof(UInt16));
-		SzArEx_GetFileNameUtf16(db(), i, tempFileName);
-		QString fileItemName(QString::fromUtf16(reinterpret_cast<const char16_t *>(tempFileName), fileItemLength - 1));
+		const size_t fileItemLength = SzArEx_GetFileNameUtf16(db(), i, 0);
+		if ( fileItemLength == 0 || fileItemLength - 1 > size_t(QString::maxSize()) || fileItemLength > SIZE_MAX / sizeof(UInt16) ) {
+			m_lastError = tr("invalid file name length in archive '%1'").arg(m_fileName);
+			return false;
+		}
+		UInt16 *tempFileName = static_cast<UInt16 *>(SzAlloc(0, fileItemLength * sizeof(UInt16)));
+		if ( !tempFileName ) {
+			m_lastError = tr("out of memory while reading archive '%1'").arg(m_fileName);
+			return false;
+		}
+		if ( SzArEx_GetFileNameUtf16(db(), i, tempFileName) != fileItemLength ) {
+			SzFree(0, tempFileName);
+			m_lastError = tr("inconsistent file name length in archive '%1'").arg(m_fileName);
+			return false;
+		}
+		QString fileItemName(QString::fromUtf16(reinterpret_cast<const char16_t *>(tempFileName), qsizetype(fileItemLength - 1)));
 		m_nameToIndexCache.insert(fileItemName, i);
 		SzFree(0, tempFileName);
 		QDateTime dateTime;
@@ -429,6 +447,7 @@ void SevenZipFile::createEntryList()
 		}
 		entryList() << SevenZipMetaData(fileItemName, SzArEx_GetFileSize(db(), i), dateTime, crc);
 	}
+	return true;
 }
 
 SevenZipExtractorThread::SevenZipExtractorThread(QObject *parent) :

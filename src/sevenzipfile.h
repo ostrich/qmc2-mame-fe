@@ -138,7 +138,7 @@ class SevenZipFile : public QObject
 
 	private:
 		QDateTime convertFileTime(const CNtfsFileTime *ft);
-		void createEntryList();
+		bool createEntryList();
 		QString errorCodeToString(SRes errorCode);
 		CSzArEx *db() { return &m_db; }
 
