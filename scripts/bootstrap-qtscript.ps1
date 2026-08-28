@@ -18,6 +18,9 @@ if (-not (Test-Path (Join-Path $portDir '.git'))) {
 git -C $portDir fetch --quiet origin $portRevision
 git -C $portDir checkout --quiet --detach $portRevision
 & (Join-Path $portDir 'scripts\apply-patches.ps1') -SourceDir $sourceDir
+$dependencyPatch = Join-Path $PSScriptRoot 'patches\qtscript-disable-werror.patch'
+git -C $sourceDir apply $dependencyPatch
+if ($LASTEXITCODE) { throw 'QtScript dependency patch failed' }
 
 $qtCmake = Join-Path $QtRoot 'bin\qt-cmake-private.bat'
 if (-not (Test-Path $qtCmake)) { throw "qt-cmake-private not found below $QtRoot" }

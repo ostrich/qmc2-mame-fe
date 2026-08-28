@@ -1,0 +1,28 @@
+diff --git a/src/script/CMakeLists.txt b/src/script/CMakeLists.txt
+index 384b963..8083fb8 100644
+--- a/src/script/CMakeLists.txt
++++ b/src/script/CMakeLists.txt
+@@ -274,6 +274,10 @@ qt_internal_add_module(Script
+         Qt::CorePrivate
+ )
+ 
++# Prebuilt Qt packages can propagate -Werror through Qt::Platform.  The legacy
++# JavaScriptCore sources are not warning-clean with current Apple Clang.
++set_property(TARGET Script PROPERTY QT_SKIP_WARNINGS_ARE_ERRORS ON)
++
+ qt_internal_extend_target(Script CONDITION WIN32
+     SOURCES
+         "${jsc_dir}/runtime/MarkStackWin.cpp"
+diff --git a/src/scripttools/CMakeLists.txt b/src/scripttools/CMakeLists.txt
+index 59aabf7..8de6d0f 100644
+--- a/src/scripttools/CMakeLists.txt
++++ b/src/scripttools/CMakeLists.txt
+@@ -167,6 +167,8 @@ qt_internal_add_module(ScriptTools
+         Qt::ScriptPrivate
+ )
+ 
++set_property(TARGET ScriptTools PROPERTY QT_SKIP_WARNINGS_ARE_ERRORS ON)
++
+ qt_add_resources(ScriptTools "scripttools_debugging"
+     FILES "debugging/scripttools_debugging.qrc"
+ )
