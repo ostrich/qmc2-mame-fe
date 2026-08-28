@@ -16,6 +16,10 @@
 #include "bigbytearray.h"
 #include "macros.h"
 
+#ifndef QMC2_ARCHIVE_MAX_ENTRY_SIZE
+#define QMC2_ARCHIVE_MAX_ENTRY_SIZE QMC2_QBYTEARRAY_LIMIT
+#endif
+
 class ArchiveEntryMetaData
 {
 	public:
@@ -51,22 +55,22 @@ class ArchiveFile : public QObject
 		QList<ArchiveEntryMetaData> &entryList() { return m_entryList; }
 		bool isOpen() { return m_archive != 0; }
 		bool open(QIODevice::OpenMode openMode = QIODevice::ReadOnly, QString fileName = QString());
-		void reopen();
+		bool reopen();
 		void close();
 		bool readMode() { return m_openMode == QIODevice::ReadOnly; }
 		bool writeMode() { return m_openMode == QIODevice::WriteOnly; }
 		bool seekNextEntry(ArchiveEntryMetaData *metaData, bool *reset = 0);
 		bool seekEntry(uint index);
 		bool seekEntry(const QString &name) { int index = indexOfName(name); return index >= 0 ? seekEntry(index) : false; }
-		bool hasError() { return errorCode() == ARCHIVE_FATAL; }
-		bool hasWarning() { return errorCode() == ARCHIVE_WARN; }
+		bool hasError() { return m_lastStatus <= ARCHIVE_FAILED; }
+		bool hasWarning() { return m_lastStatus == ARCHIVE_WARN; }
 		qint64 readEntry(QByteArray &buffer);
 		bool createEntry(QString name, size_t size);
-		qint64 writeEntryData(const QByteArray &buffer) { return archive_write_data(m_archive, buffer.constData(), buffer.size()); }
+		qint64 writeEntryData(const QByteArray &buffer);
 		qint64 writeEntryDataBig(const BigByteArray &buffer);
 		void closeEntry();
-		QString errorString() { return isOpen() ? QString(archive_error_string(m_archive)) : QString(); }
-		int errorCode() { return isOpen() ? archive_errno(m_archive) : ARCHIVE_OK; }
+		QString errorString() { return isOpen() && archive_error_string(m_archive) ? QString::fromUtf8(archive_error_string(m_archive)) : QString(); }
+		int errorCode() { return m_lastStatus; }
 		void createEntryList();
 
 	private:
@@ -80,6 +84,7 @@ class ArchiveFile : public QObject
 		bool m_sequential;
 		bool m_deflate;
 		QIODevice::OpenMode m_openMode;
+		int m_lastStatus;
 };
 
 #endif

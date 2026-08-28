@@ -870,9 +870,10 @@ void ImageChecker::feedWorkerThreads()
 			qmc2IconHash.clear();
 			qmc2IconsPreloaded = false;
 #if defined(QMC2_LIBARCHIVE_ENABLED)
-			if ( QMC2_ICON_FILETYPE_ARCHIVE )
+			if ( QMC2_ICON_FILETYPE_ARCHIVE ) {
 				foreach (ArchiveFile *archiveFile, qmc2IconArchiveMap)
 					archiveFile->reopen();
+			}
 #endif
 			int itemCount = 0;
 			bool firstCheck = true;

@@ -18,8 +18,8 @@ jobs:
           cache: true
       - name: Install native dependencies
         run: |
-          brew install curl ninja sdl2
-          echo "PKG_CONFIG_PATH=$(brew --prefix curl)/lib/pkgconfig:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          brew install curl libarchive ninja sdl2
+          echo "PKG_CONFIG_PATH=$(brew --prefix curl)/lib/pkgconfig:$(brew --prefix libarchive)/lib/pkgconfig:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
       - name: Build isolated QtScript
         run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
       - name: Build qmc2 and qchdman
@@ -55,7 +55,7 @@ jobs:
           ./tst_ftp
       - name: Run archive correctness fixtures
         run: |
-          for test in bigbytearray sevenzip; do
+          for test in archivefile bigbytearray sevenzip; do
             mkdir "build-$test-tests"
             cd "build-$test-tests"
             qmake "../tests/$test/$test.pro"
