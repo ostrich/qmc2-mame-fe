@@ -205,7 +205,7 @@ QString ImageWidget::cleanDir(QString dirs)
 	return dirList.join(";");
 }
 
-void ImageWidget::paintEvent(QPaintEvent *e)
+void ImageWidget::paintEvent(QPaintEvent *)
 {
 	QPainter p(this);
 

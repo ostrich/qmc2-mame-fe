@@ -162,7 +162,7 @@ bool SoftwareImageWidget::parentFallback()
 	return qmc2ParentImageFallback && qmc2Config->value(fallbackSettingsKey(), 0).toInt() == 0;
 }
 
-void SoftwareImageWidget::paintEvent(QPaintEvent *e)
+void SoftwareImageWidget::paintEvent(QPaintEvent *)
 {
 	QPainter p(this);
 	if ( !qmc2SoftwareList->currentItem ) {

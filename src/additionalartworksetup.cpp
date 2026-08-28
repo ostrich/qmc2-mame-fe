@@ -350,7 +350,7 @@ void AdditionalArtworkSetup::on_toolButtonAdd_clicked()
 	dataChanged();
 }
 
-void AdditionalArtworkSetup::toggleFormatEnabled(int index)
+void AdditionalArtworkSetup::toggleFormatEnabled(int)
 {
 	QComboBox *cb = (QComboBox *)sender();
 	if ( !cb )

@@ -24,7 +24,7 @@ class AdditionalArtworkSetup : public QDialog, public Ui::AdditionalArtworkSetup
 		void selectionFlagsChanged(bool checked = false);
 		void toggleFormatEnabled(int);
 		void dataChanged(const QString &) { pushButtonRestore->setEnabled(true); }
-		void dataChanged(int index = 0) { pushButtonRestore->setEnabled(true); }
+		void dataChanged(int = 0) { pushButtonRestore->setEnabled(true); }
 		void pathBrowsed(QString);
 		void chooseIcon();
 		void load();

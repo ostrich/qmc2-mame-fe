@@ -374,7 +374,7 @@ void ProcessManager::error(QProcess::ProcessError processError)
 	}
 }
 
-void ProcessManager::stateChanged(QProcess::ProcessState processState)
+void ProcessManager::stateChanged(QProcess::ProcessState)
 {
     // NOP
 }

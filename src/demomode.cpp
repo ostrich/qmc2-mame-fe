@@ -59,14 +59,14 @@ DemoModeDialog::DemoModeDialog(QWidget *parent)
 	QTimer::singleShot(0, this, SLOT(updateCategoryFilter()));
 }
 
-void DemoModeDialog::showEvent(QShowEvent *e)
+void DemoModeDialog::showEvent(QShowEvent *)
 {
 	// try to "grab" the input focus...
 	activateWindow();
 	setFocus();
 }
 
-void DemoModeDialog::closeEvent(QCloseEvent *e)
+void DemoModeDialog::closeEvent(QCloseEvent *)
 {
 	if ( demoModeRunning )
 		pushButtonRunDemo->animateClick();

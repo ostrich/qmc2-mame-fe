@@ -588,7 +588,7 @@ void ROMAlyzer::showEvent(QShowEvent *e)
 	initialCall = false;
 }
 
-void ROMAlyzer::on_spinBoxMaxLogSize_valueChanged(int value)
+void ROMAlyzer::on_spinBoxMaxLogSize_valueChanged(int)
 {
 	textBrowserLog->setMaximumBlockCount(spinBoxMaxLogSize->value());
 }
@@ -3369,17 +3369,8 @@ void ROMAlyzer::on_treeWidgetChecksumWizardSearchResult_itemSelectionChanged()
 	QList<QTreeWidgetItem *> il = treeWidgetChecksumWizardSearchResult->selectedItems();
 	pushButtonChecksumWizardAnalyzeSelectedSets->setEnabled(!il.isEmpty());
 	wizardSelectedSets.clear();
-	int selectedGoodSets = 0;
-	int selectedBadSets = 0;
 	foreach (QTreeWidgetItem *item, il) {
 		wizardSelectedSets << item->text(QMC2_ROMALYZER_CSF_COLUMN_ID);
-		if ( item->text(QMC2_ROMALYZER_CSF_COLUMN_STATUS) == tr("good") )
-			selectedGoodSets++;
-		if ( item->text(QMC2_ROMALYZER_CSF_COLUMN_STATUS) == tr("bad") ) {
-			if ( !item->icon(QMC2_ROMALYZER_CSF_COLUMN_STATUS).isNull() )
-				selectedGoodSets++;
-			selectedBadSets++;
-		}
 	}
 	wizardSelectedSets.removeDuplicates();
 }
@@ -4686,6 +4677,10 @@ void CheckSumScannerThread::recursiveFileList(const QString &sDir, QStringList *
 
 int CheckSumScannerThread::fileType(QString fileName, bool &isZip, bool &is7z)
 {
+#if !defined(QMC2_LIBARCHIVE_ENABLED)
+	Q_UNUSED(isZip);
+	Q_UNUSED(is7z);
+#endif
 	static QRegularExpression zipRx("[Zz][Ii][Pp]");
 	static QRegularExpression sevenZipRx("7[Zz]");
 	static QRegularExpression chdRx("[Cc][Hh][Dd]");

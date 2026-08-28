@@ -168,7 +168,7 @@ void CustomIDSetup::on_tableWidgetCustomIDs_itemSelectionChanged()
 		toolButtonRemoveID->setEnabled(tableWidgetCustomIDs->currentRow() >= 0);
 }
 
-void CustomIDSetup::on_tableWidgetCustomIDs_currentItemChanged(QTableWidgetItem *current, QTableWidgetItem *previous)
+void CustomIDSetup::on_tableWidgetCustomIDs_currentItemChanged(QTableWidgetItem *, QTableWidgetItem *)
 {
 	on_tableWidgetCustomIDs_itemSelectionChanged();
 }

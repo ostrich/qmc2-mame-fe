@@ -1248,7 +1248,7 @@ void YouTubeVideoPlayer::videoInfoReadyRead()
 	videoInfoBuffer += videoInfoReply->readAll();
 }
 
-void YouTubeVideoPlayer::videoInfoError(QNetworkReply::NetworkError error)
+void YouTubeVideoPlayer::videoInfoError(QNetworkReply::NetworkError)
 {
 	viError = true;
 	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("video player: video info error: %1").arg(videoInfoReply->errorString()));
@@ -1322,14 +1322,14 @@ void YouTubeVideoPlayer::on_toolBox_currentChanged(int page)
 	}
 }
 
-void YouTubeVideoPlayer::showEvent(QShowEvent *e)
+void YouTubeVideoPlayer::showEvent(QShowEvent *)
 {
 	if ( isPaused() && pausedByHideEvent )
 		play();
 	pausedByHideEvent = false;
 }
 
-void YouTubeVideoPlayer::hideEvent(QHideEvent *e)
+void YouTubeVideoPlayer::hideEvent(QHideEvent *)
 {
 	if ( isPlaying() ) {
 		pausedByHideEvent = true;
@@ -1657,7 +1657,7 @@ void YouTubeVideoPlayer::videoImageReadyRead()
 	videoImageBuffer += videoImageReply->readAll();
 }
 
-void YouTubeVideoPlayer::videoImageError(QNetworkReply::NetworkError error)
+void YouTubeVideoPlayer::videoImageError(QNetworkReply::NetworkError)
 {
 	vimgError = true;
 	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("video player: video image info error: %1").arg(videoInfoReply->errorString()));
@@ -1678,7 +1678,7 @@ void YouTubeVideoPlayer::searchRequestReadyRead()
 	searchRequestBuffer += part;
 }
 
-void YouTubeVideoPlayer::searchRequestError(QNetworkReply::NetworkError error)
+void YouTubeVideoPlayer::searchRequestError(QNetworkReply::NetworkError)
 {
 	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("video player: search request error: %1").arg(searchRequestReply->errorString()));
 	lineEditSearchString->setEnabled(true);

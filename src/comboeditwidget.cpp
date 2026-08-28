@@ -6,7 +6,7 @@
 
 extern MainWindow *qmc2MainWindow;
 
-ComboBoxEditWidget::ComboBoxEditWidget(QStringList choices, QString curText, QWidget *parent)
+ComboBoxEditWidget::ComboBoxEditWidget(QStringList choices, QString, QWidget *parent)
 	: QWidget(parent)
 {
 	setupUi(this);

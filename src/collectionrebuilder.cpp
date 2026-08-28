@@ -807,7 +807,7 @@ void CollectionRebuilder::on_comboBoxModeSwitch_currentIndexChanged(int index)
 	}
 }
 
-void CollectionRebuilder::showEvent(QShowEvent *e)
+void CollectionRebuilder::showEvent(QShowEvent *)
 {
 	QTimer::singleShot(0, this, SLOT(updateModeSetup()));
 }

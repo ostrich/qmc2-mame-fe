@@ -180,7 +180,7 @@ QVariant MachineListModel::headerData(int section, Qt::Orientation orientation, 
 	return QVariant();
 }
 
-bool MachineListModel::canFetchMore(const QModelIndex &parent) const
+bool MachineListModel::canFetchMore(const QModelIndex &) const
 {
 	return m_recordCount < ml->numMachines;
 }
@@ -227,7 +227,7 @@ void MachineListModel::fetchMore(const QModelIndex &parent)
         endInsertRows();
 }
 
-Qt::ItemFlags MachineListModel::flags(const QModelIndex &index) const
+Qt::ItemFlags MachineListModel::flags(const QModelIndex &) const
 {
 	return Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsDragEnabled;
 }
@@ -364,6 +364,7 @@ QVariant MachineListModel::data(const QModelIndex &index, int role) const
 								case QMC2_MACHINETYPE_DEVICE:
 									return ml->qmc2UnknownDeviceImageIcon;
 							}
+							Q_UNREACHABLE();
 					}
 				default:
 					return QVariant();

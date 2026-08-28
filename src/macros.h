@@ -850,7 +850,7 @@
 #define QMC2_PRINT_INT(i)			printf("%s = %ld\n", #i, i)
 #define QMC2_PRINT_HEX(x)			printf("%s = %x\n", #x, x)
 #define QMC2_PRINT_BOOL(b)			printf("%s = %s\n", #b, b ? "true" : "false")
-#define QMC2_PRINT_STRLST(l)			for (int i = 0; i < l.count(); i++) printf("%s[%ld] = %s\n", #l, i, l[i].toUtf8().constData())
+#define QMC2_PRINT_STRLST(l)			for (int i = 0; i < l.count(); i++) printf("%s[%d] = %s\n", #l, i, l[i].toUtf8().constData())
 #define QMC2_PRINT_STRTXT(s)			printf("%s\n", s.toUtf8().constData())
 
 // Google dev-key

@@ -1383,26 +1383,23 @@ void Options::on_pushButtonApply_clicked()
 	if ( qmc2GuiReady ) {
 		if ( qmc2GlobalEmulatorOptions->changed ) {
 			if ( qmc2EmulatorOptions ) {
-				switch ( QMessageBox::question(this, tr("Confirm"), 
-							tr("An open machine-specific emulator configuration has been detected.\nUse local machine-settings, overwrite with global settings or don't apply?"),
-							tr("&Local"), tr("&Overwrite"), tr("Do&n't apply"), 0, 2) ) {
-					case 0:
+				QMessageBox question(QMessageBox::Question, tr("Confirm"), tr("An open machine-specific emulator configuration has been detected.\nUse local machine-settings, overwrite with global settings or don't apply?"), QMessageBox::NoButton, this);
+				QAbstractButton *localButton = question.addButton(tr("&Local"), QMessageBox::ActionRole);
+				QAbstractButton *overwriteButton = question.addButton(tr("&Overwrite"), QMessageBox::ActionRole);
+				QAbstractButton *cancelButton = question.addButton(tr("Do&n't apply"), QMessageBox::RejectRole);
+				question.setDefaultButton(qobject_cast<QPushButton *>(localButton));
+				question.setEscapeButton(cancelButton);
+				question.exec();
+				if ( question.clickedButton() == localButton ) {
 						qmc2EmulatorOptions->save();
 						qmc2GlobalEmulatorOptions->save();
 						qmc2GlobalEmulatorOptions->load();
 						qmc2EmulatorOptions->load();
-						break;
-
-					case 1:
+				} else if ( question.clickedButton() == overwriteButton ) {
 						qmc2GlobalEmulatorOptions->save();
 						qmc2GlobalEmulatorOptions->load();
 						qmc2EmulatorOptions->load(true);
 						qmc2EmulatorOptions->save();
-						break;
-
-					case 2: 
-					default:
-						break;
 				}
 			} else {
 				qmc2GlobalEmulatorOptions->save();
@@ -2766,14 +2763,8 @@ void Options::on_toolButtonBrowseXmlCacheDatabase_clicked()
 void Options::on_toolButtonClearUserDataDatabase_clicked()
 {
 	if ( qmc2MachineList->userDataDb()->userDataRowCount() > 0 ) {
-		switch ( QMessageBox::question(this, tr("Confirm"), tr("This will remove <b>all</b> existing user data and recreate the database.\nAre you sure you want to do this?"), tr("&Yes"), tr("&No"), QString(), 0, 1) ) {
-			case 0:
-				break;
-
-			default:
-			case 1:
-				return;
-		}
+		if ( QMessageBox::question(this, tr("Confirm"), tr("This will remove <b>all</b> existing user data and recreate the database.\nAre you sure you want to do this?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes) != QMessageBox::Yes )
+			return;
 	}
 
 	qmc2MachineList->userDataDb()->clearRankCache();

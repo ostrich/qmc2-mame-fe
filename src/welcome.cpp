@@ -283,21 +283,21 @@ bool Welcome::checkConfig()
 	startupConfig->beginGroup(QMC2_FRONTEND_PREFIX);
 	if ( startupConfig->value("GUI/CheckSingleInstance", true).toBool() ) {
 		if ( startupConfig->value(QString("InstanceRunning")).toBool() ) {
-			switch ( QMessageBox::question(0, tr("Single-instance check"),
-						       tr("It appears that another instance of %1 is already running.\nHowever, this can also be the leftover of a previous crash.\n\nExit now, accept once or ignore completely?").arg(QMC2_VARIANT_NAME),
-						       tr("&Exit"), tr("&Once"), tr("&Ignore"), 0, 0) ) {
-				case 0:
+			QMessageBox question(QMessageBox::Question, tr("Single-instance check"), tr("It appears that another instance of %1 is already running.\nHowever, this can also be the leftover of a previous crash.\n\nExit now, accept once or ignore completely?").arg(QMC2_VARIANT_NAME), QMessageBox::NoButton);
+			QAbstractButton *exitButton = question.addButton(tr("&Exit"), QMessageBox::RejectRole);
+			QAbstractButton *onceButton = question.addButton(tr("&Once"), QMessageBox::AcceptRole);
+			QAbstractButton *ignoreButton = question.addButton(tr("&Ignore"), QMessageBox::ActionRole);
+			question.setDefaultButton(qobject_cast<QPushButton *>(exitButton));
+			question.setEscapeButton(exitButton);
+			question.exec();
+			if ( question.clickedButton() == exitButton ) {
 					startupConfig->setValue("GUI/CheckSingleInstance", true);
 					qApp->quit();
 					return false;
-					break;
-				case 1:
+			} else if ( question.clickedButton() == onceButton ) {
 					startupConfig->setValue("GUI/CheckSingleInstance", true);
-					break;
-				case 2: 
-				default:
+			} else if ( question.clickedButton() == ignoreButton ) {
 					startupConfig->setValue("GUI/CheckSingleInstance", false);
-					break;
 			}
 		}
 	}

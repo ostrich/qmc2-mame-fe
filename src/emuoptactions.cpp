@@ -105,15 +105,17 @@ void EmulatorOptionActions::on_toolButtonStore_clicked()
 	if ( m_isGlobal ) {
 		if ( qmc2EmulatorOptions ) {
 			QList<QTreeWidgetItem *> il;
-			switch ( QMessageBox::question(this, tr("Confirm"), 
-						       tr("An open machine-specific emulator configuration has been detected.\nUse local value for option '%1', overwrite with global value or don't apply?").arg(m_optionName),
-						       tr("&Local"), tr("&Overwrite"), tr("Do&n't apply"), 0, 2) ) {
-				case 0:
+			QMessageBox question(QMessageBox::Question, tr("Confirm"), tr("An open machine-specific emulator configuration has been detected.\nUse local value for option '%1', overwrite with global value or don't apply?").arg(m_optionName), QMessageBox::NoButton, this);
+			QAbstractButton *localButton = question.addButton(tr("&Local"), QMessageBox::ActionRole);
+			QAbstractButton *overwriteButton = question.addButton(tr("&Overwrite"), QMessageBox::ActionRole);
+			QAbstractButton *cancelButton = question.addButton(tr("Do&n't apply"), QMessageBox::RejectRole);
+			question.setDefaultButton(qobject_cast<QPushButton *>(localButton));
+			question.setEscapeButton(cancelButton);
+			question.exec();
+			if ( question.clickedButton() == localButton ) {
 					qmc2GlobalEmulatorOptions->save(m_optionName);
 					qmc2GlobalEmulatorOptions->load(false, m_optionName);
-					break;
-
-				case 1:
+			} else if ( question.clickedButton() == overwriteButton ) {
 					m_systemName = qmc2EmulatorOptions->settingsGroup.split("/").last();
 					if ( m_currentValue == m_defaultValue )
 						m_globalValue = "<UNSET>";
@@ -129,11 +131,6 @@ void EmulatorOptionActions::on_toolButtonStore_clicked()
 						else
 							il[0]->setData(QMC2_EMUOPT_COLUMN_VALUE, Qt::EditRole, m_globalValue);
 					}
-					break;
-
-				case 2:
-				default:
-					break;
 			}
 			QTimer::singleShot(0, qmc2GlobalEmulatorOptions, SLOT(updateAllEmuOptActions()));
 			QTimer::singleShot(0, qmc2EmulatorOptions, SLOT(updateAllEmuOptActions()));

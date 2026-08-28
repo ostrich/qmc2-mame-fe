@@ -62,7 +62,7 @@ void RankItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
 	painter->drawPixmap(option.rect.topLeft().x(), option.rect.topLeft().y() + 1, pm.scaled(sizeHint(option, index), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
-QSize RankItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+QSize RankItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &) const
 {
 	QFontMetrics fm(option.font);
 	QSize s(RankItemWidget::rankBackround.size());

@@ -2104,7 +2104,7 @@ void MainWindow::on_actionPlay_triggered(bool)
 	}
 }
 
-void MainWindow::on_vSplitter_splitterMoved(int pos, int index)
+void MainWindow::on_vSplitter_splitterMoved(int, int)
 {
 	if ( qmc2SystemNotesEditor ) {
 		qmc2SystemNotesEditor->move(0, 0);
@@ -2123,7 +2123,7 @@ void MainWindow::on_vSplitter_splitterMoved(int pos, int index)
 	}
 }
 
-void MainWindow::on_hSplitter_splitterMoved(int pos, int index)
+void MainWindow::on_hSplitter_splitterMoved(int pos, int)
 {
 #if defined(QMC2_EMBEDDER_SUPPORTED)
 	if ( tabWidgetMachineList->indexOf(tabEmbeddedEmus) != tabWidgetMachineList->currentIndex() || (tabWidgetMachineList->indexOf(tabEmbeddedEmus) == tabWidgetMachineList->currentIndex() && !toolButtonEmbedderMaximizeToggle->isChecked()) ) {
@@ -3163,7 +3163,7 @@ void MainWindow::on_comboBoxSearch_textActivated(const QString &text)
 	comboBoxSearch_editTextChanged_delayed();
 }
 
-void MainWindow::on_listWidgetSearch_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous)
+void MainWindow::on_listWidgetSearch_currentItemChanged(QListWidgetItem *current, QListWidgetItem *)
 {
 	static bool isActive = false;
 	if ( isActive )
@@ -4699,7 +4699,7 @@ void MainWindow::emuSelector_currentIndexChanged(const QString &text)
 		qmc2Config->setValue(QString(QMC2_EMULATOR_PREFIX + "Configuration/%1/SelectedEmulator").arg(qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME)), text);
 }
 
-void MainWindow::on_treeWidgetMachineList_itemActivated(QTreeWidgetItem *item, int column)
+void MainWindow::on_treeWidgetMachineList_itemActivated(QTreeWidgetItem *, int)
 {
 	if ( qmc2DemoModeDialog )
 		if ( qmc2DemoModeDialog->demoModeRunning )
@@ -4722,7 +4722,7 @@ void MainWindow::on_treeWidgetMachineList_itemActivated(QTreeWidgetItem *item, i
 	qmc2IgnoreItemActivation = false;
 }
 
-void MainWindow::on_treeWidgetHierarchy_itemActivated(QTreeWidgetItem *item, int column)
+void MainWindow::on_treeWidgetHierarchy_itemActivated(QTreeWidgetItem *, int)
 {
 	if ( qmc2DemoModeDialog )
 		if ( qmc2DemoModeDialog->demoModeRunning )
@@ -4860,7 +4860,7 @@ void MainWindow::on_treeWidgetMachineList_itemExpanded(QTreeWidgetItem *item)
 	}
 }
 
-void MainWindow::on_treeWidgetMachineList_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+void MainWindow::on_treeWidgetMachineList_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *)
 {
 	// workaround for a Qt bug: when POS1/Home is pressed, QTreeWidget & QTreeView don't correctly select the first VISIBLE item,
 	// if the top item is HIDDEN
@@ -4888,7 +4888,7 @@ void MainWindow::on_treeWidgetMachineList_currentItemChanged(QTreeWidgetItem *cu
 		treeWidgetMachineList_itemSelectionChanged_delayed();
 }
 
-void MainWindow::on_treeWidgetHierarchy_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+void MainWindow::on_treeWidgetHierarchy_currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)
 {
 	qmc2CheckItemVisibility = false;
 	if ( qmc2UpdateDelay > 0 )
@@ -5899,9 +5899,8 @@ void MainWindow::closeEvent(QCloseEvent *e)
 			}
 		}
 
-		ComponentInfo *componentInfo = qmc2ComponentSetup->componentInfoHash().value("Component1");
-
 #if defined(QMC2_EMBEDDER_SUPPORTED)
+		ComponentInfo *componentInfo = qmc2ComponentSetup->componentInfoHash().value("Component1");
 		int currentIndex = tabWidgetMachineList->currentIndex();
 		int embedIndex = componentInfo->appliedFeatureList().indexOf(QMC2_EMBED_INDEX);
 		if ( embedIndex >= 0 && embedIndex <= currentIndex )
@@ -6118,7 +6117,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
 	}
 }
 
-void MainWindow::showEvent(QShowEvent *e)
+void MainWindow::showEvent(QShowEvent *)
 {
 	if ( !qmc2AutoMinimizedWidgets.isEmpty() ) {
 		QMapIterator<QWidget *, Qt::WindowStates> it(qmc2AutoMinimizedWidgets);
@@ -7912,7 +7911,7 @@ void MainWindow::treeWidgetCategoryView_headerSectionClicked(int logicalIndex)
 	treeWidgetMachineList_headerSectionClicked(logicalIndex);
 }
 
-void MainWindow::on_treeWidgetCategoryView_itemActivated(QTreeWidgetItem *item, int column)
+void MainWindow::on_treeWidgetCategoryView_itemActivated(QTreeWidgetItem *item, int)
 {
 	if ( qmc2DemoModeDialog )
 		if ( qmc2DemoModeDialog->demoModeRunning )
@@ -7938,7 +7937,7 @@ void MainWindow::on_treeWidgetCategoryView_itemActivated(QTreeWidgetItem *item, 
 	qmc2IgnoreItemActivation = false;
 }
 
-void MainWindow::on_treeWidgetCategoryView_itemDoubleClicked(QTreeWidgetItem *item, int column)
+void MainWindow::on_treeWidgetCategoryView_itemDoubleClicked(QTreeWidgetItem *item, int)
 {
 	if ( !item )
 		return;
@@ -7951,7 +7950,7 @@ void MainWindow::on_treeWidgetCategoryView_itemDoubleClicked(QTreeWidgetItem *it
 		qmc2IgnoreItemActivation = true;
 }
 
-void MainWindow::on_treeWidgetCategoryView_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+void MainWindow::on_treeWidgetCategoryView_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *)
 {
 	if ( !current )
 		return;
@@ -7995,7 +7994,7 @@ void MainWindow::treeWidgetVersionView_headerSectionClicked(int logicalIndex)
 	treeWidgetMachineList_headerSectionClicked(logicalIndex);
 }
 
-void MainWindow::on_treeWidgetVersionView_itemActivated(QTreeWidgetItem *item, int column)
+void MainWindow::on_treeWidgetVersionView_itemActivated(QTreeWidgetItem *item, int)
 {
 	if ( qmc2DemoModeDialog )
 		if ( qmc2DemoModeDialog->demoModeRunning )
@@ -8021,7 +8020,7 @@ void MainWindow::on_treeWidgetVersionView_itemActivated(QTreeWidgetItem *item, i
 	qmc2IgnoreItemActivation = false;
 }
 
-void MainWindow::on_treeWidgetVersionView_itemDoubleClicked(QTreeWidgetItem *item, int column)
+void MainWindow::on_treeWidgetVersionView_itemDoubleClicked(QTreeWidgetItem *item, int)
 {
 	if ( !item )
 		return;
@@ -8031,7 +8030,7 @@ void MainWindow::on_treeWidgetVersionView_itemDoubleClicked(QTreeWidgetItem *ite
 		qmc2IgnoreItemActivation = true;
 }
 
-void MainWindow::on_treeWidgetVersionView_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+void MainWindow::on_treeWidgetVersionView_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *)
 {
 	if ( !current )
 		return;
@@ -10121,7 +10120,7 @@ void MainWindow::treeWidgetVersionView_updateRanks()
 	}
 }
 
-void MainWindow::on_treeWidgetVersionView_itemExpanded(QTreeWidgetItem *item)
+void MainWindow::on_treeWidgetVersionView_itemExpanded(QTreeWidgetItem *)
 {
 	treeWidgetVersionView_verticalScrollChanged();
 }

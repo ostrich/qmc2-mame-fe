@@ -997,7 +997,7 @@ QString &SoftwareList::getXmlDataWithEnabledSlots(QStringList swlArgs)
 	return xmlBuffer;
 }
 
-void SoftwareList::on_comboBoxDeviceConfiguration_currentIndexChanged(int index)
+void SoftwareList::on_comboBoxDeviceConfiguration_currentIndexChanged(int)
 {
 	QTimer::singleShot(0, this, SLOT(updateMountDevices()));
 }
@@ -1058,9 +1058,10 @@ QString &SoftwareList::lookupMountDevice(QString device, QString deviceInterface
 						while ( xmlMachineEntry.readNextStartElement() ) {
 							if ( xmlMachineEntry.name() == "instance" && xmlMachineEntry.attributes().hasAttribute("briefname") ) {
 								devName = xmlMachineEntry.attributes().value("briefname").toString();
-								if ( !devName.isEmpty() )
+								if ( !devName.isEmpty() ) {
 									foreach (QString devIf, devInterfaces)
 										deviceInstanceHash[devIf] << devName;
+								}
 							}
 							xmlMachineEntry.skipCurrentElement();
 						}
@@ -3166,7 +3167,7 @@ void SoftwareList::on_treeWidgetSearchResults_itemEntered(QTreeWidgetItem *item,
 	}
 }
 
-void SoftwareList::on_treeWidgetKnownSoftware_itemActivated(QTreeWidgetItem *item, int)
+void SoftwareList::on_treeWidgetKnownSoftware_itemActivated(QTreeWidgetItem *, int)
 {
 	if ( !qmc2IgnoreItemActivation ) {
 		cancelSoftwareSnap();
@@ -3220,7 +3221,7 @@ void SoftwareList::on_treeWidgetKnownSoftwareTree_itemDoubleClicked(QTreeWidgetI
 	}
 }
 
-void SoftwareList::on_treeWidgetFavoriteSoftware_itemActivated(QTreeWidgetItem *item, int)
+void SoftwareList::on_treeWidgetFavoriteSoftware_itemActivated(QTreeWidgetItem *, int)
 {
 	if ( !qmc2IgnoreItemActivation ) {
 		cancelSoftwareSnap();
@@ -3247,7 +3248,7 @@ void SoftwareList::on_treeWidgetFavoriteSoftware_itemDoubleClicked(QTreeWidgetIt
 	}
 }
 
-void SoftwareList::on_treeWidgetSearchResults_itemActivated(QTreeWidgetItem *item, int)
+void SoftwareList::on_treeWidgetSearchResults_itemActivated(QTreeWidgetItem *, int)
 {
 	if ( !qmc2IgnoreItemActivation ) {
 		cancelSoftwareSnap();
@@ -3429,7 +3430,7 @@ void SoftwareList::comboBoxSearch_editTextChanged_delayed()
 	searchActive = false;
 }
 
-void SoftwareList::on_comboBoxSearch_textActivated(const QString &pattern)
+void SoftwareList::on_comboBoxSearch_textActivated(const QString &)
 {
 	autoSelectSearchItem = true;
 	comboBoxSearch_editTextChanged_delayed();

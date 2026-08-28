@@ -198,7 +198,7 @@ void RomPathCleaner::on_spinBoxMaxLogSize_valueChanged(int value)
 	plainTextEditLog->setMaximumBlockCount(value);
 }
 
-void RomPathCleaner::hideEvent(QHideEvent *e)
+void RomPathCleaner::hideEvent(QHideEvent *)
 {
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + m_settingsKey + "/Mode", comboBoxModeSwitch->currentIndex());
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + m_settingsKey + "/EnableLog", checkBoxEnableLog->isChecked());

@@ -103,7 +103,7 @@ void ToolExecutor::toolError(QProcess::ProcessError processError)
 		QTimer::singleShot(0, this, SLOT(accept()));
 }
 
-void ToolExecutor::toolStateChanged(QProcess::ProcessState processState)
+void ToolExecutor::toolStateChanged(QProcess::ProcessState)
 {
     // NOP
 }

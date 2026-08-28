@@ -210,8 +210,8 @@ DeviceConfigurator::DeviceConfigurator(QString machine, QWidget *parent) :
 	m_foldersFirst(true),
 	m_includeFolders(true),
 	m_currentMachine(machine),
-	m_dirModel(0),
-	m_fileModel(0)
+	m_fileModel(0),
+	m_dirModel(0)
 {
 	setupUi(this);
 
@@ -538,7 +538,7 @@ QString DeviceConfigurator::getXmlData(const QString &machine)
 	return buffer;
 }
 
-void DeviceConfigurator::slotOptionChanged(int index)
+void DeviceConfigurator::slotOptionChanged(int)
 {
 	QTimer::singleShot(QMC2_SLOTOPTION_CHANGE_DELAY, this, SLOT(refreshDeviceMap()));
 }
@@ -1109,7 +1109,7 @@ void DeviceConfigurator::actionRemoveConfiguration_activated()
 	}
 }
 
-void DeviceConfigurator::on_listWidgetDeviceConfigurations_itemActivated(QListWidgetItem *item)
+void DeviceConfigurator::on_listWidgetDeviceConfigurations_itemActivated(QListWidgetItem *)
 {
 	switch ( qmc2DefaultLaunchMode ) {
 #if defined(QMC2_EMBEDDER_SUPPORTED)
@@ -1593,7 +1593,7 @@ void DeviceConfigurator::folderModeMenu_foldersFirst()
 	QTimer::singleShot(0, m_fileModel, SLOT(refresh()));
 }
 
-void DeviceConfigurator::on_comboBoxDeviceInstanceChooser_textActivated(const QString &text)
+void DeviceConfigurator::on_comboBoxDeviceInstanceChooser_textActivated(const QString &)
 {
 	if ( toolButtonChooserFilter->isChecked() )
 		on_toolButtonChooserFilter_toggled(true);

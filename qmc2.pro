@@ -2,6 +2,9 @@
 isEmpty(TARGET):TARGET = qmc2
 !versionAtLeast(QT_VERSION, 6.8.0): error("QMC2 requires Qt 6.8 or newer")
 QT += core core5compat gui widgets xml network sql svg testlib webenginewidgets
+# GCC 16 emits this diagnostic from Qt 6 headers themselves; it is not
+# actionable in application code and is fixed independently by the toolchain.
+greaterThan(QMAKE_GCC_MAJOR_VERSION, 15): QMAKE_CXXFLAGS_WARN_ON += -Wno-sfinae-incomplete
 contains(DEFINES, "QMC2_MULTIMEDIA=1"): QT += multimedia multimediawidgets
 HEADERS += src/qftp/qftp.h \
 	src/qftp/qurlinfo.h

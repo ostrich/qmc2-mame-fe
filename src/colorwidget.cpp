@@ -12,6 +12,9 @@ extern Settings *qmc2Config;
 ColorWidget::ColorWidget(QString gname, QString cname, QPalette::ColorGroup group, QPalette::ColorRole role, QColor color, QBrush brush, QWidget *parent, bool showBrushButton, bool simpleTxt)
 	: QWidget(parent)
 {
+#if !defined(QMC2_WIP_ENABLED)
+	Q_UNUSED(showBrushButton);
+#endif
 	setupUi(this);
 	colorGroup = group;
 	colorRole = role;

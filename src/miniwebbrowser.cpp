@@ -413,7 +413,7 @@ void MiniWebBrowser::webViewBrowser_linkClicked(const QUrl url)
 	QTimer::singleShot(0, this, SLOT(checkBackAndForward()));
 }
 
-void MiniWebBrowser::webViewBrowser_urlChanged(const QUrl url)
+void MiniWebBrowser::webViewBrowser_urlChanged(const QUrl)
 {
 	comboBoxURL->setEditText(QString::fromUtf8(webViewBrowser->url().toEncoded()));
 	QString newTitle = webViewBrowser->title();
@@ -491,7 +491,7 @@ void MiniWebBrowser::webViewBrowser_loadProgress(int progress)
 	}
 }
 
-void MiniWebBrowser::webViewBrowser_loadFinished(bool ok)
+void MiniWebBrowser::webViewBrowser_loadFinished(bool)
 {
 	QString newTitle = webViewBrowser->title();
 	if ( newTitle.isEmpty() )
@@ -548,7 +548,7 @@ void MiniWebBrowser::webViewBrowser_iconChanged()
 	}
 }
 
-void MiniWebBrowser::webViewBrowser_linkHovered(const QString &link, const QString &title, const QString &textContent)
+void MiniWebBrowser::webViewBrowser_linkHovered(const QString &link, const QString &, const QString &)
 {
 	if ( !link.isEmpty() ) {
 		statusTimer.stop();
@@ -665,7 +665,7 @@ void MiniWebBrowser::setStatus(QString statusMessage)
 	updateGeometry();
 }
 
-QWebEngineView *BrowserWidget::createWindow(QWebEnginePage::WebWindowType type)
+QWebEngineView *BrowserWidget::createWindow(QWebEnginePage::WebWindowType)
 {
 	MiniWebBrowser *webBrowser = new MiniWebBrowser(0);
 	//if ( type == QWebEnginePage::WebModalDialog )
