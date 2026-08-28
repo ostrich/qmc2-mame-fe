@@ -549,14 +549,15 @@
 // how many milliseconds before automatically cleaning up finished downloads
 #define QMC2_DOWNLOAD_CLEANUP_DELAY		250
 
-// ProjectMESS driver look-up URL
-#define QMC2_PROJECTMESS_PATTERN_URL		"http://www.progettoemma.net/mess/system.php?machine=%1"
+// Arcade Database machine look-up URL
+#define QMC2_ARCADE_DATABASE_MACHINE_URL	"https://adb.arcadeitalia.net/dettaglio_mame.php?game_name=%1"
 
 // ProjectMESS web cache size (in-memory, 8 MB fixed for now)
 #define QMC2_PROJECTMESS_CACHE_SIZE		8 * QMC2_ONE_MEGABYTE
 
-// ProjectMESS base URL (default)
-#define QMC2_PROJECT_MESS_BASE_URL		"http://www.progettoemma.net/mess/gioco.php?game=%1&list=%2"
+// Software look-up URLs.  Keep the legacy value for exact settings migration.
+#define QMC2_PROJECT_MESS_LEGACY_BASE_URL	"http://www.progettoemma.net/mess/gioco.php?game=%1&list=%2"
+#define QMC2_ARCADE_DATABASE_SOFTWARE_URL	"https://adb.arcadeitalia.net/dettaglio_mess.php?software_name=%1&software_list=%2"
 
 // type conversions
 #define QMC2_TO_UINT32(a)			((uchar)*((a) + 0) * (quint32)16777216ULL + \

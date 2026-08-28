@@ -3563,10 +3563,10 @@
   </action>
   <action name="actionClearProjectMESSCache">
    <property name="text">
-    <string>Clear ProjectMESS cache</string>
+    <string>Clear Arcade Database cache</string>
    </property>
    <property name="statusTip">
-    <string>Clear ProjectMESS cache</string>
+    <string>Clear Arcade Database cache</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+M</string>

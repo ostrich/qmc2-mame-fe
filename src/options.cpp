@@ -255,7 +255,7 @@ Options::Options(QWidget *parent) :
 	qmc2ShortcutHash.insert("Ctrl+H", QPair<QString, QAction *>(tr("Online documentation"), 0));
 	qmc2ShortcutHash.insert("Ctrl+I", QPair<QString, QAction *>(tr("Clear image cache"), 0));
 	qmc2ShortcutHash.insert("Ctrl+Shift+A", QPair<QString, QAction *>(tr("Setup arcade mode"), 0));
-	qmc2ShortcutHash.insert("Ctrl+M", QPair<QString, QAction *>(tr("Clear ProjectMESS cache"), 0));
+	qmc2ShortcutHash.insert("Ctrl+M", QPair<QString, QAction *>(tr("Clear Arcade Database cache"), 0));
 	qmc2ShortcutHash.insert("Ctrl+N", QPair<QString, QAction *>(tr("Clear icon cache"), 0));
 #if defined(QMC2_OS_MAC)
 	qmc2ShortcutHash.insert("Ctrl+,", QPair<QString, QAction *>(tr("Open options dialog"), 0));

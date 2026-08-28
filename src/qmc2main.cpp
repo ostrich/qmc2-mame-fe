@@ -2590,7 +2590,7 @@ void MainWindow::on_actionClearProjectMESSCache_triggered(bool)
 {
 	QString cacheStatus(tr("freed %n byte(s) in %1", "", qmc2ProjectMESSCache.totalCost()).arg(tr("%n entry(s)", "", qmc2ProjectMESSCache.count())));
 	qmc2ProjectMESSCache.clear();
-	log(QMC2_LOG_FRONTEND, tr("ProjectMESS in-memory cache cleared (%1)").arg(cacheStatus));
+	log(QMC2_LOG_FRONTEND, tr("Arcade Database in-memory cache cleared (%1)").arg(cacheStatus));
 }
 
 #if defined(QMC2_YOUTUBE_ENABLED)
@@ -3507,13 +3507,19 @@ void MainWindow::on_tabWidgetSoftwareDetail_currentChanged(int currentIndex)
 				QString entryName = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
 				QString entryTitle = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_TITLE);
 				QString listName = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST);
-				QString projectMessUrl = qmc2Config->value(QMC2_FRONTEND_PREFIX + "ProjectMESS/BaseURL", QMC2_PROJECT_MESS_BASE_URL).toString().arg(entryName).arg(listName);
-				qmc2ProjectMESS->webViewBrowser->setStatusTip(tr("ProjectMESS page for '%1' / '%2'").arg(listName).arg(entryTitle));
+				const QString baseUrlKey = QMC2_FRONTEND_PREFIX + "ProjectMESS/BaseURL";
+				QString baseUrl = qmc2Config->value(baseUrlKey, QMC2_ARCADE_DATABASE_SOFTWARE_URL).toString();
+				if ( baseUrl == QLatin1String(QMC2_PROJECT_MESS_LEGACY_BASE_URL) ) {
+					baseUrl = QLatin1String(QMC2_ARCADE_DATABASE_SOFTWARE_URL);
+					qmc2Config->setValue(baseUrlKey, baseUrl);
+				}
+				QString projectMessUrl = baseUrl.arg(entryName).arg(listName);
+				qmc2ProjectMESS->webViewBrowser->setStatusTip(tr("Arcade Database page for '%1' / '%2'").arg(listName).arg(entryTitle));
 				if ( !qmc2ProjectMESSCache.contains(listName + "_" + entryName) ) {
 					QColor color = qmc2ProjectMESS->webViewBrowser->palette().color(QPalette::WindowText);
 					qmc2ProjectMESS->webViewBrowser->setHtml(
 								QString("<html><head></head><body><center><p><font color=\"#%1%2%3\"<b>").arg(color.red()).arg(color.green()).arg(color.blue()) +
-									tr("Fetching ProjectMESS page for '%1' / '%2', please wait...").arg(listName).arg(entryTitle) + "</font></b></p><p>" +
+									tr("Fetching Arcade Database page for '%1' / '%2', please wait...").arg(listName).arg(entryTitle) + "</font></b></p><p>" +
 									QString("(<a href=\"%1\">%1</a>)").arg(projectMessUrl) + "</p></center></body></html>",
 								QUrl(projectMessUrl));
 					connect(qmc2ProjectMESS->webViewBrowser, SIGNAL(loadFinished(bool)), this, SLOT(projectMessLoadFinished(bool)));
@@ -4103,17 +4109,17 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 				QString projectMessUrl;
 				QColor color = qmc2ProjectMESSLookup->webViewBrowser->palette().color(QPalette::WindowText);
 				QString machName = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME);
-				qmc2ProjectMESSLookup->webViewBrowser->setStatusTip(tr("ProjectMESS page for system '%1'").arg(machName));
+				qmc2ProjectMESSLookup->webViewBrowser->setStatusTip(tr("Arcade Database page for system '%1'").arg(machName));
 				if ( !qmc2ProjectMESSCache.contains(machName) ) {
-					projectMessUrl = QString(QMC2_PROJECTMESS_PATTERN_URL).arg(machName);
+					projectMessUrl = QString(QMC2_ARCADE_DATABASE_MACHINE_URL).arg(machName);
 					qmc2ProjectMESSLookup->webViewBrowser->setHtml(
 							QString("<html><head></head><body><center><p><font color=\"#%1%2%3\"<b>").arg(color.red()).arg(color.green()).arg(color.blue()) +
-							tr("Fetching ProjectMESS page for system '%1', please wait...").arg(machName) +
+							tr("Fetching Arcade Database page for system '%1', please wait...").arg(machName) +
 							"</font></b></p><p>" + QString("(<a href=\"%1\">%1</a>)").arg(projectMessUrl) + "</p></center></body></html>",
 							QUrl(projectMessUrl));
 					qmc2ProjectMESSLookup->webViewBrowser->load(QUrl(projectMessUrl));
 				} else {
-					projectMessUrl = QString(QMC2_PROJECTMESS_PATTERN_URL).arg(machName);
+					projectMessUrl = QString(QMC2_ARCADE_DATABASE_MACHINE_URL).arg(machName);
 					qmc2ProjectMESSLookup->webViewBrowser->setHtml(QString(QMC2_UNCOMPRESS(*qmc2ProjectMESSCache[machName])), QUrl(projectMessUrl));
 					qmc2ProjectMESSLookup->webViewBrowser->load(QUrl(projectMessUrl));
 				}
@@ -8113,13 +8119,13 @@ void MainWindow::projectMessLoadFinished(bool ok)
 {
 	if ( qmc2SoftwareList->currentItem && qmc2ProjectMESS && ok ) {
 		// store compressed page to in-memory cache
-		QString cacheKey = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST) + "_" + qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
-		if ( qmc2ProjectMESSCache.contains(cacheKey) )
-			qmc2ProjectMESSCache.remove(cacheKey);
-		QString data("%1");
-		qmc2ProjectMESS->webViewBrowser->page()->toHtml([data](const QString &result) { data.arg(result); });
-		QByteArray cdata = QMC2_COMPRESS(data.toUtf8());
-		qmc2ProjectMESSCache.insert(cacheKey, new QByteArray(cdata), cdata.size());
+		const QString cacheKey = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST) + "_" + qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
+		qmc2ProjectMESS->webViewBrowser->page()->toHtml([cacheKey](const QString &data) {
+			if ( qmc2ProjectMESSCache.contains(cacheKey) )
+				qmc2ProjectMESSCache.remove(cacheKey);
+			QByteArray compressedData = QMC2_COMPRESS(data.toUtf8());
+			qmc2ProjectMESSCache.insert(cacheKey, new QByteArray(compressedData), compressedData.size());
+		});
 	}
 
 	// we only want to know this ONCE
@@ -8133,14 +8139,14 @@ void MainWindow::projectMessSystemLoadStarted()
 
 void MainWindow::projectMessSystemLoadFinished(bool ok)
 {
-	if ( ok ) {
-		QString data("%1");
-		qmc2ProjectMESSLookup->webViewBrowser->page()->toHtml([data](const QString &result) { data.arg(result); });
-		QByteArray projectMessData = QMC2_COMPRESS(data.toUtf8());
-    		QString machName(qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME));
-		if ( qmc2ProjectMESSCache.contains(machName) )
-			qmc2ProjectMESSCache.remove(machName);
-		qmc2ProjectMESSCache.insert(machName, new QByteArray(projectMessData), projectMessData.size());
+	if ( ok && qmc2ProjectMESSLookup && qmc2CurrentItem ) {
+		const QString machName(qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME));
+		qmc2ProjectMESSLookup->webViewBrowser->page()->toHtml([machName](const QString &data) {
+			QByteArray compressedData = QMC2_COMPRESS(data.toUtf8());
+			if ( qmc2ProjectMESSCache.contains(machName) )
+				qmc2ProjectMESSCache.remove(machName);
+			qmc2ProjectMESSCache.insert(machName, new QByteArray(compressedData), compressedData.size());
+		});
 	}
 }
 

@@ -126,8 +126,8 @@ ComponentInfo *ComponentSetup::initComponent2()
 	componentInfo->setShortTitle(QMC2_DEVICE_INDEX, tr("De&vices"));
 	componentInfo->setLongTitle(QMC2_DEVICE_INDEX, tr("Device configuration"));
 	componentInfo->setIcon(QMC2_DEVICE_INDEX, QIcon(QString::fromUtf8(":/data/img/tape.png")));
-	componentInfo->setShortTitle(QMC2_PROJECTMESS_INDEX, tr("Pr&ojectMESS"));
-	componentInfo->setLongTitle(QMC2_PROJECTMESS_INDEX, tr("ProjectMESS (web lookup)"));
+	componentInfo->setShortTitle(QMC2_PROJECTMESS_INDEX, tr("Arcade &Database"));
+	componentInfo->setLongTitle(QMC2_PROJECTMESS_INDEX, tr("Arcade Database (web lookup)"));
 	componentInfo->setIcon(QMC2_PROJECTMESS_INDEX, QIcon(QString::fromUtf8(":/data/img/project_mess.png")));
 	componentInfo->setShortTitle(QMC2_CABINET_INDEX, tr("Ca&binet"));
 	componentInfo->setLongTitle(QMC2_CABINET_INDEX, tr("Arcade cabinet image"));
@@ -274,8 +274,8 @@ ComponentInfo *ComponentSetup::initComponent4()
 	componentInfo->setIcon(QMC2_SWINFO_SNAPSHOT_PAGE, QIcon(QString::fromUtf8(":/data/img/camera.png")));
 	componentInfo->setWidget(QMC2_SWINFO_SNAPSHOT_PAGE, qmc2MainWindow->tabWidgetSoftwareDetail->widget(QMC2_SWINFO_SNAPSHOT_PAGE));
 
-	componentInfo->setShortTitle(QMC2_SWINFO_PROJECTMESS_PAGE, tr("ProjectMESS"));
-	componentInfo->setLongTitle(QMC2_SWINFO_PROJECTMESS_PAGE, tr("ProjectMESS web lookup"));
+	componentInfo->setShortTitle(QMC2_SWINFO_PROJECTMESS_PAGE, tr("Arcade Database"));
+	componentInfo->setLongTitle(QMC2_SWINFO_PROJECTMESS_PAGE, tr("Arcade Database web lookup"));
 	componentInfo->setIcon(QMC2_SWINFO_PROJECTMESS_PAGE, QIcon(QString::fromUtf8(":/data/img/project_mess.png")));
 	componentInfo->setWidget(QMC2_SWINFO_PROJECTMESS_PAGE, qmc2MainWindow->tabWidgetSoftwareDetail->widget(QMC2_SWINFO_PROJECTMESS_PAGE));
 
