@@ -25,6 +25,12 @@ replace_exact("src/script/CMakeLists.txt"
 # Prebuilt Qt packages can propagate -Werror through Qt::Platform. The legacy
 # JavaScriptCore sources are not warning-clean with current Apple Clang.
 set_property(TARGET Script PROPERTY QT_SKIP_WARNINGS_ARE_ERRORS ON)
+
+# JavaScriptCore's Darwin clock implementation calls CFAbsoluteTime APIs
+# directly, so QtCore's private transitive linkage is not sufficient.
+if(APPLE)
+    target_link_libraries(Script PRIVATE "-framework CoreFoundation")
+endif()
 ]])
 
 replace_exact("src/scripttools/CMakeLists.txt"
