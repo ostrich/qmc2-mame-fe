@@ -14,7 +14,7 @@ jobs:
           modules: qt5compat qtmultimedia qtpositioning qtsvg qttools qtwebchannel qtwebengine
           cache: true
       - name: Install native dependencies
-        run: sudo apt-get update && sudo apt-get install -y libarchive-dev libcurl4-openssl-dev libsdl2-dev ninja-build
+        run: sudo apt-get update && sudo apt-get install -y libarchive-dev libcurl4-openssl-dev libminizip-dev libsdl2-dev ninja-build zlib1g-dev
       - name: Build isolated QtScript
         run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
       - name: Build qmc2 and qchdman
@@ -26,6 +26,15 @@ jobs:
         run: |
           make -j4
           make -j4 qchdman
+      - name: Validate system zlib and minizip
+        run: |
+          mkdir build-system-libs
+          cd build-system-libs
+          qmake ../qmc2.pro CONFIG+=release "DEFINES+=QMC2_SDLMAME QMC2_MULTIMEDIA=1 QMC2_LIBARCHIVE_ENABLED"
+          make -f Makefile.qmake -j4
+          ! ldd qmc2 | grep 'not found'
+          ldd qmc2 | grep 'libminizip'
+          ldd qmc2 | grep 'libz.so'
       - name: Run XML compatibility fixtures
         run: |
           mkdir build-xml-tests

@@ -19,7 +19,7 @@
 #include "options.h"
 #include "unzip.h"
 #include "zip.h"
-#include "mz.h"
+#include "zlib.h"
 #include "sevenzipfile.h"
 #if defined(QMC2_LIBARCHIVE_ENABLED)
 #include "archivefile.h"
@@ -1432,7 +1432,7 @@ bool CollectionRebuilderThread::writeAllZipData(QString baseDir, QString id, QSt
 						errorReason = tr("unknown file type '%1'").arg(type);
 						break;
 				}
-				if ( success && zipOpenNewFileInZip3(zip, file.toUtf8().constData(), &zipInfo, file.toUtf8().constData(), file.length(), 0, 0, 0, MZ_COMPRESS_METHOD_DEFLATE, zipLevel, 0, MAX_WBITS, DEF_MEM_LEVEL, 0, NULL, 0) == ZIP_OK ) {
+				if ( success && zipOpenNewFileInZip3(zip, file.toUtf8().constData(), &zipInfo, file.toUtf8().constData(), file.length(), 0, 0, 0, Z_DEFLATED, zipLevel, 0, MAX_WBITS, DEF_MEM_LEVEL, 0, NULL, 0) == ZIP_OK ) {
 					emit log(tr("writing '%1' to ZIP archive '%2' (uncompressed size: %3)").arg(file).arg(fileName).arg(ROMAlyzer::humanReadable(data.length())));
 					quint64 bytesWritten = 0;
 					while ( bytesWritten < (quint64)data.length() && !exitThread && success ) {

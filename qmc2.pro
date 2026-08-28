@@ -351,6 +351,11 @@ contains(DEFINES, QMC2_BUNDLED_MINIZIP) {
 } else {
 	CONFIG += link_pkgconfig
 	PKGCONFIG += minizip
+	!win32 {
+		MINIZIP_INCLUDEDIR = $$system(pkg-config --variable=includedir minizip)
+		exists($$MINIZIP_INCLUDEDIR/minizip/unzip.h): INCLUDEPATH += $$MINIZIP_INCLUDEDIR/minizip
+		exists($$MINIZIP_INCLUDEDIR/minizip-ng/unzip.h): INCLUDEPATH += $$MINIZIP_INCLUDEDIR/minizip-ng
+	}
 }
 
 contains(DEFINES, QMC2_BUNDLED_ZLIB) {
