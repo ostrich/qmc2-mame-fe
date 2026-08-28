@@ -67,6 +67,7 @@ jobs:
         env:
           QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
         run: |
+          $env:PATH = "$env:QTSCRIPT_PREFIX\bin;$env:PATH"
           New-Item -ItemType Directory build-qtscript-tests
           Set-Location build-qtscript-tests
           qmake ..\tests\qtscript\qtscript.pro CONFIG+=release
