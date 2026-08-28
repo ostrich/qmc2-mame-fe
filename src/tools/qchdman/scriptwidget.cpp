@@ -144,7 +144,7 @@ void ScriptWidget::adjustFonts()
 	ui->plainTextEditScript->setFont(f);
 
 	QFontMetrics fmEditorFont(f);
-	ui->plainTextEditScript->setTabStopWidth(fmEditorFont.width(' ') * 8);
+	ui->plainTextEditScript->setTabStopDistance(fmEditorFont.horizontalAdvance(' ') * 8);
 
 	f.fromString(globalConfig->preferencesLogFont());
 	f.setPointSize(globalConfig->preferencesLogFontSize());

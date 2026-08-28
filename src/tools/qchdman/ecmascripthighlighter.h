@@ -2,6 +2,7 @@
 #define ECMASCRIPTHIGHLIGHTER_H
 
 #include <QSyntaxHighlighter>
+#include <QRegularExpression>
 
 class ECMAScriptHighlighter : public QSyntaxHighlighter
 {

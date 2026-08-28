@@ -35,12 +35,14 @@ jobs:
           SDL: 2
           SDL_LIBS: 'LIBS+="../SDL2-${SDL_VERSION}/lib/x64/SDL2.lib ../SDL2-${SDL_VERSION}/lib/x64/SDL2main.lib"'
           SDL_INCLUDEPATH: 'INCLUDEPATH+="../SDL2-${SDL_VERSION}/include"'
-          QMAKEPATH: ${{ github.workspace }}\.deps\qtscript
+          QMAKEPATH: ${{ github.workspace }}\.deps\qtscript;${{ github.workspace }}\.deps\qtscript\lib\qt6
+          QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
         run: make -j4 configure
       - name: Build qmc2 and qchdman
         shell: pwsh
         env:
-          QMAKEPATH: ${{ github.workspace }}\.deps\qtscript
+          QMAKEPATH: ${{ github.workspace }}\.deps\qtscript;${{ github.workspace }}\.deps\qtscript\lib\qt6
+          QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
         run: |
           nmake /f Makefile.qmake.release
           nmake qchdman

@@ -55,11 +55,10 @@ void ECMAScriptHighlighter::highlightBlock(const QString &text)
 {
 	foreach (const HighlightingRule &rule, mHighlightingRules) {
 		QRegularExpression expression(rule.pattern);
-		int index = expression.indexIn(text);
-		while ( index >= 0 ) {
-			int length = expression.matchedLength();
-			setFormat(index, length, rule.format);
-			index = expression.indexIn(text, index + length);
+		QRegularExpressionMatchIterator matches = expression.globalMatch(text);
+		while ( matches.hasNext() ) {
+			const QRegularExpressionMatch match = matches.next();
+			setFormat(match.capturedStart(), match.capturedLength(), rule.format);
 		}
 	}
 
@@ -69,8 +68,8 @@ void ECMAScriptHighlighter::highlightBlock(const QString &text)
 	bool isSingleLineComment = false;
 
 	if ( previousBlockState() != 1 ) {
-		commentStartIndex = mMultiLineCommentStartExpression.indexIn(text);
-		singleLineCommentStartIndex = mSingleLineCommentExpression.indexIn(text);
+		commentStartIndex = mMultiLineCommentStartExpression.match(text).capturedStart();
+		singleLineCommentStartIndex = mSingleLineCommentExpression.match(text).capturedStart();
 		if ( singleLineCommentStartIndex >= 0 && (singleLineCommentStartIndex < commentStartIndex || commentStartIndex < 0) ) {
 			isSingleLineComment = true;
 			commentStartIndex = singleLineCommentStartIndex;
@@ -85,16 +84,17 @@ void ECMAScriptHighlighter::highlightBlock(const QString &text)
 		setFormat(commentStartIndex, text.length() - singleLineCommentStartIndex, mSingleLineCommentFormat);
 	else {
 		while ( commentStartIndex >= 0 ) {
-			int multiLineCommentEndIndex = mMultiLineCommentEndExpression.indexIn(text, commentStartIndex);
+			const QRegularExpressionMatch endMatch = mMultiLineCommentEndExpression.match(text, commentStartIndex);
+			int multiLineCommentEndIndex = endMatch.capturedStart();
 			int commentLength;
 			if ( multiLineCommentEndIndex == -1 ) {
 				setCurrentBlockState(1);
 				commentLength = text.length() - commentStartIndex;
 			} else {
-				commentLength = multiLineCommentEndIndex - commentStartIndex + mMultiLineCommentEndExpression.matchedLength();
+				commentLength = multiLineCommentEndIndex - commentStartIndex + endMatch.capturedLength();
 			}
 			setFormat(commentStartIndex, commentLength, mMultiLineCommentFormat);
-			commentStartIndex = mMultiLineCommentStartExpression.indexIn(text, commentStartIndex + commentLength);
+			commentStartIndex = mMultiLineCommentStartExpression.match(text, commentStartIndex + commentLength).capturedStart();
 		}
 	}
 }

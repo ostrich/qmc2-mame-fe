@@ -1,9 +1,23 @@
 VERSION = 0.244
 
 !versionAtLeast(QT_VERSION, 6.8.0): error("qchdman requires Qt 6.8 or newer")
-QT += core core5compat gui script scripttools widgets
+QT += core core5compat gui widgets
 TARGET = qchdman
 TEMPLATE = app
+
+QTSCRIPT_PREFIX = $$(QTSCRIPT_PREFIX)
+!isEmpty(QTSCRIPT_PREFIX) {
+    CONFIG -= link_prl
+    INCLUDEPATH = $$QTSCRIPT_PREFIX/include/qt6 $$INCLUDEPATH
+    QMAKE_LIBDIR = $$QTSCRIPT_PREFIX/lib $$QMAKE_LIBDIR
+    unix:!macx: LIBS += $$QTSCRIPT_PREFIX/lib/libQt6ScriptTools.so $$QTSCRIPT_PREFIX/lib/libQt6Script.so
+    macx: LIBS += $$QTSCRIPT_PREFIX/lib/libQt6ScriptTools.dylib $$QTSCRIPT_PREFIX/lib/libQt6Script.dylib
+    win32: LIBS += $$QTSCRIPT_PREFIX/lib/Qt6ScriptTools.lib $$QTSCRIPT_PREFIX/lib/Qt6Script.lib
+    DEFINES += QT_SCRIPTTOOLS_LIB QT_SCRIPT_LIB
+    unix: QMAKE_RPATHDIR += $$QTSCRIPT_PREFIX/lib
+} else {
+    QT += script scripttools
+}
 
 greaterThan(DEBUG, 0) | contains(DEFINES, "QCHDMAN_DEBUG") {
     !contains(DEFINES, "QCHDMAN_DEBUG"): DEFINES += QCHDMAN_DEBUG

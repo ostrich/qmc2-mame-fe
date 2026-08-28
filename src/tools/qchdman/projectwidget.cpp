@@ -700,7 +700,7 @@ void ProjectWidget::started()
 #if defined(Q_OS_WIN)
 	log(tr("process started: PID = %1").arg(chdmanProc->pid()->dwProcessId));
 #else
-	log(tr("process started: PID = %1").arg(chdmanProc->pid()));
+	log(tr("process started: PID = %1").arg(chdmanProc->processId()));
 #endif
 	status = QCHDMAN_PRJSTAT_RUNNING;
 	ui->toolButtonStop->setEnabled(true);
@@ -787,10 +787,10 @@ void ProjectWidget::readyReadStandardError()
 			case QCHDMAN_PRJ_EXTRACT_LD:
 				if ( s.contains(QRegularExpression(", \\d+\\.\\d+\\%\\ complete\\.\\.\\.")) ) {
 					QRegularExpression rx(", (\\d+)\\.(\\d+)\\%\\ complete\\.\\.\\.");
-					int pos = rx.indexIn(s);
-					if ( pos > -1 ) {
-						int decimal = rx.cap(2).toInt();
-						percent = rx.cap(1).toInt() + (decimal >= 5 ? 1 : 0);
+					const QRegularExpressionMatch match = rx.match(s);
+					if ( match.hasMatch() ) {
+						int decimal = match.captured(2).toInt();
+						percent = match.captured(1).toInt() + (decimal >= 5 ? 1 : 0);
 					}
 				} else if ( s.contains("Compression complete ... final ratio =") || s.contains("Extraction complete") )
 					percent = 100;

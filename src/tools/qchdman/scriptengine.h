@@ -1,8 +1,8 @@
 #ifndef SCRIPTENGINE_H
 #define SCRIPTENGINE_H
 
-#include <QtScript>
-#include <QtScriptTools>
+#include <QtScript/QtScript>
+#include <QtScriptTools/QtScriptTools>
 #include <QObject>
 #include <QStringList>
 #include <QMap>

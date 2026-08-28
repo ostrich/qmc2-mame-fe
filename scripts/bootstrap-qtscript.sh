@@ -21,6 +21,7 @@ done
 [[ -n "$qt_root" && -d "$qt_root" ]] || { echo "pass --qt-root PATH" >&2; exit 2; }
 [[ -n "$prefix" ]] || prefix="$PWD/.deps/qtscript"
 [[ -n "$work_root" ]] || work_root="$PWD/.deps/qtscript-work"
+[[ "$work_root" != "/" ]] || { echo "refusing root as --work-root" >&2; exit 2; }
 
 port_dir="$work_root/port"
 source_dir="$work_root/src"
@@ -31,21 +32,33 @@ if [[ ! -d "$port_dir/.git" ]]; then
 fi
 git -C "$port_dir" fetch --quiet origin "$PORT_REV"
 git -C "$port_dir" checkout --quiet --detach "$PORT_REV"
+rm -rf "$source_dir" "$build_dir"
 bash "$port_dir/scripts/apply-patches.sh" "$source_dir"
 
 qt_cmake=""
 for candidate in "$qt_root/bin/qt-cmake-private" "$qt_root/libexec/qt-cmake-private"; do
 	[[ -x "$candidate" ]] && qt_cmake="$candidate" && break
 done
-[[ -n "$qt_cmake" ]] || { echo "qt-cmake-private not found below $qt_root" >&2; exit 1; }
-
-"$qt_cmake" -S "$source_dir" -B "$build_dir" -G Ninja \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DCMAKE_INSTALL_PREFIX="$prefix" \
-	-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF
+if [[ -n "$qt_cmake" ]]; then
+	"$qt_cmake" -S "$source_dir" -B "$build_dir" -G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX="$prefix" \
+		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF
+else
+	cmake -S "$source_dir" -B "$build_dir" -G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX="$prefix" \
+		-DCMAKE_PREFIX_PATH="$qt_root" \
+		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF
+fi
 cmake --build "$build_dir" --parallel "$parallel"
 cmake --install "$build_dir"
 
-test -f "$prefix/mkspecs/modules/qt_lib_script.pri"
-test -f "$prefix/mkspecs/modules/qt_lib_scripttools.pri"
+module_root="$prefix"
+if [[ -f "$prefix/lib/qt6/mkspecs/modules/qt_lib_script.pri" ]]; then
+	module_root="$prefix/lib/qt6"
+fi
+test -f "$module_root/mkspecs/modules/qt_lib_script.pri"
+test -f "$module_root/mkspecs/modules/qt_lib_scripttools.pri"
 echo "QtScript $PORT_REV installed in $prefix"
+echo "Add $module_root to QMAKEPATH when building qchdman"
