@@ -24,8 +24,8 @@ jobs:
           QMAKEPATH: ${{ github.workspace }}/.deps/qtscript:${{ github.workspace }}/.deps/qtscript/lib/qt6
           QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript
         run: |
-          make -j4
-          make -j4 qchdman
+          make -j4 QMAKE="$QT_ROOT_DIR/bin/qmake" LRELEASE="$QT_ROOT_DIR/bin/lrelease" LUPDATE="$QT_ROOT_DIR/bin/lupdate"
+          make -j4 QMAKE="$QT_ROOT_DIR/bin/qmake" LRELEASE="$QT_ROOT_DIR/bin/lrelease" LUPDATE="$QT_ROOT_DIR/bin/lupdate" qchdman
       - name: Validate system zlib and minizip
         run: |
           mkdir build-system-libs
