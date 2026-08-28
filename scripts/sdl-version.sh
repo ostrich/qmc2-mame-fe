@@ -10,8 +10,11 @@ if [ "$(uname)" == "Darwin" ]; then
 				exit 1
 			fi
 		elif [ "$1" == "2" ]; then
-			SDL_VERSION=$(grep '#define SDL_MAJOR_VERSION' /Library/Frameworks/SDL2.framework/Headers/SDL_version.h | awk '{print $3}')
-			if [ "$?" != "0" ]; then
+			if command -v sdl2-config > /dev/null 2>&1; then
+				SDL_VERSION=$(sdl2-config --version)
+			elif [ -f /Library/Frameworks/SDL2.framework/Headers/SDL_version.h ]; then
+				SDL_VERSION=$(awk '/#define SDL_MAJOR_VERSION/ { print $3; exit }' /Library/Frameworks/SDL2.framework/Headers/SDL_version.h)
+			else
 				echo "### WARNING: can't determine SDL version -- SDL2 framework not found!"
 				exit 1
 			fi
@@ -20,13 +23,15 @@ if [ "$(uname)" == "Darwin" ]; then
 			exit 1
 		fi
 	else
-		SDL_VERSION=$(grep '#define SDL_MAJOR_VERSION' /Library/Frameworks/SDL2.framework/Headers/SDL_version.h | awk '{print $3}')
-		if [ "$?" != "0" ]; then
-			SDL_VERSION=$(grep '#define SDL_MAJOR_VERSION' /Library/Frameworks/SDL.framework/Headers/SDL_version.h | awk '{print $3}')
-			if [ "$?" != "0" ]; then
-				echo "### WARNING: can't determine SDL version -- no SDL/SDL2 framework found!"
-				exit 1
-			fi
+		if command -v sdl2-config > /dev/null 2>&1; then
+			SDL_VERSION=$(sdl2-config --version)
+		elif [ -f /Library/Frameworks/SDL2.framework/Headers/SDL_version.h ]; then
+			SDL_VERSION=$(awk '/#define SDL_MAJOR_VERSION/ { print $3; exit }' /Library/Frameworks/SDL2.framework/Headers/SDL_version.h)
+		elif [ -f /Library/Frameworks/SDL.framework/Headers/SDL_version.h ]; then
+			SDL_VERSION=$(awk '/#define SDL_MAJOR_VERSION/ { print $3; exit }' /Library/Frameworks/SDL.framework/Headers/SDL_version.h)
+		else
+			echo "### WARNING: can't determine SDL version -- no SDL/SDL2 installation found!"
+			exit 1
 		fi
 	fi
 else

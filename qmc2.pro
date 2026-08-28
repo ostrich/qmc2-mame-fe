@@ -386,9 +386,15 @@ contains(DEFINES, QMC2_BUNDLED_ZLIB) {
 # platform specific stuff
 macx {
 	greaterThan(SDL, 1) {
-		LIBS += -framework SDL2 -framework Cocoa -F/Library/Frameworks -rpath /Library/Frameworks
-		INCLUDEPATH += /Library/Frameworks/SDL2.framework/Headers
-		QMAKE_CXXFLAGS += -framework SDL2 -F/Library/Frameworks
+		packagesExist(sdl2) {
+			CONFIG += link_pkgconfig
+			PKGCONFIG += sdl2
+			LIBS += -framework Cocoa
+		} else {
+			LIBS += -framework SDL2 -framework Cocoa -F/Library/Frameworks -rpath /Library/Frameworks
+			INCLUDEPATH += /Library/Frameworks/SDL2.framework/Headers
+			QMAKE_CXXFLAGS += -framework SDL2 -F/Library/Frameworks
+		}
 	} else {
 		OBJECTIVE_SOURCES += src/SDLMain_tmpl.m
 		HEADERS += src/SDLMain_tmpl.h
