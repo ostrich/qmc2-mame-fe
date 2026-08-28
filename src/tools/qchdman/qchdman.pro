@@ -43,6 +43,7 @@ macx {
 
 win32 {
     RC_FILE = qchdman.rc
+    LIBS += shell32.lib
 }
 
 DEFINES += QCHDMAN_VERSION=$$VERSION

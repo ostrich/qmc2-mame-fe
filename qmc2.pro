@@ -361,7 +361,9 @@ contains(DEFINES, QMC2_BUNDLED_MINIZIP) {
 }
 
 contains(DEFINES, QMC2_BUNDLED_ZLIB) {
-	INCLUDEPATH += src/zlib
+	# Keep the bundled headers ahead of dependency prefixes which may also
+	# contain a shared zlib and mark its symbols dllimport on Windows.
+	INCLUDEPATH = src/zlib $$INCLUDEPATH
 	!win32 {
 		QMAKE_CFLAGS += -DHAVE_UNISTD_H
 	}
