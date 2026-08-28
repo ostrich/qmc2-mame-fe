@@ -2,11 +2,9 @@
 #define FTPREPLY_H
 
 #include <QNetworkReply>
-#include <QStringList>
-#include <QMap>
+#include <QThread>
 
-#include "qftp/qftp.h"
-#include "qftp/qurlinfo.h"
+class CurlFtpTransfer;
 
 class FtpReply : public QNetworkReply
 {
@@ -14,6 +12,7 @@ class FtpReply : public QNetworkReply
 
 	public:
 		FtpReply(const QUrl &);
+		~FtpReply() override;
 		void abort();
 		qint64 bytesAvailable() const;
 		bool isSequential() const;
@@ -24,19 +23,20 @@ class FtpReply : public QNetworkReply
 		qint64 readData(char *, qint64);
 
 	private slots:
-		void processCommand(int, bool);
-		void processListInfo(const QUrlInfo &);
-		void processData();
+		void receiveData(const QByteArray &);
+		void receiveProgress(qint64, qint64);
+		void receiveFinished(int, const QString &, qint64);
 
 	private:
-		void setContent();
-		void setListContent();
+		void setListContent(const QString &);
+		QNetworkReply::NetworkError networkError(int) const;
 
-		QFtp *ftp;
-		QList<QUrlInfo> items;
+		friend class CurlFtpTransfer;
+		CurlFtpTransfer *transfer;
 		QByteArray content;
 		qint64 offset;
-		QMap<QString, qint64> fileSizeMap;
-};    
+		qint64 expectedSize;
+		bool directoryRequest;
+};
 
 #endif

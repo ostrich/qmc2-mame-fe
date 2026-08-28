@@ -30,6 +30,7 @@ public:
 	}
 
 	QString userName;
+	bool dosListing = false;
 
 private:
 	void writeControl(const QByteArray &line)
@@ -81,20 +82,33 @@ private:
 				writeControl("200 Type set\r\n");
 			} else if ( verb == "PASV" ) {
 				openPassiveServer();
+			} else if ( verb == "EPSV" ) {
+				dataServer.close();
+				QVERIFY(dataServer.listen(QHostAddress::LocalHost));
+				writeControl("229 Entering Extended Passive Mode (|||" + QByteArray::number(dataServer.serverPort()) + "|)\r\n");
 			} else if ( verb == "LIST" ) {
 				if ( argument == "/missing.bin" ) {
 					writeControl("550 Not found\r\n");
 				} else {
 					writeControl("150 Opening data connection\r\n");
-					if ( argument.endsWith("/") )
-						sendData("-rw-r--r-- 1 owner group 12 Jan 01 2026 file.bin\r\n"
-							"drwxr-xr-x 1 owner group 0 Jan 01 2026 subdir\r\n");
+					if ( argument.isEmpty() || argument.endsWith("/") ) {
+						if ( dosListing )
+							sendData("01-01-2026  12:00PM                  12 file.bin\r\n"
+								"01-01-2026  12:00PM       <DIR>          subdir\r\n");
+						else
+							sendData("-rw-r--r-- 1 owner group 12 Jan 01 2026 file.bin\r\n"
+								"drwxr-xr-x 1 owner group 0 Jan 01 2026 subdir\r\n");
+					}
 					else
 						sendData("-rw-r--r-- 1 owner group 12 Jan 01 2026 file.bin\r\n");
 				}
 			} else if ( verb == "RETR" ) {
-				writeControl("150 Opening data connection\r\n");
-				sendData("hello ftp!\n");
+				if ( argument.endsWith("missing.bin") )
+					writeControl("550 Not found\r\n");
+				else {
+					writeControl("150 Opening data connection\r\n");
+					sendData("hello ftp!\n");
+				}
 			} else if ( verb == "QUIT" ) {
 				writeControl("221 Goodbye\r\n");
 				control->disconnectFromHost();
@@ -146,6 +160,18 @@ private slots:
 		QSignalSpy error(&reply, &QNetworkReply::errorOccurred);
 		QVERIFY(error.wait());
 		QCOMPARE(reply.error(), QNetworkReply::ContentNotFoundError);
+	}
+
+	void rendersDosDirectoryListing()
+	{
+		FakeFtpServer server;
+		server.dosListing = true;
+		FtpReply reply(server.url("/pub/"));
+		QSignalSpy finished(&reply, &QNetworkReply::finished);
+		QVERIFY(finished.wait());
+		const QByteArray html = reply.readAll();
+		QVERIFY(html.contains("file.bin"));
+		QVERIFY(html.contains("subdir"));
 	}
 };
 

@@ -3,11 +3,16 @@ CONFIG += testcase console c++17
 TEMPLATE = app
 TARGET = tst_ftp
 greaterThan(QMAKE_GCC_MAJOR_VERSION, 15): QMAKE_CXXFLAGS_WARN_ON += -Wno-sfinae-incomplete
-SOURCES += tst_ftp.cpp \
-    ../../src/ftpreply.cpp \
-    ../../src/qftp/qftp.cpp \
-    ../../src/qftp/qurlinfo.cpp
-HEADERS += ../../src/ftpreply.h \
-    ../../src/qftp/qftp.h \
-    ../../src/qftp/qurlinfo.h
-INCLUDEPATH += ../../src ../../src/qftp
+SOURCES += tst_ftp.cpp ../../src/ftpreply.cpp
+HEADERS += ../../src/ftpreply.h
+INCLUDEPATH += ../../src
+!win32 {
+	CONFIG += link_pkgconfig
+	PKGCONFIG += libcurl
+} else {
+	VCPKG_PREFIX = $$(VCPKG_ROOT)
+	isEmpty(VCPKG_PREFIX): VCPKG_PREFIX = $$(VCPKG_INSTALLATION_ROOT)
+	CURL_ROOT = $$VCPKG_PREFIX/installed/x64-windows
+	INCLUDEPATH += $$CURL_ROOT/include
+	LIBS += /LIBPATH:$$CURL_ROOT/lib libcurl.lib
+}

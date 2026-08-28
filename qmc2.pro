@@ -6,13 +6,18 @@ QT += core core5compat gui widgets xml network sql svg testlib webenginewidgets
 # actionable in application code and is fixed independently by the toolchain.
 greaterThan(QMAKE_GCC_MAJOR_VERSION, 15): QMAKE_CXXFLAGS_WARN_ON += -Wno-sfinae-incomplete
 contains(DEFINES, "QMC2_MULTIMEDIA=1"): QT += multimedia multimediawidgets
-HEADERS += src/qftp/qftp.h \
-	src/qftp/qurlinfo.h
-SOURCES += src/qftp/qftp.cpp \
-	src/qftp/qurlinfo.cpp
 INCLUDEPATH += src/ \
-	src/qftp \
 	src/lzma
+!win32 {
+	CONFIG += link_pkgconfig
+	PKGCONFIG += libcurl
+} else {
+	VCPKG_PREFIX = $$(VCPKG_ROOT)
+	isEmpty(VCPKG_PREFIX): VCPKG_PREFIX = $$(VCPKG_INSTALLATION_ROOT)
+	CURL_ROOT = $$VCPKG_PREFIX/installed/x64-windows
+	INCLUDEPATH += $$CURL_ROOT/include
+	LIBS += /LIBPATH:$$CURL_ROOT/lib libcurl.lib
+}
 TEMPLATE = app
 FORMS += ui/qmc2main.ui \
 	ui/options.ui \
