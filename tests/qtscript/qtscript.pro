@@ -9,7 +9,10 @@ QTSCRIPT_PREFIX = $$(QTSCRIPT_PREFIX)
     CONFIG -= link_prl
     INCLUDEPATH = $$QTSCRIPT_PREFIX/include/qt6 $$QTSCRIPT_PREFIX/include $$INCLUDEPATH
     unix:!macx: LIBS += $$QTSCRIPT_PREFIX/lib/libQt6ScriptTools.so $$QTSCRIPT_PREFIX/lib/libQt6Script.so
-    macx: LIBS += -F$$QTSCRIPT_PREFIX/lib -framework QtScriptTools -framework QtScript
+    macx {
+        QMAKE_FRAMEWORKPATH = $$QTSCRIPT_PREFIX/lib $$QMAKE_FRAMEWORKPATH
+        LIBS += -F$$QTSCRIPT_PREFIX/lib -framework QtScriptTools -framework QtScript
+    }
     win32: LIBS += $$QTSCRIPT_PREFIX/lib/Qt6ScriptTools.lib $$QTSCRIPT_PREFIX/lib/Qt6Script.lib
     DEFINES += QT_SCRIPTTOOLS_LIB QT_SCRIPT_LIB
     unix: QMAKE_RPATHDIR += $$QTSCRIPT_PREFIX/lib
