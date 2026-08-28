@@ -258,7 +258,7 @@ QMap<QString, ArchiveFile *> qmc2IconArchiveMap;
 MainEventFilter *qmc2MainEventFilter = 0;
 QHash<QString, QKeySequence> qmc2QtKeyHash;
 #if QMC2_JOYSTICK == 1
-QHash<QString, QString> qmc2JoystickFunctionHash;
+QMultiHash<QString, QString> qmc2JoystickFunctionHash;
 bool qmc2JoystickIsCalibrating = false;
 #endif
 bool qmc2ShowMachineName = false;
