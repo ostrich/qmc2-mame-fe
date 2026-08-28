@@ -24,8 +24,9 @@ QMC2 and qchdman require Qt 6.8 or newer. Qt 5 is no longer supported.
 qmc2-arcade has not yet been ported to Qt 6 and is therefore excluded from
 this release series.
 
-The qmc2 GUI also requires libcurl for FTP downloads. On Windows, the qmake
-project expects the x64-windows libcurl package under VCPKG_ROOT.
+The qmc2 GUI also requires libcurl for FTP downloads. Optional libarchive
+support is enabled with `LIBARCHIVE=1`. On Windows, the qmake project expects
+the x64-windows libcurl and libarchive packages under VCPKG_ROOT.
 
 Building and installing QMC2 from source
 ----------------------------------------

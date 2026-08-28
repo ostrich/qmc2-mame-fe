@@ -25,6 +25,7 @@ jobs:
       - name: Build qmc2 and qchdman
         env:
           DISTCFG: 1
+          LIBARCHIVE: 1
           QMAKEPATH: ${{ github.workspace }}/.deps/qtscript:${{ github.workspace }}/.deps/qtscript/lib/qt6
           QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript
         run: |

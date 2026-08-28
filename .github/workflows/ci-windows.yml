@@ -19,9 +19,9 @@ jobs:
           Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-$env:SDL_VERSION/SDL2-devel-$env:SDL_VERSION-VC.zip" -OutFile "${{ runner.workspace }}\SDL2.zip"
           Expand-Archive "${{ runner.workspace }}\SDL2.zip" -DestinationPath "${{ runner.workspace }}"
       - uses: ilammy/msvc-dev-cmd@v1
-      - name: Install libcurl
+      - name: Install native dependencies
         shell: pwsh
-        run: vcpkg install curl:x64-windows
+        run: vcpkg install curl:x64-windows libarchive:x64-windows
       - uses: msys2/setup-msys2@v2
         with:
           install: make
@@ -35,6 +35,7 @@ jobs:
           MKSPEC: win32-msvc
           FORCE_MINGW: 0
           ARCH: Windows
+          LIBARCHIVE: 1
           SDL: 2
           SDL_LIBS: 'LIBS+="../SDL2-${SDL_VERSION}/lib/x64/SDL2.lib ../SDL2-${SDL_VERSION}/lib/x64/SDL2main.lib"'
           SDL_INCLUDEPATH: 'INCLUDEPATH+="../SDL2-${SDL_VERSION}/include"'
@@ -78,7 +79,9 @@ jobs:
       - name: Run archive correctness fixtures
         shell: pwsh
         run: |
-          foreach ($test in @("bigbytearray", "sevenzip")) {
+          $vcpkgRoot = if ($env:VCPKG_ROOT) { $env:VCPKG_ROOT } else { $env:VCPKG_INSTALLATION_ROOT }
+          $env:PATH = "$vcpkgRoot\installed\x64-windows\bin;$env:PATH"
+          foreach ($test in @("archivefile", "bigbytearray", "sevenzip")) {
             New-Item -ItemType Directory "build-$test-tests"
             Push-Location "build-$test-tests"
             qmake "..\tests\$test\$test.pro" CONFIG+=release

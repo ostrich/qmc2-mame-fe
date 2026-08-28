@@ -317,7 +317,12 @@ DEFINES += Z7_PPMD_SUPPORT Z7_ST Z7_NO_UNALIGNED_ACCESS
 contains(DEFINES, QMC2_LIBARCHIVE_ENABLED) {
 	SOURCES += src/archivefile.cpp
 	HEADERS += src/archivefile.h
-	LIBS += -larchive
+	!win32 {
+		PKGCONFIG += libarchive
+	} else {
+		INCLUDEPATH += $$CURL_ROOT/include
+		LIBS += /LIBPATH:$$CURL_ROOT/lib archive.lib
+	}
 }
 
 contains(DEFINES, QMC2_BUNDLED_MINIZIP) {
