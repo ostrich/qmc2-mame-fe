@@ -33,7 +33,6 @@
 #include <QAction>
 #include <QBuffer>
 #include <QByteArray>
-#include <QXmlQuery>
 #include <QStringList>
 #include "highlighter.h"
 
@@ -65,9 +64,6 @@ class HtmlEditor : public QMainWindow
 		bool stopLoading;
 		bool loadSuccess;
 		QStringList imageTypes;
-		QBuffer *xmlQueryBuffer;
-		QByteArray *xmlDocument;
-		QXmlQuery xmlQuery;
 		QStringList xmlResult;
 
 		HtmlEditor(QString, bool embedded = false, QWidget *parent = 0);

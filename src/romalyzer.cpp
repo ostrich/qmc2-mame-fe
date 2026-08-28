@@ -13,7 +13,6 @@
 #include <QDateTime>
 #include <QDate>
 #include <QTime>
-#include <QXmlQuery>
 #include <QPalette>
 #include <QRegExp>
 #include <QChar>
@@ -22,6 +21,7 @@
 #endif
 
 #include "romalyzer.h"
+#include "xmlmachine.h"
 #include "qmc2main.h"
 #include "options.h"
 #include "machinelist.h"
@@ -862,12 +862,8 @@ void ROMAlyzer::analyze()
 
 			// step 2: parse XML data, insert ROMs / CHDs and check-sums as they *should* be
 			log(tr("parsing XML data for '%1'").arg(setKey));
-			QXmlInputSource xmlInputSource;
-			xmlInputSource.setData(xmlBuffer);
 			ROMAlyzerXmlHandler xmlHandler(item, checkBoxExpandFiles->isChecked(), checkBoxAutoScroll->isChecked(), mode());
-			QXmlSimpleReader xmlReader;
-			xmlReader.setContentHandler(&xmlHandler);
-			if ( xmlReader.parse(xmlInputSource) )
+			if ( xmlHandler.parse(xmlBuffer) )
 				log(tr("done (parsing XML data for '%1')").arg(setKey));
 			else
 				log(tr("error (parsing XML data for '%1')").arg(setKey));
@@ -3192,7 +3188,6 @@ void ROMAlyzer::exportToDataFile()
 			ts << "\t\t<url></url>\n";
 			ts << "\t\t<comment>" << tr("Created by QMC2 v%1").arg(XSTR(QMC2_VERSION)) << "</comment>\n";
 			ts << "\t</header>\n";
-			QString mainEntityName = "machine";
 			for (int i = 0; i < treeWidgetChecksums->topLevelItemCount(); i++) {
 				if ( i % QMC2_ROMALYZER_EXPORT_RESPONSE ) {
 					progressBar->setValue(i);
@@ -3202,26 +3197,12 @@ void ROMAlyzer::exportToDataFile()
 				QString name = item->text(QMC2_ROMALYZER_COLUMN_SET).split(" ", QString::SkipEmptyParts)[0];
 				if ( analyzerBadSets.contains(name) ) {
 					QString sourcefile, isbios, cloneof, romof, sampleof;
-					QByteArray xmlDocument(ROMAlyzer::getXmlData(name, true).toUtf8());
-					QBuffer xmlQueryBuffer(&xmlDocument);
-					xmlQueryBuffer.open(QIODevice::ReadOnly);
-					QXmlQuery xmlQuery(QXmlQuery::XQuery10);
-					xmlQuery.bindVariable("xmlDocument", &xmlQueryBuffer);
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@sourcefile/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&sourcefile);
-					sourcefile = sourcefile.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@isbios/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&isbios);
-					isbios = isbios.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@cloneof/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&cloneof);
-					cloneof = cloneof.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@romof/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&romof);
-					romof = romof.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@sampleof/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&sampleof);
-					sampleof = sampleof.trimmed();
+					XmlMachine machine(ROMAlyzer::getXmlData(name, true).toUtf8());
+					sourcefile = machine.attribute("sourcefile");
+					isbios = machine.attribute("isbios");
+					cloneof = machine.attribute("cloneof");
+					romof = machine.attribute("romof");
+					sampleof = machine.attribute("sampleof");
 					ts << "\t<machine name=\"" << name << "\"";
 					if ( !sourcefile.isEmpty() )
 						ts << " sourcefile=\"" << sourcefile << "\"";
@@ -3235,17 +3216,11 @@ void ROMAlyzer::exportToDataFile()
 						ts << " sampleof=\"" << sampleof << "\"";
 					ts << ">\n";
 					QString description, year, manufacturer;
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/description/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&description);
-					description = description.trimmed();
+					description = machine.childText("description");
 					ts << "\t\t<description>" << description << "</description>\n";
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/year/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&year);
-					year = year.trimmed();
+					year = machine.childText("year");
 					ts << "\t\t<year>" << year << "</year>\n";
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/manufacturer/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&manufacturer);
-					manufacturer = manufacturer.trimmed();
+					manufacturer = machine.childText("manufacturer");
 					ts << "\t\t<manufacturer>" << manufacturer << "</manufacturer>\n";
 					for (int j = 0; j < item->childCount(); j++) {
 						QTreeWidgetItem *childItem = item->child(j);
@@ -4093,7 +4068,22 @@ ROMAlyzerXmlHandler::ROMAlyzerXmlHandler(QTreeWidgetItem *parent, bool expand, b
 	greyBrush = QBrush(QColor(128, 128, 128));
 }
 
-bool ROMAlyzerXmlHandler::startElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName, const QXmlAttributes &attributes)
+bool ROMAlyzerXmlHandler::parse(const QString &xml)
+{
+	QXmlStreamReader reader(xml);
+	while ( !reader.atEnd() ) {
+		reader.readNext();
+		if ( reader.isStartElement() )
+			startElement(reader.name().toString(), reader.attributes());
+		else if ( reader.isEndElement() )
+			endElement(reader.name().toString());
+		else if ( reader.isCharacters() )
+			characters(reader.text().toString());
+	}
+	return !reader.hasError();
+}
+
+bool ROMAlyzerXmlHandler::startElement(const QString &qName, const QXmlStreamAttributes &attributes)
 {
 	QString s;
 	QString mainEntityName;
@@ -4164,7 +4154,7 @@ bool ROMAlyzerXmlHandler::startElement(const QString &/*namespaceURI*/, const QS
 	return true;
 }
 
-bool ROMAlyzerXmlHandler::endElement(const QString &/*namespaceURI*/, const QString &/*localName*/, const QString &qName)
+bool ROMAlyzerXmlHandler::endElement(const QString &qName)
 {
 	QString mainEntityName;
 

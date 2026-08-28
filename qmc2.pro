@@ -159,6 +159,7 @@ SOURCES += src/qmc2main.cpp \
 	src/manualscanner.cpp \
 	src/rompathcleaner.cpp \
 	src/setupwizard.cpp \
+	src/xmlmachine.cpp \
 	src/clickablelabel.cpp \
 	src/htmleditor/htmleditor.cpp \
 	src/htmleditor/highlighter.cpp \
@@ -285,6 +286,7 @@ HEADERS += src/qmc2main.h \
 	src/dbcolumninfo.h \
 	src/rompathcleaner.h \
 	src/setupwizard.h \
+	src/xmlmachine.h \
 	src/clickablelabel.h \
 	src/htmleditor/htmleditor.h \
 	src/htmleditor/highlighter.h \

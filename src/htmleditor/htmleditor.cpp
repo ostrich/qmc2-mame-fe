@@ -39,7 +39,7 @@
 #include <QHash>
 #include <QRegExp>
 #include <QDesktopServices>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QToolButton>
 #include <QFileDialog>
 #include <QInputDialog>
@@ -54,6 +54,7 @@
 #include "macros.h"
 #include "miniwebbrowser.h"
 #include "htmleditor.h"
+#include "xmlmachine.h"
 #include "highlighter.h"
 #include "imagewidget.h"
 #include "preview.h"
@@ -137,8 +138,6 @@ HtmlEditor::HtmlEditor(QString editorName, bool embedded, QWidget *parent) :
 
 	loadActive = false;
 	loadSuccess = true;
-	xmlQueryBuffer = 0;
-	xmlDocument = 0;
 
 	// hide new-from-template and file-revert actions initially
 	ui->actionFileNewFromTemplate->setVisible(false);
@@ -516,7 +515,7 @@ void HtmlEditor::fileOpenInBrowser()
 		webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
 	else {
 		webBrowser->adjustSize();
-		webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
+		webBrowser->move(QGuiApplication::primaryScreen()->availableGeometry().center() - webBrowser->rect().center());
 	}
 	connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 	if ( ui->tabWidget->currentIndex() == 1 ) {
@@ -987,7 +986,7 @@ void HtmlEditor::openLink(const QUrl &url)
 		webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
 	else {
 		webBrowser->adjustSize();
-		webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
+		webBrowser->move(QGuiApplication::primaryScreen()->availableGeometry().center() - webBrowser->rect().center());
 	}
 	connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 	webBrowser->webViewBrowser->load(url);
@@ -1238,17 +1237,10 @@ QString HtmlEditor::getImage(QString currentImage)
 
 bool HtmlEditor::queryLocalXml(QString id, QString queryString, bool sort, QString systemEntityName)
 {
-	QByteArray localXmlDocument(ROMAlyzer::getXmlData(id, true).toLocal8Bit());
-	if ( !systemEntityName.isEmpty() )
-		localXmlDocument.replace("machine", systemEntityName.toLocal8Bit());
-	QBuffer localXmlQueryBuffer(&localXmlDocument);
-	localXmlQueryBuffer.open(QIODevice::ReadOnly);
-	xmlQuery.bindVariable("xmlDocument", &localXmlQueryBuffer);
-	xmlResult.clear();
 	if ( !queryString.contains("doc($xmlDocument)") )
 		queryString.prepend("doc($xmlDocument)");
-	xmlQuery.setQuery(queryString);
-	if ( xmlQuery.evaluateTo(&xmlResult) ) {
+	XmlMachine machine(ROMAlyzer::getXmlData(id, true).toUtf8());
+	if ( machine.evaluateBundledTemplateQuery(queryString, systemEntityName, &xmlResult) ) {
 		if ( sort )
 			std::sort(xmlResult.begin(), xmlResult.end(), MainWindow::qStringListLessThan);
 		return true;
@@ -1637,13 +1629,6 @@ QString HtmlEditor::operatingSystemName()
 
 void HtmlEditor::closeXmlBuffer()
 {
-	if ( xmlQueryBuffer ) {
-		xmlQueryBuffer->close();
-		delete xmlQueryBuffer;
-		delete xmlDocument;
-		xmlQueryBuffer = 0;
-		xmlDocument = 0;
-	}
 }
 
 void HtmlEditor::enableFileNewFromTemplateAction(bool enable)

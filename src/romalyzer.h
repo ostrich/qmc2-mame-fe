@@ -236,7 +236,7 @@ class CheckSumScannerThread : public QThread
 		bool scanRegularFile(QString, quint64 *, QString *, QString *);
 };
 
-class ROMAlyzerXmlHandler : public QXmlDefaultHandler
+class ROMAlyzerXmlHandler
 {
 	public:
 		QString currentText;
@@ -259,8 +259,9 @@ class ROMAlyzerXmlHandler : public QXmlDefaultHandler
 
 		ROMAlyzerXmlHandler(QTreeWidgetItem *, bool expand = false, bool scroll = false, int mode = QMC2_ROMALYZER_MODE_SYSTEM);
 
-		bool startElement(const QString &, const QString &, const QString &, const QXmlAttributes &);
-		bool endElement(const QString &, const QString &, const QString &);
+		bool parse(const QString &);
+		bool startElement(const QString &, const QXmlStreamAttributes &);
+		bool endElement(const QString &);
 		bool characters(const QString &);
 };
 

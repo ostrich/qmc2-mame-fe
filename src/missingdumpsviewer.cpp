@@ -6,7 +6,6 @@
 #include <QDateTime>
 #include <QByteArray>
 #include <QBuffer>
-#include <QXmlQuery>
 #include <QMultiMap>
 #include <QMessageBox>
 
@@ -15,6 +14,7 @@
 #include "settings.h"
 #include "options.h"
 #include "macros.h"
+#include "xmlmachine.h"
 
 extern Settings *qmc2Config;
 extern Options *qmc2Options;
@@ -58,7 +58,6 @@ void MissingDumpsViewer::on_toolButtonExportToDataFile_clicked()
 			ts << "\t\t<url></url>\n";
 			ts << "\t\t<comment>" << tr("Created by QMC2 v%1").arg(XSTR(QMC2_VERSION)) << "</comment>\n";
 			ts << "\t</header>\n";
-			QString mainEntityName("machine");
 			QMultiMap<QString, DumpRecord *> dumpMap;
 			progressBar->setFormat(tr("Preparing"));
 			progressBar->setRange(0, treeWidget->topLevelItemCount());
@@ -78,35 +77,15 @@ void MissingDumpsViewer::on_toolButtonExportToDataFile_clicked()
 				QString id(dumpKeys.at(i));
 				if ( defaultEmulator() ) {
 					QString sourcefile, isbios, cloneof, romof, sampleof, description, year, manufacturer, merge;
-					QByteArray xmlDocument(ROMAlyzer::getXmlData(id, true).toUtf8());
-					QBuffer xmlQueryBuffer(&xmlDocument);
-					xmlQueryBuffer.open(QIODevice::ReadOnly);
-					QXmlQuery xmlQuery(QXmlQuery::XQuery10);
-					xmlQuery.bindVariable("xmlDocument", &xmlQueryBuffer);
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@sourcefile/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&sourcefile);
-					sourcefile = sourcefile.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@isbios/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&isbios);
-					isbios = isbios.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@cloneof/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&cloneof);
-					cloneof = cloneof.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@romof/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&romof);
-					romof = romof.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/@sampleof/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&sampleof);
-					sampleof = sampleof.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/description/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&description);
-					description = description.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/year/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&year);
-					year = year.trimmed();
-					xmlQuery.setQuery(QString("doc($xmlDocument)//%1/manufacturer/string()").arg(mainEntityName));
-					xmlQuery.evaluateTo(&manufacturer);
-					manufacturer = manufacturer.trimmed();
+					XmlMachine machine(ROMAlyzer::getXmlData(id, true).toUtf8());
+					sourcefile = machine.attribute("sourcefile");
+					isbios = machine.attribute("isbios");
+					cloneof = machine.attribute("cloneof");
+					romof = machine.attribute("romof");
+					sampleof = machine.attribute("sampleof");
+					description = machine.childText("description");
+					year = machine.childText("year");
+					manufacturer = machine.childText("manufacturer");
 					ts << "\t<machine name=\"" << id << "\"";
 					if ( !sourcefile.isEmpty() )
 						ts << " sourcefile=\"" << sourcefile << "\"";
@@ -128,9 +107,7 @@ void MissingDumpsViewer::on_toolButtonExportToDataFile_clicked()
 					foreach (DumpRecord *dr, dumpMap.values(id)) {
 						if ( dr->type() == "ROM" ) {
 							ts << "\t\t<rom name=\"" << dr->name() << "\"";
-							xmlQuery.setQuery(QString("doc($xmlDocument)//%1/rom[@name='%2']/@merge/string()").arg(mainEntityName).arg(dr->name()));
-							xmlQuery.evaluateTo(&merge);
-							merge = merge.trimmed();
+							merge = machine.namedChildAttribute("rom", dr->name(), "merge");
 							if ( !merge.isEmpty() )
 								ts << " merge=\"" << merge << "\"";
 							if ( !dr->size().isEmpty() )
@@ -142,9 +119,7 @@ void MissingDumpsViewer::on_toolButtonExportToDataFile_clicked()
 							ts << "/>\n";
 						} else {
 							ts << "\t\t<disk name=\"" << dr->name() << "\"";
-							xmlQuery.setQuery(QString("doc($xmlDocument)//%1/disk[@name='%2']/@merge/string()").arg(mainEntityName).arg(dr->name()));
-							xmlQuery.evaluateTo(&merge);
-							merge = merge.trimmed();
+							merge = machine.namedChildAttribute("disk", dr->name(), "merge");
 							if ( !merge.isEmpty() )
 								ts << " merge=\"" << merge << "\"";
 							if ( !dr->sha1().isEmpty() )
