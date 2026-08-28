@@ -23,7 +23,6 @@
 
 #include <QtGui>
 #include <QHBoxLayout>
-#include <QTest>
 #include <QTabBar>
 #include <QMap>
 #include <QHash>
@@ -48,6 +47,7 @@
 #include <QToolTip>
 #include <QWebEngineView>
 #include <QListWidgetItem>
+#include <QPointer>
 
 #include <algorithm> // std::sort()
 
@@ -411,20 +411,12 @@ void HtmlEditor::setContentEditable(bool readonly)
 void HtmlEditor::checkRevertStatus()
 {
 	if ( !fileName.isEmpty() ) {
-		bool wasModified = !loadedContent.isEmpty();
-		if ( ui->tabWidget->currentIndex() == 0 ) {
-			QString data("%1");
-			ui->webView->page()->toHtml([data](const QString &result) { data.arg(result); });
-			wasModified = loadedContent != data;
-		} else
-			wasModified = loadedContent != ui->plainTextEdit->toPlainText();
-		QString data("%1");
-		ui->webView->page()->toHtml([data](const QString &result) { data.arg(result); });
-		if ( data != emptyContent && wasModified ) {
-			QFile f(fileName);
-			ui->actionFileRevert->setVisible(f.exists());
-		} else
-			ui->actionFileRevert->setVisible(false);
+		const bool htmlTab = ui->tabWidget->currentIndex() != 0;
+		const QString plainText = ui->plainTextEdit->toPlainText();
+		ui->webView->page()->toHtml([this, htmlTab, plainText](const QString &data) {
+			const bool wasModified = loadedContent != (htmlTab ? plainText : data);
+			ui->actionFileRevert->setVisible(data != emptyContent && wasModified && QFile::exists(fileName));
+		});
 	} else
 		ui->actionFileRevert->setVisible(false);
 }
@@ -510,6 +502,8 @@ void HtmlEditor::fileOpen()
 void HtmlEditor::fileOpenInBrowser()
 {
 	MiniWebBrowser *webBrowser = new MiniWebBrowser(0);
+	QPointer<MiniWebBrowser> browserGuard(webBrowser);
+	QPointer<HtmlEditor> editorGuard(this);
 	webBrowser->setAttribute(Qt::WA_DeleteOnClose);
 	if ( qmc2Config->contains(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry") )
 		webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
@@ -519,12 +513,15 @@ void HtmlEditor::fileOpenInBrowser()
 	}
 	connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
 	if ( ui->tabWidget->currentIndex() == 1 ) {
-		ui->webView->page()->setHtml(ui->plainTextEdit->toPlainText());
-		wysiwygDirty = false;
-	}
-	QString data("%1");
-	webBrowser->webViewBrowser->page()->toHtml([data](const QString &result) { data.arg(result); });
-	webBrowser->webViewBrowser->page()->setHtml(noScript(data));
+		QString data(ui->plainTextEdit->toPlainText());
+		webBrowser->webViewBrowser->page()->setHtml(noScript(data));
+	} else
+		ui->webView->page()->toHtml([browserGuard, editorGuard](const QString &html) {
+			if ( !browserGuard || !editorGuard )
+				return;
+			QString data(html);
+			browserGuard->webViewBrowser->page()->setHtml(editorGuard->noScript(data));
+		});
 	if ( !fileName.isEmpty() && QFile(fileName).exists() ) {
 		webBrowser->homeUrl = QUrl::fromUserInput(fileName);
 		webBrowser->comboBoxURL->lineEdit()->setText(webBrowser->homeUrl.toString());
@@ -546,24 +543,20 @@ bool HtmlEditor::fileSave()
 		return rc;
 	}
 
-	QFile file(fileName);
-	bool success = file.open(QIODevice::WriteOnly);
-	if ( success ) {
-		if ( ui->tabWidget->currentIndex() == 1 ) {
-			ui->webView->page()->setHtml(ui->plainTextEdit->toPlainText());
-			wysiwygDirty = false;
-		}
-		QString content("%1");
-		ui->webView->page()->toHtml([content](const QString &result) { content.arg(result); });
-		QTextStream ts(&file);
-		ts << noScript(content);
-		ts.flush();
-		file.close();
-		success = true;
+	const QString targetFileName(fileName);
+	if ( ui->tabWidget->currentIndex() == 1 ) {
+		localModified = !writeContent(targetFileName, ui->plainTextEdit->toPlainText());
+		checkRevertStatus();
+	} else {
+		QPointer<HtmlEditor> guard(this);
+		ui->webView->page()->toHtml([guard, targetFileName](const QString &html) {
+			if ( !guard )
+				return;
+			guard->localModified = !guard->writeContent(targetFileName, html);
+			guard->checkRevertStatus();
+		});
 	}
-	localModified = !success;
-	checkRevertStatus();
-	return success;
+	return true;
 }
 
 bool HtmlEditor::fileSaveAs()
@@ -579,22 +572,15 @@ bool HtmlEditor::fileSaveAs()
 	if ( fileName.isEmpty() )
 		setCurrentFileName(fn);
 
-	QFile file(fn);
-	bool success = file.open(QIODevice::WriteOnly);
-	if ( success ) {
-		if ( ui->tabWidget->currentIndex() == 1 ) {
-			ui->webView->page()->setHtml(ui->plainTextEdit->toPlainText());
-			wysiwygDirty = false;
-		}
-		QString content("%1");
-		ui->webView->page()->toHtml([content](const QString &result) { content.arg(result); });
-		QTextStream ts(&file);
-		ts << noScript(content);
-		ts.flush();
-		file.close();
-		success = true;
-	}
-	return success;
+	if ( ui->tabWidget->currentIndex() == 1 )
+		return writeContent(fn, ui->plainTextEdit->toPlainText());
+
+	QPointer<HtmlEditor> guard(this);
+	ui->webView->page()->toHtml([guard, fn](const QString &html) {
+		if ( guard )
+			guard->writeContent(fn, html);
+	});
+	return true;
 }
 
 void HtmlEditor::insertImageFromFile()
@@ -782,23 +768,14 @@ void HtmlEditor::execCommand(const QString &cmd, const QString &arg)
 	localModified = true;
 }
 
-bool HtmlEditor::queryCommandState(const QString &cmd)
-{
-	QWebEnginePage *page = ui->webView->page();
-	QString js(QString("document.queryCommandState(\"%1\", false, null)").arg(cmd));
-	QString result("%1");
-	page->runJavaScript(js, [result](const QVariant &r) { result.arg(r.toString()); });
-	return result.simplified().toLower() == "true";
-}
-
 void HtmlEditor::styleParagraph()
 {
 	execCommand("formatBlock", "p");
 	if ( generateEmptyContent ) {
-		QString data("%1");
-		ui->webView->page()->toHtml([data](const QString &result) { data.arg(result); });
-		emptyContent = data;
-		generateEmptyContent = false;
+		ui->webView->page()->toHtml([this](const QString &data) {
+			emptyContent = data;
+			generateEmptyContent = false;
+		});
 	}
 }
 
@@ -933,9 +910,9 @@ void HtmlEditor::adjustActions()
 	FOLLOW_CHECK(ui->actionFormatUnderline, QWebEnginePage::ToggleUnderline);
 	*/
 
-	ui->actionFormatStrikethrough->setChecked(queryCommandState("strikeThrough"));
-	ui->actionFormatNumberedList->setChecked(queryCommandState("insertOrderedList"));
-	ui->actionFormatBulletedList->setChecked(queryCommandState("insertUnorderedList"));
+	ui->webView->page()->runJavaScript("document.queryCommandState('strikeThrough')", [this](const QVariant &state) { ui->actionFormatStrikethrough->setChecked(state.toBool()); });
+	ui->webView->page()->runJavaScript("document.queryCommandState('insertOrderedList')", [this](const QVariant &state) { ui->actionFormatNumberedList->setChecked(state.toBool()); });
+	ui->webView->page()->runJavaScript("document.queryCommandState('insertUnorderedList')", [this](const QVariant &state) { ui->actionFormatBulletedList->setChecked(state.toBool()); });
 }
 
 void HtmlEditor::adjustWYSIWYG()
@@ -965,11 +942,11 @@ void HtmlEditor::changeTab(int index)
 		case 1:
 			if ( htmlDirty ) {
 				ui->plainTextEdit->blockSignals(true);
-				QString data("%1");
-				ui->webView->page()->toHtml([data](const QString &result) { data.arg(result); });
-				ui->plainTextEdit->setPlainText(data);
-				ui->plainTextEdit->blockSignals(false);
-				htmlDirty = false;
+				ui->webView->page()->toHtml([this](const QString &data) {
+					ui->plainTextEdit->setPlainText(data);
+					ui->plainTextEdit->blockSignals(false);
+					htmlDirty = false;
+				});
 			}
 			break;
 
@@ -1103,31 +1080,30 @@ bool HtmlEditor::loadTemplate(const QString &f)
 		data.replace(it.key(), replacementString);
 	}
 
-	// pre-execute JavaScript (if any) and wait for asynchronous loads to finish...
+	// Pre-execute JavaScript (if any), then capture the resulting document once
+	// QWebEnginePage reports that all asynchronous resources have finished.
 	loadActive = true;
 	stopLoading = false;
 	emptyContent = data;
-	ui->webView->setHtml(data, QUrl::fromLocalFile(f));
-	while ( loadActive && !qmc2CleaningUp && !stopLoading ) {
-		QTest::qWait(1);
-		if ( !qmc2CleaningUp && !stopLoading )
-			qApp->processEvents(QEventLoop::AllEvents, 1);
-	}
-	if ( !qmc2CleaningUp && !stopLoading ) {
-		ui->webView->setHtml(data, QUrl::fromLocalFile(f));
-		if ( actionReadOnly->isChecked() )
-			ui->webView->page()->runJavaScript("document.documentElement.contentEditable = false");
-		else
-			ui->webView->page()->runJavaScript("document.documentElement.contentEditable = true");
-		ui->plainTextEdit->setReadOnly(actionReadOnly->isChecked());
+	disconnect(templateLoadConnection);
+	templateLoadConnection = connect(ui->webView->page(), &QWebEnginePage::loadFinished, this, [this, f](bool ok) {
+		disconnect(templateLoadConnection);
+		if ( !ok || qmc2CleaningUp || stopLoading ) {
+			emptyContent = "QMC2_INVALID";
+			return;
+		}
+		setContentEditable(actionReadOnly->isChecked());
 		if ( fileName.isEmpty() )
 			setCurrentFileName(f);
-		QString data("%1");
-		ui->webView->page()->toHtml([data](const QString &result) { data.arg(result); });
-		emptyContent = data;
-		adjustHTML();
-	} else
-		emptyContent = "QMC2_INVALID";
+		QPointer<HtmlEditor> guard(this);
+		ui->webView->page()->toHtml([guard](const QString &html) {
+			if ( !guard )
+				return;
+			guard->emptyContent = html;
+			guard->adjustHTML();
+		});
+	});
+	ui->webView->setHtml(data, QUrl::fromLocalFile(f));
 
 	return true;
 }
@@ -1644,43 +1620,52 @@ bool HtmlEditor::save()
 	if ( fileName.isEmpty() )
 		return false;
 
-	if ( ui->tabWidget->currentIndex() == 1 ) {
-		ui->webView->page()->setHtml(ui->plainTextEdit->toPlainText());
-		wysiwygDirty = false;
-	}
-
-	QString data("%1");
-	ui->webView->page()->toHtml([data](const QString &result) { data.arg(result); });
-	loadedContent = data;
-
-	if ( loadedContent == emptyContent ) {
-		QFile f(fileName);
-		if ( f.exists() )
-			f.remove();
-		localModified = false;
-		return true;
-	}
-
-	QFileInfo fi(fileName);
-	QString targetPath(QDir::cleanPath(fi.absoluteDir().path()));
-
-	if ( !QFile::exists(targetPath) ) {
-		QDir dummyDir;
-		if ( !dummyDir.mkpath(targetPath) )
-			return false;
-	}
-
-	QFile f(fileName);
-	if ( !f.open(QIODevice::WriteOnly) )
+	const QString targetFileName(fileName);
+	if ( !prepareSavePath(targetFileName) )
 		return false;
 
-	QTextStream ts(&f);
-	ts << noScript(loadedContent);
-	ts.flush();
-	f.close();
-	localModified = false;
+	if ( ui->tabWidget->currentIndex() == 1 ) {
+		loadedContent = ui->plainTextEdit->toPlainText();
+		localModified = !writeContent(targetFileName, loadedContent, true);
+		return !localModified;
+	}
+
+	QPointer<HtmlEditor> guard(this);
+	ui->webView->page()->toHtml([guard, targetFileName](const QString &html) {
+		if ( !guard )
+			return;
+		guard->loadedContent = html;
+		guard->localModified = !guard->writeContent(targetFileName, html, true);
+	});
 
 	return true;
+}
+
+bool HtmlEditor::prepareSavePath(const QString &targetFileName)
+{
+	QFileInfo fi(targetFileName);
+	QString targetPath(QDir::cleanPath(fi.absoluteDir().path()));
+	return QFile::exists(targetPath) || QDir().mkpath(targetPath);
+}
+
+bool HtmlEditor::writeContent(const QString &targetFileName, QString content, bool removeEmptyFile)
+{
+	if ( removeEmptyFile && content == emptyContent ) {
+		QFile file(targetFileName);
+		return !file.exists() || file.remove();
+	}
+
+	if ( !prepareSavePath(targetFileName) )
+		return false;
+
+	QFile file(targetFileName);
+	if ( !file.open(QIODevice::WriteOnly) )
+		return false;
+
+	QTextStream stream(&file);
+	stream << noScript(content);
+	stream.flush();
+	return stream.status() == QTextStream::Ok;
 }
 
 void HtmlEditor::setCurrentFileName(const QString &fileName)

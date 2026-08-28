@@ -78,7 +78,8 @@ class HtmlEditor : public QMainWindow
 	private:
 		void execCommand(const QString&);
 		void execCommand(const QString &cmd, const QString &arg);
-		bool queryCommandState(const QString&);
+		bool prepareSavePath(const QString &targetFileName);
+		bool writeContent(const QString &targetFileName, QString content, bool removeEmptyFile = false);
 
 	public slots:
 		void loadStarted();
@@ -201,6 +202,7 @@ class HtmlEditor : public QMainWindow
 		QDialog *insertHtmlDialog;
 		Ui_TablePropertyDialog *ui_tablePropertyDialog;
 		QDialog *tablePropertyDialog;
+		QMetaObject::Connection templateLoadConnection;
 };
 
 #endif // HTML_EDITOR_H
