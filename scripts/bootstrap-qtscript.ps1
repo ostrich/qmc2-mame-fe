@@ -24,7 +24,8 @@ if (-not (Test-Path $qtCmake)) { throw "qt-cmake-private not found below $QtRoot
 
 & $qtCmake -S $sourceDir -B $buildDir -G 'Ninja Multi-Config' `
     "-DCMAKE_INSTALL_PREFIX=$($Prefix.Replace('\', '/'))" `
-    -DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF
+    -DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF `
+    -DWARNINGS_ARE_ERRORS=OFF
 if ($LASTEXITCODE) { throw 'QtScript configure failed' }
 cmake --build $buildDir --config RelWithDebInfo --parallel $Parallel
 if ($LASTEXITCODE) { throw 'QtScript build failed' }

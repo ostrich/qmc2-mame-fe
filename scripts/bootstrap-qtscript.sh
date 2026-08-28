@@ -43,13 +43,15 @@ if [[ -n "$qt_cmake" ]]; then
 	"$qt_cmake" -S "$source_dir" -B "$build_dir" -G Ninja \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX="$prefix" \
-		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF
+		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF \
+		-DWARNINGS_ARE_ERRORS=OFF
 else
 	cmake -S "$source_dir" -B "$build_dir" -G Ninja \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX="$prefix" \
 		-DCMAKE_PREFIX_PATH="$qt_root" \
-		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF
+		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF \
+		-DWARNINGS_ARE_ERRORS=OFF
 fi
 cmake --build "$build_dir" --parallel "$parallel"
 cmake --install "$build_dir"
