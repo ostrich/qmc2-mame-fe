@@ -72,7 +72,6 @@ jobs:
           for framework in .deps/qtscript/lib/QtScript*.framework; do
             ditto "$framework" "src/tools/qchdman/qchdman.app/Contents/Frameworks/$(basename "$framework")"
           done
-          install_name_tool -add_rpath @executable_path/../Frameworks src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman
       - name: Verify bundled libraries
         run: |
           otool -L qmc2-sdlmame.app/Contents/MacOS/qmc2-sdlmame
