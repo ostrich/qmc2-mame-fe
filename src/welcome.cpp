@@ -243,7 +243,7 @@ void Welcome::setupLanguage()
 				lang = "sv";
 				break;
 			default:
-				switch ( QLocale::system().country() ) {
+				switch ( QLocale::system().territory() ) {
 					case QLocale::Brazil:
 						lang = "pt_BR";
 						break;
@@ -260,7 +260,7 @@ void Welcome::setupLanguage()
 		delete qmc2Translator;
 	}
 	qmc2Translator = new QTranslator(0);
-	qmc2Translator->load(QString(":/data/lng/qmc2_%1.qm").arg(lang));
+	Q_UNUSED(qmc2Translator->load(QString(":/data/lng/qmc2_%1.qm").arg(lang)));
 	qApp->installTranslator(qmc2Translator);
 }
 

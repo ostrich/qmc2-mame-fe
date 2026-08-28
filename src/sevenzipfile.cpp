@@ -389,7 +389,7 @@ void SevenZipFile::createEntryList()
 		int fileItemLength = SzArEx_GetFileNameUtf16(db(), i, 0);
 		UInt16 *tempFileName = (UInt16 *)SzAlloc(0, fileItemLength * sizeof(UInt16));
 		SzArEx_GetFileNameUtf16(db(), i, tempFileName);
-		QString fileItemName(QString::fromUtf16(tempFileName, fileItemLength - 1));
+		QString fileItemName(QString::fromUtf16(reinterpret_cast<const char16_t *>(tempFileName), fileItemLength - 1));
 		m_nameToIndexCache.insert(fileItemName, i);
 		SzFree(0, tempFileName);
 		QDateTime dateTime;

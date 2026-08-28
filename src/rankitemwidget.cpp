@@ -165,7 +165,7 @@ void RankItemWidget::mousePressEvent(QMouseEvent *e)
 {
 	if ( e->buttons() & Qt::LeftButton )
 		if ( rect().contains(e->pos()) )
-			updateRankFromMousePos(e->x());
+			updateRankFromMousePos(qRound(e->position().x()));
 	e->ignore();
 }
 
@@ -173,7 +173,7 @@ void RankItemWidget::mouseMoveEvent(QMouseEvent *e)
 {
 	if ( e->buttons() & Qt::LeftButton )
 		if ( rect().contains(e->pos()) )
-			updateRankFromMousePos(e->x());
+			updateRankFromMousePos(qRound(e->position().x()));
 	e->ignore();
 }
 

@@ -316,7 +316,7 @@ void CustomIDSetup::actionDefaultIdIconTriggered()
 {
 	QAction *action = (QAction *)sender();
 	if ( action ) {
-		QToolButton *tb = (QToolButton *)action->parentWidget()->parentWidget();
+		QToolButton *tb = qobject_cast<QToolButton *>(action->parent() ? action->parent()->parent() : 0);
 		if ( tb ) {
 			tb->setIcon(QIcon(QString::fromUtf8(":/data/img/pacman.png")));
 			tb->setWhatsThis(":/data/img/pacman.png");
@@ -328,7 +328,7 @@ void CustomIDSetup::actionNoIdIconTriggered()
 {
 	QAction *action = (QAction *)sender();
 	if ( action ) {
-		QToolButton *tb = (QToolButton *)action->parentWidget()->parentWidget();
+		QToolButton *tb = qobject_cast<QToolButton *>(action->parent() ? action->parent()->parent() : 0);
 		if ( tb ) {
 			tb->setIcon(QIcon());
 			tb->setWhatsThis("[none]");

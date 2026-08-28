@@ -458,8 +458,9 @@ void HtmlEditor::fileNew()
 	int my = ui->webView->height() / 2;
 	QPoint center = QPoint(mx, my);
 	ui->webView->setFocus();
-	QMouseEvent *e1 = new QMouseEvent(QEvent::MouseButtonPress, center, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-	QMouseEvent *e2 = new QMouseEvent(QEvent::MouseButtonRelease, center, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	const QPoint globalCenter = ui->webView->mapToGlobal(center);
+	QMouseEvent *e1 = new QMouseEvent(QEvent::MouseButtonPress, QPointF(center), QPointF(center), QPointF(globalCenter), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+	QMouseEvent *e2 = new QMouseEvent(QEvent::MouseButtonRelease, QPointF(center), QPointF(center), QPointF(globalCenter), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 	QApplication::postEvent(ui->webView, e1);
 	QApplication::postEvent(ui->webView, e2);
 

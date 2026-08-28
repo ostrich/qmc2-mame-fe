@@ -85,7 +85,7 @@ bool CookieJar::setCookiesFromUrl(const QList<QNetworkCookie> &cookieList, const
 		QNetworkCookie cookie = cookieList[i];
 		cookie.setDomain(domain);
 		cookie.setPath(defaultPath);
-		cookieMap.insertMulti(domain + defaultPath, cookie);
+		cookieMap.insert(domain + defaultPath, cookie);
 	}
 	return QNetworkCookieJar::setCookiesFromUrl(cookieList, url);
 }
@@ -206,7 +206,7 @@ bool CookieJar::loadCookies(QList<QNetworkCookie> &cookieList, QString domain, Q
 				qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("WARNING: failed to remove expired cookie from database: query = '%1', error = '%2'").arg(delquery.lastQuery()).arg(query.lastError().text()));
 		} else {
 			cookieList << cookie;
-			cookieMap.insertMulti(domain + path, cookie);
+			cookieMap.insert(domain + path, cookie);
 		}
 	}
 	db.driver()->commitTransaction();

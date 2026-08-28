@@ -3815,7 +3815,7 @@ void Options::actionDefaultEmuIconTriggered()
 {
 	QAction *action = (QAction *)sender();
 	if ( action ) {
-		QToolButton *tb = (QToolButton *)action->parentWidget()->parentWidget();
+		QToolButton *tb = qobject_cast<QToolButton *>(action->parent() ? action->parent()->parent() : 0);
 		if ( tb ) {
 			tb->setIcon(QIcon(QString::fromUtf8(":/data/img/alien.png")));
 			tb->setWhatsThis(":/data/img/alien.png");
@@ -3827,7 +3827,7 @@ void Options::actionNoEmuIconTriggered()
 {
 	QAction *action = (QAction *)sender();
 	if ( action ) {
-		QToolButton *tb = (QToolButton *)action->parentWidget()->parentWidget();
+		QToolButton *tb = qobject_cast<QToolButton *>(action->parent() ? action->parent()->parent() : 0);
 		if ( tb ) {
 			tb->setIcon(QIcon());
 			tb->setWhatsThis("[none]");

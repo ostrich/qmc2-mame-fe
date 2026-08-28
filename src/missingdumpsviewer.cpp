@@ -66,7 +66,7 @@ void MissingDumpsViewer::on_toolButtonExportToDataFile_clicked()
 			for (int i = 0; i < treeWidget->topLevelItemCount(); i++) {
 				QTreeWidgetItem *item = treeWidget->topLevelItem(i);
 				if ( !checkBoxSelectedDumpsOnly->isChecked() || item->isSelected() )
-					dumpMap.insertMulti(item->text(QMC2_MDV_COLUMN_ID), new DumpRecord(item->text(QMC2_MDV_COLUMN_NAME), item->text(QMC2_MDV_COLUMN_TYPE), item->text(QMC2_MDV_COLUMN_SIZE), item->text(QMC2_MDV_COLUMN_CRC), item->text(QMC2_MDV_COLUMN_SHA1)));
+					dumpMap.insert(item->text(QMC2_MDV_COLUMN_ID), new DumpRecord(item->text(QMC2_MDV_COLUMN_NAME), item->text(QMC2_MDV_COLUMN_TYPE), item->text(QMC2_MDV_COLUMN_SIZE), item->text(QMC2_MDV_COLUMN_CRC), item->text(QMC2_MDV_COLUMN_SHA1)));
 				progressBar->setValue(i);
 			}
 			QStringList dumpKeys(dumpMap.uniqueKeys());

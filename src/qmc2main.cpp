@@ -6592,10 +6592,10 @@ bool MainEventFilter::eventFilter(QObject *object, QEvent *event)
 					// emulate a key event for the mapped key
 					int key = 0;
 					if ( qmc2QtKeyHash.contains(matchedKeySeq) )
-						key = qmc2QtKeyHash[matchedKeySeq][0] | qmc2QtKeyHash[matchedKeySeq][1] | qmc2QtKeyHash[matchedKeySeq][2] | qmc2QtKeyHash[matchedKeySeq][3];
+						key = qmc2QtKeyHash[matchedKeySeq][0].toCombined() | qmc2QtKeyHash[matchedKeySeq][1].toCombined() | qmc2QtKeyHash[matchedKeySeq][2].toCombined() | qmc2QtKeyHash[matchedKeySeq][3].toCombined();
 					else {
 						QKeySequence emulatedKeySequence(matchedKeySeq);
-						key = emulatedKeySequence[0] | emulatedKeySequence[1] | emulatedKeySequence[2] | emulatedKeySequence[3];
+						key = emulatedKeySequence[0].toCombined() | emulatedKeySequence[1].toCombined() | emulatedKeySequence[2].toCombined() | emulatedKeySequence[3].toCombined();
 					}
 
 					Qt::KeyboardModifiers mods = Qt::NoModifier;
