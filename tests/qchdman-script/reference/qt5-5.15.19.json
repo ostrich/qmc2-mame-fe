@@ -1,0 +1,15 @@
+{
+    "fixtures": [
+        {
+            "id": "globals/structured-result",
+            "result": {
+                "hasLog": true,
+                "hasProjectCreate": true,
+                "ok": true,
+                "same": false,
+                "value": 42
+            }
+        }
+    ],
+    "format": 1
+}

@@ -22,3 +22,10 @@ invocation per line to `QCHDMAN_FAKE_RECORD`; behavior is selected with
 `QCHDMAN_FAKE_MODE` (`success`, `progress`, `exit`, `crash`, or `wait`). Output,
 delay, and exit status are controlled by the other `QCHDMAN_FAKE_*`
 environment variables in its source.
+
+## Canonical Qt 5 reference
+
+`./run-reference.sh` builds the harness with exactly Qt 5.15.19 and compares
+its normalized fixture observations with the checked-in reference. It never
+changes that reference. Maintainers regenerate it explicitly with
+`./run-reference.sh --update-reference` and review the resulting Git diff.

@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <QJsonDocument>
+#include <QJsonArray>
 #include <QJsonObject>
+#include <QFile>
 #include <QPlainTextEdit>
 #include <QTemporaryDir>
 
@@ -28,6 +30,7 @@ private:
     MainWindow *window = 0;
     ProjectWindow *scriptWindow = 0;
     ScriptWidget *scriptWidget = 0;
+    QJsonArray observations;
 };
 
 void QchdmanScriptTest::initTestCase()
@@ -50,6 +53,16 @@ void QchdmanScriptTest::initTestCase()
 
 void QchdmanScriptTest::cleanupTestCase()
 {
+    const QString resultPath = qEnvironmentVariable("QCHDMAN_TEST_RESULTS");
+    if (!resultPath.isEmpty()) {
+        QFile resultFile(resultPath);
+        QVERIFY2(resultFile.open(QIODevice::WriteOnly | QIODevice::Truncate),
+                 qPrintable(resultFile.errorString()));
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), 1);
+        document.insert(QStringLiteral("fixtures"), observations);
+        resultFile.write(QJsonDocument(document).toJson(QJsonDocument::Indented));
+    }
     window->mdiArea()->removeSubWindow(scriptWindow);
     delete scriptWindow;
     scriptWindow = 0;
@@ -103,6 +116,10 @@ void QchdmanScriptTest::structuredResultRoundTrip()
     QCOMPARE(document.object().value(QStringLiteral("same")).toBool(), false);
     QCOMPARE(document.object().value(QStringLiteral("hasLog")).toBool(), true);
     QCOMPARE(document.object().value(QStringLiteral("hasProjectCreate")).toBool(), true);
+    QJsonObject observation;
+    observation.insert(QStringLiteral("id"), QStringLiteral("globals/structured-result"));
+    observation.insert(QStringLiteral("result"), document.object());
+    observations.append(observation);
 }
 
 QTEST_MAIN(QchdmanScriptTest)

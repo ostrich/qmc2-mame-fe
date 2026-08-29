@@ -10,8 +10,8 @@
 #ifndef QSTRING_H
 #include <QtCore/QStringList>
 #endif
-#ifndef QREGEXP_H
-#include <QRegularExpression>
+#ifndef QREGULAREXPRESSION_H
+#include <QtCore/QRegularExpression>
 #endif
 
 class Settings : public QSettings
