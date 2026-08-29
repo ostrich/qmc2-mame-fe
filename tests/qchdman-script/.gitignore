@@ -1,0 +1,11 @@
+.qmake.stash
+Makefile
+*.o
+*.moc
+moc_*.cpp
+moc_predefs.h
+qrc_*.cpp
+ui_*.h
+target_wrapper.sh
+fake-chdman/fake-chdman
+harness/tst_qchdman_script
