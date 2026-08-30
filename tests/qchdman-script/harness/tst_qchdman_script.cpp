@@ -999,6 +999,7 @@ void QchdmanScriptTest::deterministicCancellationRecovery()
     QCOMPARE(cancelled.value(QStringLiteral("before")).toInt(), 1);
     QCOMPARE(cancelled.value(QStringLiteral("events")).toArray(), QJsonArray({QStringLiteral("start:cancel"), QStringLiteral("finish:cancel")}));
     QCOMPARE(cancelled.value(QStringLiteral("status")).toString(), QStringLiteral("terminated"));
+    QCOMPARE(cancelled.value(QStringLiteral("rc")).toInt(), 15);
     QCOMPARE(cancelled.value(QStringLiteral("running")).toInt(), 0);
 
     qputenv("QCHDMAN_FAKE_MODE", "success");
@@ -1146,21 +1147,17 @@ void QchdmanScriptTest::debuggerWorkflow()
     bool consoleAvailable = false;
     bool consoleEvaluated = false;
     bool breakpointActionTriggered = false;
-    bool active = true;
-    std::function<void()> pollDebugger;
-    pollDebugger = [&]() {
-        if (!active)
-            return;
+    QElapsedTimer sourceWait;
+    sourceWait.start();
+    QTimer debuggerTimer;
+    debuggerTimer.setInterval(10);
+    connect(&debuggerTimer, &QTimer::timeout, this, [&]() {
         QScriptEngineDebugger *debugger = scriptWidget->engine()->debuggerForTest();
-        if (!debugger) {
-            QTimer::singleShot(10, this, pollDebugger);
+        if (!debugger)
             return;
-        }
         QAction *continueAction = debugger->action(QScriptEngineDebugger::ContinueAction);
-        if (!continueAction || !continueAction->isEnabled()) {
-            QTimer::singleShot(10, this, pollDebugger);
+        if (!continueAction || !continueAction->isEnabled())
             return;
-        }
         QWidget *code = debugger->widget(QScriptEngineDebugger::CodeWidget);
         QWidget *stack = debugger->widget(QScriptEngineDebugger::StackWidget);
         QWidget *locals = debugger->widget(QScriptEngineDebugger::LocalsWidget);
@@ -1178,12 +1175,10 @@ void QchdmanScriptTest::debuggerWorkflow()
                 sourceVisible = sourceVisible || editor->toPlainText().contains(QStringLiteral("debuggerWorkflowInner"));
         }
         // ContinueAction can become enabled before the code widget has applied
-        // its queued source update, particularly with Cocoa.  Keep the first
-        // suspension in place until the source we intend to exercise is shown.
-        if (pauses == 0 && !sourceVisible) {
-            QTimer::singleShot(10, this, pollDebugger);
+        // its queued source update, particularly with Cocoa.  Give that update
+        // time to arrive, but never leave the nested debugger loop unbounded.
+        if (pauses == 0 && !sourceVisible && sourceWait.elapsed() < 2000)
             return;
-        }
         consoleAvailable = consoleAvailable || (console && console->findChild<QLineEdit *>());
         if (pauses == 0 && console) {
             if (QLineEdit *lineEdit = console->findChild<QLineEdit *>()) {
@@ -1212,16 +1207,15 @@ void QchdmanScriptTest::debuggerWorkflow()
         else if (pauses == 2)
             action = debugger->action(QScriptEngineDebugger::StepOutAction);
         ++pauses;
-        QTimer::singleShot(10, this, pollDebugger);
         action->trigger();
-    };
-    QTimer::singleShot(10, this, pollDebugger);
+    });
+    debuggerTimer.start();
     const QJsonObject result = QJsonDocument::fromJson(runFixture(QStringLiteral(
         "function debuggerWorkflowInner(value) { var localValue = value + 1; return localValue; }\n"
         "debugger;\nvar debuggerWorkflowResult = debuggerWorkflowInner(41);\ndebugger;\n"
         "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({value:debuggerWorkflowResult}));"))
         .toUtf8()).object();
-    active = false;
+    debuggerTimer.stop();
     QCOMPARE(result.value(QStringLiteral("value")).toInt(), 42);
     QVERIFY(pauses >= 4);
     QVERIFY(widgetsAvailable);

@@ -736,7 +736,11 @@ void ProjectWidget::finished(int exitCode, QProcess::ExitStatus exitStatus)
 			status = QCHDMAN_PRJSTAT_CRASHED;
 		}
 	}
-	lastRc = exitCode;
+	// QProcess exposes platform-specific exit codes for a process killed on
+	// demand (for example, Windows reports an NT status value).  Script files
+	// historically observe 15 from the Qt 5 reference implementation, so keep
+	// the public project return code stable across platforms.
+	lastRc = terminatedOnDemand ? 15 : exitCode;
 	QTime execTime;
 	execTime = execTime.addMSecs(projectTimer.elapsed());
 	log(tr("process finished: exitCode = %1, exitStatus = %2, execTime = %3").arg(exitCode).arg(statusString).arg(execTime.toString("hh:mm:ss.zzz")));
