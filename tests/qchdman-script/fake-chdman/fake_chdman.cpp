@@ -7,6 +7,10 @@
 #include <QTextStream>
 #include <QThread>
 
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
+
 static void writeText(FILE *stream, const QString &text)
 {
     QTextStream output(stream, QIODevice::WriteOnly);
@@ -20,12 +24,14 @@ int main(int argc, char **argv)
     const QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
     const QString recordPath = environment.value(QStringLiteral("QCHDMAN_FAKE_RECORD"));
     const QString mode = environment.value(QStringLiteral("QCHDMAN_FAKE_MODE"), QStringLiteral("success"));
-    const int delay = environment.value(QStringLiteral("QCHDMAN_FAKE_DELAY_MS"), QStringLiteral("0")).toInt();
+    int delay = environment.value(QStringLiteral("QCHDMAN_FAKE_DELAY_MS"), QStringLiteral("0")).toInt();
 
     QJsonArray arguments;
     const QStringList applicationArguments = app.arguments();
     for (int i = 1; i < applicationArguments.size(); ++i)
         arguments.append(applicationArguments.at(i));
+    if (applicationArguments.value(1) == QStringLiteral("verify"))
+        delay += environment.value(QStringLiteral("QCHDMAN_FAKE_VERIFY_STAGGER_MS"), QStringLiteral("0")).toInt();
 
     if (!recordPath.isEmpty()) {
         QFile record(recordPath);
@@ -52,8 +58,15 @@ int main(int argc, char **argv)
         writeText(stdout, QStringLiteral("Compressing, 25.0% complete\nCompressing, 100.0% complete\n"));
         return 0;
     }
-    if (mode == QStringLiteral("crash"))
+    if (mode == QStringLiteral("crash")) {
+#ifdef Q_OS_WIN
+        // Qt classifies NT exception status codes as QProcess::CrashExit. Using
+        // ExitProcess avoids Windows Error Reporting blocking an unattended run.
+        ExitProcess(0xC0000005u);
+#else
         qFatal("fake chdman crash requested");
+#endif
+    }
     if (mode == QStringLiteral("wait")) {
         for (;;)
             QThread::msleep(100);

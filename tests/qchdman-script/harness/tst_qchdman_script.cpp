@@ -690,6 +690,7 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
     qputenv("QCHDMAN_FAKE_RECORD", QFile::encodeName(recordPath));
     qputenv("QCHDMAN_FAKE_MODE", "success");
     qputenv("QCHDMAN_FAKE_DELAY_MS", "25");
+    qputenv("QCHDMAN_FAKE_VERIFY_STAGGER_MS", "75");
     qputenv("QCHDMAN_FAKE_STDERR", "Compressing, 25.0% complete...\nCompression complete ... final ratio = 1.00\n");
 
     const QJsonObject success = QJsonDocument::fromJson(runFixture(QStringLiteral(
@@ -803,6 +804,7 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
     qunsetenv("QCHDMAN_FAKE_RECORD");
     qunsetenv("QCHDMAN_FAKE_MODE");
     qunsetenv("QCHDMAN_FAKE_DELAY_MS");
+    qunsetenv("QCHDMAN_FAKE_VERIFY_STAGGER_MS");
     qunsetenv("QCHDMAN_FAKE_EXIT_CODE");
     QJsonObject result;
     result.insert(QStringLiteral("success"), success);
