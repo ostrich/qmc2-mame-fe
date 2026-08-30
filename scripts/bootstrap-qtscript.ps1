@@ -20,6 +20,10 @@ git -C $portDir remote set-url origin $portRepository
 git -C $portDir fetch --quiet origin $portRevision
 git -C $portDir checkout --quiet --detach $portRevision
 & (Join-Path $portDir 'scripts\apply-patches.ps1') -SourceDir $sourceDir
+Get-ChildItem (Join-Path $PSScriptRoot 'qtscript-patches\*.patch') | Sort-Object Name | ForEach-Object {
+    git -C $sourceDir apply $_.FullName
+    if ($LASTEXITCODE) { throw "Failed to apply QtScript compatibility patch $($_.Name)" }
+}
 
 $qtCmake = Join-Path $QtRoot 'bin\qt-cmake-private.bat'
 if (-not (Test-Path $qtCmake)) { throw "qt-cmake-private not found below $QtRoot" }

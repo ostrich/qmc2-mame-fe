@@ -1158,6 +1158,20 @@
             }
         },
         {
+            "id": "debugger/workflow",
+            "result": {
+                "actions": true,
+                "breakpointAction": true,
+                "console": true,
+                "consoleEvaluation": true,
+                "minimumPauses": 4,
+                "reattached": true,
+                "source": true,
+                "value": 42,
+                "widgets": true
+            }
+        },
+        {
             "id": "globals/structured-result",
             "result": {
                 "hasLog": true,

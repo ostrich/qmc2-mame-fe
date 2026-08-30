@@ -1,0 +1,151 @@
+From b8feb03041ba6bd661284d1ee3e56a07693dbaff Mon Sep 17 00:00:00 2001
+From: QtScript Qt 6 patch set <qtscript-qt6@local.invalid>
+Date: Sat, 29 Aug 2026 20:29:17 -0400
+Subject: [PATCH] Fix debugger action signal connections
+
+---
+ src/scripttools/debugging/qscriptdebugger.cpp | 30 +++++++++----------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/src/scripttools/debugging/qscriptdebugger.cpp b/src/scripttools/debugging/qscriptdebugger.cpp
+index 5549f92..772bd53 100644
+--- a/src/scripttools/debugging/qscriptdebugger.cpp
++++ b/src/scripttools/debugging/qscriptdebugger.cpp
+@@ -1679,7 +1679,7 @@ QAction *QScriptDebugger::interruptAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->interruptAction->setShortcut(QScriptDebugger::tr("Shift+F5"));
+ #endif
+-        QObject::connect(d->interruptAction, SIGNAL(triggered()),
++        QObject::connect(d->interruptAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_interrupt()));
+     }
+     return d->interruptAction;
+@@ -1698,7 +1698,7 @@ QAction *QScriptDebugger::continueAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->continueAction->setShortcut(QScriptDebugger::tr("F5"));
+ #endif
+-        QObject::connect(d->continueAction, SIGNAL(triggered()),
++        QObject::connect(d->continueAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_continue()));
+     }
+     return d->continueAction;
+@@ -1717,7 +1717,7 @@ QAction *QScriptDebugger::stepIntoAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->stepIntoAction->setShortcut(QScriptDebugger::tr("F11"));
+ #endif
+-        QObject::connect(d->stepIntoAction, SIGNAL(triggered()),
++        QObject::connect(d->stepIntoAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_stepInto()));
+     }
+     return d->stepIntoAction;
+@@ -1736,7 +1736,7 @@ QAction *QScriptDebugger::stepOverAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->stepOverAction->setShortcut(QScriptDebugger::tr("F10"));
+ #endif
+-        QObject::connect(d->stepOverAction, SIGNAL(triggered()),
++        QObject::connect(d->stepOverAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_stepOver()));
+     }
+     return d->stepOverAction;
+@@ -1755,7 +1755,7 @@ QAction *QScriptDebugger::stepOutAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->stepOutAction->setShortcut(QScriptDebugger::tr("Shift+F11"));
+ #endif
+-        QObject::connect(d->stepOutAction, SIGNAL(triggered()),
++        QObject::connect(d->stepOutAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_stepOut()));
+     }
+     return d->stepOutAction;
+@@ -1774,7 +1774,7 @@ QAction *QScriptDebugger::runToCursorAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->runToCursorAction->setShortcut(QScriptDebugger::tr("Ctrl+F10"));
+ #endif
+-        QObject::connect(d->runToCursorAction, SIGNAL(triggered()),
++        QObject::connect(d->runToCursorAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_runToCursor()));
+     }
+     return d->runToCursorAction;
+@@ -1791,7 +1791,7 @@ QAction *QScriptDebugger::runToNewScriptAction(QObject *parent) const
+         that->d_func()->runToNewScriptAction = new QAction(runToNewScriptIcon,
+                                                            QScriptDebugger::tr("Run to New Script"), parent);
+         d->runToNewScriptAction->setEnabled(d->interactive);
+-        QObject::connect(d->runToNewScriptAction, SIGNAL(triggered()),
++        QObject::connect(d->runToNewScriptAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_runToNewScript()));
+     }
+     return d->runToNewScriptAction;
+@@ -1809,7 +1809,7 @@ QAction *QScriptDebugger::toggleBreakpointAction(QObject *parent) const
+         d->toggleBreakpointAction->setShortcut(QScriptDebugger::tr("F9"));
+ #endif
+         d->toggleBreakpointAction->setEnabled((d->codeWidget != 0) && (d->codeWidget->currentView() != 0));
+-        QObject::connect(d->toggleBreakpointAction, SIGNAL(triggered()),
++        QObject::connect(d->toggleBreakpointAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_toggleBreakpoint()));
+     }
+     return d->toggleBreakpointAction;
+@@ -1822,7 +1822,7 @@ QAction *QScriptDebugger::clearDebugOutputAction(QObject *parent) const
+         QIcon clearDebugOutputIcon;
+         QScriptDebugger *that = const_cast<QScriptDebugger*>(this);
+         that->d_func()->clearDebugOutputAction = new QAction(clearDebugOutputIcon, QScriptDebugger::tr("Clear Debug Output"), parent);
+-        QObject::connect(d->clearDebugOutputAction, SIGNAL(triggered()),
++        QObject::connect(d->clearDebugOutputAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_clearDebugOutput()));
+     }
+     return d->clearDebugOutputAction;
+@@ -1835,7 +1835,7 @@ QAction *QScriptDebugger::clearErrorLogAction(QObject *parent) const
+         QIcon clearErrorLogIcon;
+         QScriptDebugger *that = const_cast<QScriptDebugger*>(this);
+         that->d_func()->clearErrorLogAction = new QAction(clearErrorLogIcon, QScriptDebugger::tr("Clear Error Log"), parent);
+-        QObject::connect(d->clearErrorLogAction, SIGNAL(triggered()),
++        QObject::connect(d->clearErrorLogAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_clearErrorLog()));
+     }
+     return d->clearErrorLogAction;
+@@ -1848,7 +1848,7 @@ QAction *QScriptDebugger::clearConsoleAction(QObject *parent) const
+         QIcon clearConsoleIcon;
+         QScriptDebugger *that = const_cast<QScriptDebugger*>(this);
+         that->d_func()->clearConsoleAction = new QAction(clearConsoleIcon, QScriptDebugger::tr("Clear Console"), parent);
+-        QObject::connect(d->clearConsoleAction, SIGNAL(triggered()),
++        QObject::connect(d->clearConsoleAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_clearConsole()));
+     }
+     return d->clearConsoleAction;
+@@ -1869,7 +1869,7 @@ QAction *QScriptDebugger::findInScriptAction(QObject *parent) const
+             (d->codeFinderWidget != 0)
+             && (d->codeWidget != 0)
+             && (d->codeWidget->currentView() != 0));
+-        QObject::connect(d->findInScriptAction, SIGNAL(triggered()),
++        QObject::connect(d->findInScriptAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_findInScript()));
+     }
+     return d->findInScriptAction;
+@@ -1886,7 +1886,7 @@ QAction *QScriptDebugger::findNextInScriptAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->findNextInScriptAction->setShortcut(QScriptDebugger::tr("F3"));
+ #endif
+-        QObject::connect(d->findNextInScriptAction, SIGNAL(triggered()),
++        QObject::connect(d->findNextInScriptAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_findNextInScript()));
+     }
+     return d->findNextInScriptAction;
+@@ -1903,7 +1903,7 @@ QAction *QScriptDebugger::findPreviousInScriptAction(QObject *parent) const
+ #ifndef QT_NO_SHORTCUT
+         d->findPreviousInScriptAction->setShortcut(QScriptDebugger::tr("Shift+F3"));
+ #endif
+-        QObject::connect(d->findPreviousInScriptAction, SIGNAL(triggered()),
++        QObject::connect(d->findPreviousInScriptAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_findPreviousInScript()));
+     }
+     return d->findPreviousInScriptAction;
+@@ -1920,7 +1920,7 @@ QAction *QScriptDebugger::goToLineAction(QObject *parent) const
+         d->goToLineAction->setShortcut(QScriptDebugger::tr("Ctrl+G"));
+ #endif
+         d->goToLineAction->setEnabled((d->codeWidget != 0) && (d->codeWidget->currentView() != 0));
+-        QObject::connect(d->goToLineAction, SIGNAL(triggered()),
++        QObject::connect(d->goToLineAction, SIGNAL(triggered(bool)),
+                          that, SLOT(_q_goToLine()));
+     }
+     return d->goToLineAction;
+-- 
+2.55.0
+

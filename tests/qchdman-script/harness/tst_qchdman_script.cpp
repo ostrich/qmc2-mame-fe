@@ -12,6 +12,7 @@
 #include <QQueue>
 #include <QTimer>
 #include <algorithm>
+#include <functional>
 
 #include "mainwindow.h"
 #include "qchdmansettings.h"
@@ -102,6 +103,7 @@ private slots:
     void projectProperties();
     void projectLifecycleAndFailures();
     void scriptInterruptionAndStress();
+    void debuggerWorkflow();
     void structuredResultRoundTrip();
     void slotManifestComplete();
 
@@ -842,6 +844,113 @@ void QchdmanScriptTest::scriptInterruptionAndStress()
         {QStringLiteral("iterations"), 5},
         {QStringLiteral("activeProcessIterations"), 2},
         {QStringLiteral("recovered"), true}
+    });
+    observations.append(observation);
+}
+
+void QchdmanScriptTest::debuggerWorkflow()
+{
+    int pauses = 0;
+    bool widgetsAvailable = false;
+    bool actionsAvailable = false;
+    bool sourceVisible = false;
+    bool consoleAvailable = false;
+    bool consoleEvaluated = false;
+    bool breakpointActionTriggered = false;
+    bool active = true;
+    std::function<void()> pollDebugger;
+    pollDebugger = [&]() {
+        if (!active)
+            return;
+        QScriptEngineDebugger *debugger = scriptWidget->engine()->debuggerForTest();
+        if (!debugger) {
+            QTimer::singleShot(10, this, pollDebugger);
+            return;
+        }
+        QAction *continueAction = debugger->action(QScriptEngineDebugger::ContinueAction);
+        if (!continueAction || !continueAction->isEnabled()) {
+            QTimer::singleShot(10, this, pollDebugger);
+            return;
+        }
+        QWidget *code = debugger->widget(QScriptEngineDebugger::CodeWidget);
+        QWidget *stack = debugger->widget(QScriptEngineDebugger::StackWidget);
+        QWidget *locals = debugger->widget(QScriptEngineDebugger::LocalsWidget);
+        QWidget *console = debugger->widget(QScriptEngineDebugger::ConsoleWidget);
+        widgetsAvailable = code && stack && locals && console
+                && debugger->widget(QScriptEngineDebugger::ScriptsWidget)
+                && debugger->widget(QScriptEngineDebugger::BreakpointsWidget)
+                && debugger->widget(QScriptEngineDebugger::ErrorLogWidget);
+        actionsAvailable = debugger->action(QScriptEngineDebugger::StepIntoAction)
+                && debugger->action(QScriptEngineDebugger::StepOverAction)
+                && debugger->action(QScriptEngineDebugger::StepOutAction)
+                && debugger->action(QScriptEngineDebugger::ToggleBreakpointAction);
+        if (code) {
+            for (QPlainTextEdit *editor : code->findChildren<QPlainTextEdit *>())
+                sourceVisible = sourceVisible || editor->toPlainText().contains(QStringLiteral("debuggerWorkflowInner"));
+        }
+        consoleAvailable = consoleAvailable || (console && console->findChild<QLineEdit *>());
+        if (pauses == 0 && console) {
+            if (QLineEdit *lineEdit = console->findChild<QLineEdit *>()) {
+                lineEdit->setText(QStringLiteral("1 + 2"));
+                QTest::keyClick(lineEdit, Qt::Key_Return);
+                QCoreApplication::processEvents();
+                lineEdit->setText(QStringLiteral("break 3"));
+                QTest::keyClick(lineEdit, Qt::Key_Return);
+                consoleEvaluated = true;
+            }
+            if (code) {
+                for (QPlainTextEdit *editor : code->findChildren<QPlainTextEdit *>()) {
+                    editor->moveCursor(QTextCursor::Start);
+                    editor->moveCursor(QTextCursor::Down);
+                }
+            }
+            debugger->action(QScriptEngineDebugger::ToggleBreakpointAction)->trigger();
+            breakpointActionTriggered = true;
+            QCoreApplication::processEvents();
+        }
+        QAction *action = continueAction;
+        if (pauses == 0)
+            action = debugger->action(QScriptEngineDebugger::StepOverAction);
+        else if (pauses == 1)
+            action = debugger->action(QScriptEngineDebugger::StepIntoAction);
+        else if (pauses == 2)
+            action = debugger->action(QScriptEngineDebugger::StepOutAction);
+        ++pauses;
+        QTimer::singleShot(10, this, pollDebugger);
+        action->trigger();
+    };
+    QTimer::singleShot(10, this, pollDebugger);
+    const QJsonObject result = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "function debuggerWorkflowInner(value) { var localValue = value + 1; return localValue; }\n"
+        "debugger;\nvar debuggerWorkflowResult = debuggerWorkflowInner(41);\ndebugger;\n"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({value:debuggerWorkflowResult}));"))
+        .toUtf8()).object();
+    active = false;
+    QCOMPARE(result.value(QStringLiteral("value")).toInt(), 42);
+    QVERIFY(pauses >= 4);
+    QVERIFY(widgetsAvailable);
+    QVERIFY(actionsAvailable);
+    QVERIFY(sourceVisible);
+    QVERIFY(consoleAvailable);
+    QVERIFY(consoleEvaluated);
+    QVERIFY(breakpointActionTriggered);
+    QScriptEngineDebugger *debugger = scriptWidget->engine()->debuggerForTest();
+    QVERIFY(debugger);
+    debugger->detach();
+    debugger->attachTo(scriptWidget->engine()->scriptEngineForTest());
+
+    QJsonObject observation;
+    observation.insert(QStringLiteral("id"), QStringLiteral("debugger/workflow"));
+    observation.insert(QStringLiteral("result"), QJsonObject{
+        {QStringLiteral("value"), 42},
+        {QStringLiteral("minimumPauses"), 4},
+        {QStringLiteral("widgets"), widgetsAvailable},
+        {QStringLiteral("actions"), actionsAvailable},
+        {QStringLiteral("source"), sourceVisible},
+        {QStringLiteral("console"), consoleAvailable},
+        {QStringLiteral("consoleEvaluation"), consoleEvaluated},
+        {QStringLiteral("breakpointAction"), breakpointActionTriggered},
+        {QStringLiteral("reattached"), true}
     });
     observations.append(observation);
 }

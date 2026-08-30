@@ -32,6 +32,11 @@ public:
 	void stopScript();
 	void disconnectScriptSignals();
 
+#if defined(QCHDMAN_SCRIPT_TEST)
+	QScriptEngine *scriptEngineForTest() const { return mEngine; }
+	QScriptEngineDebugger *debuggerForTest() const { return mEngineDebugger; }
+#endif
+
 public slots:
 	// print a message to the script-log
 	void log(QString message);

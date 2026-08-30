@@ -1,0 +1,11 @@
+diff --git a/src/scripttools/CMakeLists.txt b/src/scripttools/CMakeLists.txt
+--- a/src/scripttools/CMakeLists.txt
++++ b/src/scripttools/CMakeLists.txt
+@@ -167,4 +167,5 @@
+ 
+-qt_add_resources(ScriptTools "scripttools_debugging"
+-    FILES "debugging/scripttools_debugging.qrc"
++qt_add_resources(scripttools_debugging_sources
++    "debugging/scripttools_debugging.qrc"
+ )
++target_sources(ScriptTools PRIVATE ${scripttools_debugging_sources})

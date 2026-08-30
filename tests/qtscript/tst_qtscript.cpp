@@ -70,6 +70,35 @@ private slots:
 
         debugger.detach();
     }
+
+    void debuggerActionsAndResources()
+    {
+        QScriptEngine engine;
+        QScriptEngineDebugger debugger;
+        debugger.attachTo(&engine);
+        int pauses = 0;
+        QTimer poller;
+        poller.setInterval(5);
+        connect(&poller, &QTimer::timeout, this, [&]() {
+            QAction *continueAction = debugger.action(QScriptEngineDebugger::ContinueAction);
+            if (!continueAction->isEnabled())
+                return;
+            QVERIFY(debugger.widget(QScriptEngineDebugger::CodeWidget));
+            QVERIFY(debugger.widget(QScriptEngineDebugger::StackWidget));
+            QVERIFY(debugger.widget(QScriptEngineDebugger::LocalsWidget));
+            QVERIFY(debugger.widget(QScriptEngineDebugger::ConsoleWidget));
+            ++pauses;
+            continueAction->trigger();
+        });
+        poller.start();
+        const QScriptValue result = engine.evaluate(
+            QStringLiteral("debugger; var answer = 42; debugger; answer;"),
+            QStringLiteral("debugger-actions.js"));
+        poller.stop();
+        QCOMPARE(result.toInt32(), 42);
+        QCOMPARE(pauses, 2);
+        debugger.detach();
+    }
 };
 
 QTEST_MAIN(tst_QtScript)

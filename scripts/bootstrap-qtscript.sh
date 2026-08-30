@@ -4,6 +4,7 @@ set -euo pipefail
 
 readonly PORT_REPO=https://github.com/ostrich/qtscript-qt6.git
 readonly PORT_REV=1122594ab02aeb07c7a862738ef36486bab1ed7a
+readonly REPOSITORY_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 qt_root="${QT_ROOT_DIR:-}"
 prefix="${QTSCRIPT_PREFIX:-}"
 work_root="${QTSCRIPT_WORK_ROOT:-}"
@@ -36,6 +37,9 @@ git -C "$port_dir" fetch --quiet origin "$PORT_REV"
 git -C "$port_dir" checkout --quiet --detach "$PORT_REV"
 rm -rf "$source_dir" "$build_dir"
 bash "$port_dir/scripts/apply-patches.sh" "$source_dir"
+for compatibility_patch in "$REPOSITORY_ROOT/scripts/qtscript-patches"/*.patch; do
+	git -C "$source_dir" apply "$compatibility_patch"
+done
 
 qt_cmake=""
 for candidate in "$qt_root/bin/qt-cmake-private" "$qt_root/libexec/qt-cmake-private"; do
