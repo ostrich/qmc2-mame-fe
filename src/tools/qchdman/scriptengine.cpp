@@ -2821,9 +2821,13 @@ void ScriptEngine::waitForRunningProjects(int numProjects)
 	QCHDMAN_SCRIPT_ENGINE_DEBUG(log(QString("DEBUG: ScriptEngine::waitForRunningProjects(int numProjects = %1)").arg(numProjects)));
 
 	int previouslyRunningProjects = runningProjects();
-	while ( (previouslyRunningProjects - runningProjects() < numProjects) && !externalStop ) {
+	// Projects can finish between runProjects() and this call.  Do not wait for
+	// more completions than can still occur, otherwise a caller that observed an
+	// earlier running count can block forever on a fast process.
+	int projectsToWaitFor = qMin(numProjects, previouslyRunningProjects);
+	while ( (previouslyRunningProjects - runningProjects() < projectsToWaitFor) && !externalStop ) {
 		foreach (QString id, mProjectMap.keys()) {
-			if ( externalStop || (previouslyRunningProjects - runningProjects() >= numProjects) )
+			if ( externalStop || (previouslyRunningProjects - runningProjects() >= projectsToWaitFor) )
 				break;
 
 			if ( mProjectMap[id]->status == QCHDMAN_PRJSTAT_RUNNING ) {

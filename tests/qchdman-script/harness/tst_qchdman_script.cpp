@@ -704,6 +704,10 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
         "scriptEngine.projectSetVerifyInputFile('parallel-b','input b.chd');"
         "scriptEngine.runProjects('parallel-a, parallel-b');"
         "var peak=scriptEngine.runningProjects();"
+        // Finish one project first, then deliberately request more completions
+        // than remain.  This used to hang when fast Windows processes finished
+        // between observing the running count and waiting.
+        "scriptEngine.syncProjects('parallel-a');"
         "scriptEngine.waitForRunningProjects(2);scriptEngine.syncProjects();"
         "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({"
         "started:started,finished:finished,peak:peak,running:scriptEngine.runningProjects(),"
