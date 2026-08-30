@@ -107,19 +107,50 @@ private slots:
     void versionOnePersistence();
     void projectProperties();
     void projectLifecycleAndFailures();
+    void recursiveProjectScheduling();
+    void repeatedParallelProjects();
+    void deterministicCancellationRecovery();
+    void callbackExceptionRecovery();
+    void scriptFileLoadingAndExecution();
     void scriptInterruptionAndStress();
     void debuggerWorkflow();
     void structuredResultRoundTrip();
     void slotManifestComplete();
 
 private:
+    QPlainTextEdit *scriptLog() const;
+    QString resultFromLog() const;
     QString runFixture(const QString &body);
+    QString runScriptFile(const QString &fileName);
     QTemporaryDir settingsDirectory;
     MainWindow *window = 0;
     ProjectWindow *scriptWindow = 0;
     ScriptWidget *scriptWidget = 0;
     QJsonArray observations;
 };
+
+QPlainTextEdit *QchdmanScriptTest::scriptLog() const
+{
+    const QList<QPlainTextEdit *> editors = scriptWidget->findChildren<QPlainTextEdit *>();
+    for (QPlainTextEdit *editor : editors) {
+        if (editor->isReadOnly())
+            return editor;
+    }
+    return 0;
+}
+
+QString QchdmanScriptTest::resultFromLog() const
+{
+    QPlainTextEdit *log = scriptLog();
+    if (!log)
+        return QString();
+    const QString prefix = QStringLiteral("QCHDMAN_TEST_RESULT ");
+    for (const QString &line : log->toPlainText().split(QLatin1Char('\n'))) {
+        if (line.contains(prefix))
+            return line.mid(line.indexOf(prefix) + prefix.size());
+    }
+    return QString();
+}
 
 void QchdmanScriptTest::initTestCase()
 {
@@ -169,14 +200,7 @@ void QchdmanScriptTest::cleanupTestCase()
 
 QString QchdmanScriptTest::runFixture(const QString &body)
 {
-    const QList<QPlainTextEdit *> editors = scriptWidget->findChildren<QPlainTextEdit *>();
-    QPlainTextEdit *log = 0;
-    for (QPlainTextEdit *editor : editors) {
-        if (editor->isReadOnly()) {
-            log = editor;
-            break;
-        }
-    }
+    QPlainTextEdit *log = scriptLog();
     if (!log) {
         QTest::qFail("could not locate the production script log", __FILE__, __LINE__);
         return QString();
@@ -184,12 +208,21 @@ QString QchdmanScriptTest::runFixture(const QString &body)
     log->clear();
     scriptWidget->engine()->runScript(body);
     QCoreApplication::processEvents();
-    const QString prefix = QStringLiteral("QCHDMAN_TEST_RESULT ");
-    for (const QString &line : log->toPlainText().split(QLatin1Char('\n'))) {
-        if (line.contains(prefix))
-            return line.mid(line.indexOf(prefix) + prefix.size());
+    return resultFromLog();
+}
+
+QString QchdmanScriptTest::runScriptFile(const QString &fileName)
+{
+    QPlainTextEdit *log = scriptLog();
+    if (!log) {
+        QTest::qFail("could not locate the production script log", __FILE__, __LINE__);
+        return QString();
     }
-    return QString();
+    log->clear();
+    scriptWidget->load(fileName);
+    scriptWidget->on_toolButtonRun_clicked();
+    QCoreApplication::processEvents();
+    return resultFromLog();
 }
 
 void QchdmanScriptTest::structuredResultRoundTrip()
@@ -822,6 +855,250 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
     observation.insert(QStringLiteral("id"), QStringLiteral("projects/lifecycle"));
     observation.insert(QStringLiteral("result"), result);
     observations.append(observation);
+}
+
+void QchdmanScriptTest::recursiveProjectScheduling()
+{
+    const QString fakeChdman = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
+    QVERIFY(QFileInfo::exists(fakeChdman));
+    globalConfig->setPreferencesChdmanBinary(fakeChdman);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QStringList relativeFiles{
+        QStringLiteral("root.chd"), QStringLiteral("café.chd"),
+        QStringLiteral("sub one/one.chd"), QStringLiteral("sub one/space name.chd"),
+        QStringLiteral("日本語/deep.chd")
+    };
+    for (const QString &relative : relativeFiles) {
+        const QString path = directory.filePath(QStringLiteral("input/") + relative);
+        QVERIFY(QDir().mkpath(QFileInfo(path).path()));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("fixture");
+    }
+    QVERIFY(QDir().mkpath(directory.filePath(QStringLiteral("output"))));
+    const QString recordPath = directory.filePath(QStringLiteral("recursive.jsonl"));
+    qputenv("QCHDMAN_FAKE_RECORD", QFile::encodeName(recordPath));
+    qputenv("QCHDMAN_FAKE_MODE", "success");
+    qputenv("QCHDMAN_FAKE_DELAY_MS", "20");
+
+    QString rootLiteral = QString::fromUtf8(QJsonDocument(QJsonArray{directory.path()}).toJson(QJsonDocument::Compact));
+    rootLiteral = rootLiteral.mid(1, rootLiteral.size() - 2);
+    const QString source = QStringLiteral(
+        "# Qt CHDMAN GUI script file -- please do not edit manually\n"
+        "ApplicationVersion = 0.244\nScriptFormatVersion = 1\nECMAScript [\n"
+        "var root=%1,input=root+'/input',output=root+'/output',queue=[],active=0,peak=0;\n"
+        "var started=[],finished=[],destroyed=[],state={},violations=[];\n"
+        "function collect(path,relative){var files=scriptEngine.dirEntryList(path,'*.chd',true,true);"
+        "files.forEach(function(name){queue.push({id:(relative?relative+'/':'')+name,input:path+'/'+name});});"
+        "scriptEngine.dirSubDirList(path,'',true,true).forEach(function(name){collect(path+'/'+name,(relative?relative+'/':'')+name);});}\n"
+        "function pump(){while(active<2&&queue.length){var item=queue.shift();active++;state[item.id]=0;"
+        "scriptEngine.projectCreate(item.id,'Copy');scriptEngine.projectSetCopyInputFile(item.id,item.input);"
+        "scriptEngine.projectSetCopyOutputFile(item.id,output+'/'+item.id);scriptEngine.projectSetCopyForce(item.id,true);"
+        "scriptEngine.runProjects(item.id);}}\n"
+        "scriptEngine.projectStarted.connect(function(id){if(state[id]!==0)violations.push('start:'+id);state[id]=1;"
+        "started.push(id);if(scriptEngine.runningProjects()>peak)peak=scriptEngine.runningProjects();});\n"
+        "scriptEngine.projectFinished.connect(function(id){if(state[id]!==1)violations.push('finish:'+id);state[id]=2;"
+        "finished.push(id);active--;scriptEngine.projectDestroy(id);destroyed.push(id);"
+        "scriptEngine.progressSetValue(scriptEngine.progressGetValue()+1);pump();});\n"
+        "collect(input,'');queue.sort(function(a,b){return a.id<b.id?-1:a.id>b.id?1:0;});var total=queue.length;"
+        "scriptEngine.progressSetRange(0,total);scriptEngine.progressSetValue(0);pump();"
+        "while(active>0)scriptEngine.waitForRunningProjects();"
+        "started.sort();finished.sort();destroyed.sort();"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({total:total,started:started,finished:finished,"
+        "destroyed:destroyed,peak:peak,progress:scriptEngine.progressGetValue(),running:scriptEngine.runningProjects(),"
+        "violations:violations}));\n]\n").arg(rootLiteral);
+    const QString scriptPath = directory.filePath(QStringLiteral("recursive-copy.scr"));
+    QFile scriptFile(scriptPath);
+    QVERIFY(scriptFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    scriptFile.write(source.toUtf8());
+    scriptFile.close();
+
+    const QJsonObject result = QJsonDocument::fromJson(runScriptFile(scriptPath).toUtf8()).object();
+    QCOMPARE(result.value(QStringLiteral("total")).toInt(), relativeFiles.size());
+    QCOMPARE(result.value(QStringLiteral("started")).toArray().size(), relativeFiles.size());
+    QCOMPARE(result.value(QStringLiteral("finished")).toArray(), result.value(QStringLiteral("started")).toArray());
+    QCOMPARE(result.value(QStringLiteral("destroyed")).toArray(), result.value(QStringLiteral("started")).toArray());
+    QCOMPARE(result.value(QStringLiteral("peak")).toInt(), 2);
+    QCOMPARE(result.value(QStringLiteral("progress")).toInt(), relativeFiles.size());
+    QCOMPARE(result.value(QStringLiteral("running")).toInt(), 0);
+    QCOMPARE(result.value(QStringLiteral("violations")).toArray(), QJsonArray());
+
+    QFile record(recordPath);
+    QVERIFY(record.open(QIODevice::ReadOnly | QIODevice::Text));
+    QJsonArray commands;
+    while (!record.atEnd()) {
+        const QJsonObject invocation = QJsonDocument::fromJson(record.readLine()).object();
+        commands.append(invocation.value(QStringLiteral("arguments")));
+    }
+    QCOMPARE(commands.size(), relativeFiles.size());
+    qunsetenv("QCHDMAN_FAKE_RECORD");
+    qunsetenv("QCHDMAN_FAKE_MODE");
+    qunsetenv("QCHDMAN_FAKE_DELAY_MS");
+
+    QJsonObject normalized = result;
+    normalized.insert(QStringLiteral("commands"), commands.size());
+    QJsonObject observation{{QStringLiteral("id"), QStringLiteral("projects/recursive-scheduling")},
+                            {QStringLiteral("result"), normalized}};
+    observations.append(observation);
+}
+
+void QchdmanScriptTest::repeatedParallelProjects()
+{
+    const QString fakeChdman = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
+    QVERIFY(QFileInfo::exists(fakeChdman));
+    globalConfig->setPreferencesChdmanBinary(fakeChdman);
+    qputenv("QCHDMAN_FAKE_MODE", "success");
+    // Keep each process alive long enough for even the slower reference
+    // engine to start the complete eight-project batch concurrently.
+    qputenv("QCHDMAN_FAKE_DELAY_MS", "100");
+    const QString script = QStringLiteral(
+        "var started=0,finished=0,rounds=[],ids=[];"
+        "scriptEngine.projectStarted.connect(function(id){started++;});"
+        "scriptEngine.projectFinished.connect(function(id){finished++;});"
+        "for(var i=1;i<=4;i++){var id='verify'+i;ids.push(id);scriptEngine.projectCreate(id,'Verify');"
+        "scriptEngine.projectSetVerifyInputFile(id,'input.chd');}"
+        "for(i=1;i<=4;i++){var clone='verify'+(i+4);ids.push(clone);scriptEngine.projectClone('verify'+i,clone);}"
+        "for(var round=1;round<=5;round++){scriptEngine.runProjects();var peak=scriptEngine.runningProjects();"
+        "scriptEngine.syncProjects();var codes=[];for(i=0;i<ids.length;i++)codes.push(scriptEngine.projectReturnCode(ids[i]));"
+        "rounds.push({round:round,peak:peak,running:scriptEngine.runningProjects(),codes:codes});}"
+        "scriptEngine.destroyProjects();scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({"
+        "started:started,finished:finished,rounds:rounds,running:scriptEngine.runningProjects()}));");
+    const QJsonObject result = QJsonDocument::fromJson(runFixture(script).toUtf8()).object();
+    QCOMPARE(result.value(QStringLiteral("started")).toInt(), 40);
+    QCOMPARE(result.value(QStringLiteral("finished")).toInt(), 40);
+    QCOMPARE(result.value(QStringLiteral("running")).toInt(), 0);
+    const QJsonArray rounds = result.value(QStringLiteral("rounds")).toArray();
+    QCOMPARE(rounds.size(), 5);
+    for (const QJsonValue &value : rounds) {
+        const QJsonObject round = value.toObject();
+        QCOMPARE(round.value(QStringLiteral("peak")).toInt(), 8);
+        QCOMPARE(round.value(QStringLiteral("running")).toInt(), 0);
+        QCOMPARE(round.value(QStringLiteral("codes")).toArray(), QJsonArray({0,0,0,0,0,0,0,0}));
+    }
+    qunsetenv("QCHDMAN_FAKE_MODE");
+    qunsetenv("QCHDMAN_FAKE_DELAY_MS");
+    observations.append(QJsonObject{{QStringLiteral("id"), QStringLiteral("projects/repeated-parallel")},
+                                    {QStringLiteral("result"), result}});
+}
+
+void QchdmanScriptTest::deterministicCancellationRecovery()
+{
+    const QString fakeChdman = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
+    QVERIFY(QFileInfo::exists(fakeChdman));
+    globalConfig->setPreferencesChdmanBinary(fakeChdman);
+    qputenv("QCHDMAN_FAKE_MODE", "wait");
+    const QJsonObject cancelled = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "var events=[];scriptEngine.projectStarted.connect(function(id){events.push('start:'+id);});"
+        "scriptEngine.projectFinished.connect(function(id){events.push('finish:'+id);});"
+        "scriptEngine.projectCreate('cancel','Info');scriptEngine.runProjects('cancel');"
+        "var before=scriptEngine.runningProjects();scriptEngine.stopProjects('cancel');"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({before:before,events:events,"
+        "status:scriptEngine.projectStatus('cancel'),rc:scriptEngine.projectReturnCode('cancel'),"
+        "running:scriptEngine.runningProjects()}));")).toUtf8()).object();
+    QCOMPARE(cancelled.value(QStringLiteral("before")).toInt(), 1);
+    QCOMPARE(cancelled.value(QStringLiteral("events")).toArray(), QJsonArray({QStringLiteral("start:cancel"), QStringLiteral("finish:cancel")}));
+    QCOMPARE(cancelled.value(QStringLiteral("status")).toString(), QStringLiteral("terminated"));
+    QCOMPARE(cancelled.value(QStringLiteral("running")).toInt(), 0);
+
+    qputenv("QCHDMAN_FAKE_MODE", "success");
+    const QJsonObject recovery = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "scriptEngine.projectCreate('recovery','Verify');scriptEngine.projectSetVerifyInputFile('recovery','input.chd');"
+        "scriptEngine.runProjects('recovery');scriptEngine.syncProjects('recovery');"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({status:scriptEngine.projectStatus('recovery'),"
+        "rc:scriptEngine.projectReturnCode('recovery'),running:scriptEngine.runningProjects()}));")).toUtf8()).object();
+    QCOMPARE(recovery.value(QStringLiteral("status")).toString(), QStringLiteral("finished"));
+    QCOMPARE(recovery.value(QStringLiteral("rc")).toInt(), 0);
+    QCOMPARE(recovery.value(QStringLiteral("running")).toInt(), 0);
+    qunsetenv("QCHDMAN_FAKE_MODE");
+    observations.append(QJsonObject{{QStringLiteral("id"), QStringLiteral("projects/cancellation-recovery")},
+                                    {QStringLiteral("result"), QJsonObject{{QStringLiteral("cancelled"), cancelled},
+                                                                           {QStringLiteral("recovery"), recovery}}}});
+}
+
+void QchdmanScriptTest::callbackExceptionRecovery()
+{
+    const QString fakeChdman = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
+    QVERIFY(QFileInfo::exists(fakeChdman));
+    globalConfig->setPreferencesChdmanBinary(fakeChdman);
+    qputenv("QCHDMAN_FAKE_MODE", "success");
+    qputenv("QCHDMAN_FAKE_DELAY_MS", "10");
+    int debuggerPauses = 0;
+    QTimer debuggerTimer;
+    debuggerTimer.setInterval(5);
+    connect(&debuggerTimer, &QTimer::timeout, this, [&]() {
+        QScriptEngineDebugger *debugger = scriptWidget->engine()->debuggerForTest();
+        QAction *action = debugger ? debugger->action(QScriptEngineDebugger::ContinueAction) : 0;
+        if (action && action->isEnabled()) {
+            ++debuggerPauses;
+            action->trigger();
+        }
+    });
+    debuggerTimer.start();
+    scriptWidget->engine()->runScript(QStringLiteral(
+        "scriptEngine.projectFinished.connect(function(id){throw new Error('intentional callback failure');});"
+        "scriptEngine.projectCreate('exception','Info');scriptEngine.runProjects('exception');"
+        "scriptEngine.syncProjects('exception');"));
+    debuggerTimer.stop();
+    QCOMPARE(scriptWidget->engine()->runningProjects(), 0);
+    const QJsonObject recovery = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({ok:true,running:scriptEngine.runningProjects()}));"))
+        .toUtf8()).object();
+    QCOMPARE(recovery.value(QStringLiteral("ok")).toBool(), true);
+    QCOMPARE(recovery.value(QStringLiteral("running")).toInt(), 0);
+    QVERIFY(debuggerPauses >= 1);
+    qunsetenv("QCHDMAN_FAKE_MODE");
+    qunsetenv("QCHDMAN_FAKE_DELAY_MS");
+    observations.append(QJsonObject{{QStringLiteral("id"), QStringLiteral("runtime/callback-exception")},
+                                    {QStringLiteral("result"), QJsonObject{{QStringLiteral("debuggerPaused"), true},
+                                                                           {QStringLiteral("recovered"), true},
+                                                                           {QStringLiteral("running"), 0}}}});
+}
+
+void QchdmanScriptTest::scriptFileLoadingAndExecution()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString validPath = directory.filePath(QStringLiteral("Grüße 世界-crlf.scr"));
+    QFile valid(validPath);
+    QVERIFY(valid.open(QIODevice::WriteOnly));
+    valid.write("# Qt CHDMAN GUI script file -- please do not edit manually\r\n"
+                "ApplicationVersion = 0.20\r\nScriptFormatVersion = 1\r\nECMAScript [\r\n"
+                "var embedded = '] is data';\r\n"
+                "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({unicode:'café 世界',embedded:embedded}));\r\n]\r\n");
+    valid.close();
+    const QJsonObject executed = QJsonDocument::fromJson(runScriptFile(validPath).toUtf8()).object();
+    QCOMPARE(executed.value(QStringLiteral("unicode")).toString(), QStringLiteral("café 世界"));
+    QCOMPARE(executed.value(QStringLiteral("embedded")).toString(), QStringLiteral("] is data"));
+    const QString canonical = scriptWidget->toString();
+    QVERIFY(canonical.contains(QStringLiteral("ApplicationVersion = 0.244\n")));
+    QVERIFY(canonical.contains(QStringLiteral("var embedded = '] is data';\n")));
+
+    const QString beforeInvalid = scriptWidget->toString();
+    const QString noMarkerPath = directory.filePath(QStringLiteral("no-marker.scr"));
+    QFile noMarker(noMarkerPath);
+    QVERIFY(noMarker.open(QIODevice::WriteOnly | QIODevice::Text));
+    noMarker.write("ApplicationVersion = 0.244\nScriptFormatVersion = 1\n");
+    noMarker.close();
+    scriptWidget->load(noMarkerPath);
+    QCOMPARE(scriptWidget->toString(), beforeInvalid);
+
+    const QString truncatedPath = directory.filePath(QStringLiteral("truncated.scr"));
+    QFile truncated(truncatedPath);
+    QVERIFY(truncated.open(QIODevice::WriteOnly | QIODevice::Text));
+    truncated.write("ApplicationVersion = 0.244\nScriptFormatVersion = 1\nECMAScript [\nvar truncatedValue = 7;\n");
+    truncated.close();
+    scriptWidget->load(truncatedPath);
+    const bool truncatedLoaded = scriptWidget->toString().contains(QStringLiteral("var truncatedValue = 7;"));
+    QVERIFY(truncatedLoaded);
+
+    observations.append(QJsonObject{{QStringLiteral("id"), QStringLiteral("persistence/script-file-execution")},
+                                    {QStringLiteral("result"), QJsonObject{{QStringLiteral("unicode"), true},
+                                                                           {QStringLiteral("crlf"), true},
+                                                                           {QStringLiteral("oldApplicationVersion"), true},
+                                                                           {QStringLiteral("embeddedDelimiter"), true},
+                                                                           {QStringLiteral("noMarkerPreserved"), true},
+                                                                           {QStringLiteral("truncatedLoaded"), truncatedLoaded}}}});
 }
 
 void QchdmanScriptTest::scriptInterruptionAndStress()

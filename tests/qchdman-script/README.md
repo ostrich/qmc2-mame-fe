@@ -23,6 +23,14 @@ invocation per line to `QCHDMAN_FAKE_RECORD`; behavior is selected with
 delay, and exit status are controlled by the other `QCHDMAN_FAKE_*`
 environment variables in its source.
 
+The integration cases include recursive directory discovery and bounded
+project scheduling (derived from the external `04-recursive-copy.scr` stress
+case), repeated eight-project parallel batches, deterministic cancellation and
+subsequent recovery, exceptions raised from project callbacks, and loading and
+executing real version-1 `.scr` files with CRLF, Unicode, older application
+versions, embedded delimiters, and malformed input.  These all drive the real
+`ScriptWidget` and `ScriptEngine`; they do not add script-only test APIs.
+
 ## Canonical Qt 5 reference
 
 `./run-reference.sh` builds the harness with exactly Qt 5.15.19 and compares

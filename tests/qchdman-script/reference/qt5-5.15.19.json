@@ -1150,6 +1150,163 @@
             }
         },
         {
+            "id": "projects/recursive-scheduling",
+            "result": {
+                "commands": 5,
+                "destroyed": [
+                    "café.chd",
+                    "root.chd",
+                    "sub one/one.chd",
+                    "sub one/space name.chd",
+                    "日本語/deep.chd"
+                ],
+                "finished": [
+                    "café.chd",
+                    "root.chd",
+                    "sub one/one.chd",
+                    "sub one/space name.chd",
+                    "日本語/deep.chd"
+                ],
+                "peak": 2,
+                "progress": 5,
+                "running": 0,
+                "started": [
+                    "café.chd",
+                    "root.chd",
+                    "sub one/one.chd",
+                    "sub one/space name.chd",
+                    "日本語/deep.chd"
+                ],
+                "total": 5,
+                "violations": [
+                ]
+            }
+        },
+        {
+            "id": "projects/repeated-parallel",
+            "result": {
+                "finished": 40,
+                "rounds": [
+                    {
+                        "codes": [
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "peak": 8,
+                        "round": 1,
+                        "running": 0
+                    },
+                    {
+                        "codes": [
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "peak": 8,
+                        "round": 2,
+                        "running": 0
+                    },
+                    {
+                        "codes": [
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "peak": 8,
+                        "round": 3,
+                        "running": 0
+                    },
+                    {
+                        "codes": [
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "peak": 8,
+                        "round": 4,
+                        "running": 0
+                    },
+                    {
+                        "codes": [
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "peak": 8,
+                        "round": 5,
+                        "running": 0
+                    }
+                ],
+                "running": 0,
+                "started": 40
+            }
+        },
+        {
+            "id": "projects/cancellation-recovery",
+            "result": {
+                "cancelled": {
+                    "before": 1,
+                    "events": [
+                        "start:cancel",
+                        "finish:cancel"
+                    ],
+                    "rc": 15,
+                    "running": 0,
+                    "status": "terminated"
+                },
+                "recovery": {
+                    "rc": 0,
+                    "running": 0,
+                    "status": "finished"
+                }
+            }
+        },
+        {
+            "id": "runtime/callback-exception",
+            "result": {
+                "debuggerPaused": true,
+                "recovered": true,
+                "running": 0
+            }
+        },
+        {
+            "id": "persistence/script-file-execution",
+            "result": {
+                "crlf": true,
+                "embeddedDelimiter": true,
+                "noMarkerPreserved": true,
+                "oldApplicationVersion": true,
+                "truncatedLoaded": true,
+                "unicode": true
+            }
+        },
+        {
             "id": "runtime/interruption-stress",
             "result": {
                 "activeProcessIterations": 2,

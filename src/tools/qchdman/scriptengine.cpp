@@ -2830,8 +2830,13 @@ void ScriptEngine::waitForRunningProjects(int numProjects)
 			if ( externalStop || (previouslyRunningProjects - runningProjects() >= projectsToWaitFor) )
 				break;
 
-			if ( mProjectMap[id]->status == QCHDMAN_PRJSTAT_RUNNING ) {
-				mProjectMap[id]->chdmanProc->waitForFinished(QCHDMAN_PROCESS_POLL_TIME);
+			// Processing events while waiting can invoke a script's
+			// projectFinished callback.  That callback is allowed to destroy
+			// its own project, so never dereference the map entry again after
+			// entering the event loop without first checking its lifetime.
+			QPointer<ProjectWidget> projectWidget = mProjectMap.value(id);
+			if ( projectWidget && projectWidget->status == QCHDMAN_PRJSTAT_RUNNING && projectWidget->chdmanProc ) {
+				projectWidget->chdmanProc->waitForFinished(QCHDMAN_PROCESS_POLL_TIME);
 				qApp->processEvents();
 			}
 		}
