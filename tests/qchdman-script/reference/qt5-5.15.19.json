@@ -1,6 +1,88 @@
 {
     "fixtures": [
         {
+            "id": "utilities/core",
+            "result": {
+                "detached": 0,
+                "entries": [
+                    "a.txt"
+                ],
+                "hasCPU": true,
+                "iteratedCount": 1,
+                "knownOS": true,
+                "made": true,
+                "progress": 17,
+                "removed": true,
+                "shellExit": 7,
+                "subdirs": [
+                    "sub"
+                ]
+            }
+        },
+        {
+            "id": "runtime/language-bridge",
+            "result": {
+                "caught": true,
+                "containerJoin": "bridge.txt",
+                "containerLength": 1,
+                "defaultArguments": true,
+                "gcAvailable": true,
+                "nested": 42,
+                "primitive": true,
+                "sameGlobal": false,
+                "signal": "signal-id",
+                "stackAvailable": false,
+                "syntax": true
+            }
+        },
+        {
+            "id": "runtime/repeated-runs",
+            "result": {
+                "first": {
+                    "counter": 1
+                },
+                "second": {
+                    "counter": 2
+                }
+            }
+        },
+        {
+            "id": "utilities/dialogs",
+            "result": {
+                "cancelled": [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                "doubleValue": 4.25,
+                "file": "<TMP>/chosen.txt",
+                "folder": "<TMP>",
+                "integer": 23,
+                "item": "two",
+                "oks": [
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true
+                ],
+                "text": "chosen text"
+            }
+        },
+        {
+            "id": "persistence/version-1",
+            "result": {
+                "fileRoundTrip": true,
+                "malformedPreserved": true,
+                "project": "# Qt CHDMAN GUI project file -- please do not edit manually\nApplicationVersion = 0.244\nProjectFormatVersion = 1\nProjectType = Info\nInfoInputFile = /tmp/Grüße 世界.chd\nInfoVerbose = 1\n",
+                "script": "# Qt CHDMAN GUI script file -- please do not edit manually\nApplicationVersion = 0.244\nScriptFormatVersion = 1\nECMAScript [\nvar greeting = 'Grüße 世界';\nscriptEngine.log(greeting);\n]\n"
+            }
+        },
+        {
             "id": "globals/structured-result",
             "result": {
                 "hasLog": true,

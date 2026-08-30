@@ -1,0 +1,21 @@
+{
+    "format": 1,
+    "rules": [
+        {
+            "pattern": "^(log|dirStartEntryList|dirHasNextEntry|dirNextEntry|dirEntryList|dirSubDirList|dumpHardDiskTemplates|runShellCommand|operatingSystemName|createPath|removePath|numberOfCPUs|progressSetRange|progressSetValue|progressGetValue)$",
+            "fixture": "utilities/core"
+        },
+        {
+            "pattern": "^(inputGetFilePath|inputGetFolderPath|inputGetStringValue|inputGetListItem|inputGetIntValue|inputGetDoubleValue|inputOk)$",
+            "fixture": "utilities/dialogs"
+        },
+        {
+            "pattern": "^(projectCreate|projectCreateFromFile|projectCreateFromString|projectClone|projectDestroy|projectStatus|projectReturnCode|projectSetType|projectGetType|projectToWindow|projectCloneToWindow|runProjects|stopProjects|syncProjects|destroyProjects|waitForRunningProjects|runningProjects)$",
+            "fixture": "projects/lifecycle"
+        },
+        {
+            "pattern": "^project(Set|Get)(Info|Verify|Copy|CreateRaw|CreateHD|CreateCD|CreateLD|ExtractRaw|ExtractHD|ExtractCD|ExtractLD|DumpMeta|AddMeta|DelMeta).+$",
+            "fixture": "projects/properties"
+        }
+    ]
+}

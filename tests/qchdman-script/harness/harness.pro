@@ -59,3 +59,5 @@ FORMS += $$QCHDMAN_DIR/mainwindow.ui \
     $$QCHDMAN_DIR/scriptwidget.ui
 
 RESOURCES += $$QCHDMAN_DIR/qchdman.qrc
+
+DISTFILES += ../slot-manifest.json

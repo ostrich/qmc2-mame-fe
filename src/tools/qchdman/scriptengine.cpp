@@ -38,8 +38,6 @@ ScriptEngine::~ScriptEngine()
 {
 	externalStop = true;
 	if ( mEngineDebugger ) {
-		mEngineDebugger->standardWindow()->close();
-		qApp->processEvents();
 		mEngineDebugger->detach();
 		delete mEngineDebugger;
 		mEngineDebugger = 0;
@@ -57,16 +55,11 @@ void ScriptEngine::runScript(QString script)
 	if ( !mProjectMap.isEmpty() )
 		destroyProjects();
 	mScriptWidget->on_progressBar_valueChanged(0);
-	if ( mEngineDebugger ) {
-		mEngineDebugger->standardWindow()->close();
-		qApp->processEvents();
-		mEngineDebugger->detach();
-		delete mEngineDebugger;
-		mEngineDebugger = 0;
+	if ( !mEngineDebugger ) {
+		mEngineDebugger = new QScriptEngineDebugger(this);
+		mEngineDebugger->attachTo(mEngine);
 	}
 	disconnectScriptSignals();
-	mEngineDebugger = new QScriptEngineDebugger(this);
-	mEngineDebugger->attachTo(mEngine);
 	mEngine->evaluate(script);
 	mEngine->collectGarbage();
 }
@@ -83,8 +76,6 @@ void ScriptEngine::stopScript()
 		destroyProjects();
 	}
 	if ( mEngineDebugger ) {
-		mEngineDebugger->standardWindow()->close();
-		qApp->processEvents();
 		mEngineDebugger->detach();
 		delete mEngineDebugger;
 		mEngineDebugger = 0;
