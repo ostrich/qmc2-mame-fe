@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.deps/qtscript
-          key: qtscript-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh') }}
+          key: qtscript-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
       - name: Build isolated QtScript
         if: steps.qtscript-cache.outputs.cache-hit != 'true'
         run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
@@ -101,8 +101,10 @@ jobs:
           otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman
           ! otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman | grep "$GITHUB_WORKSPACE/.deps"
       - uses: actions/upload-artifact@v7
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         with:
           name: qmc2-macos-${{ matrix.arch }}-${{ github.sha }}
+          retention-days: 14
           path: |
             qmc2-sdlmame.app
             src/tools/qchdman/qchdman.app

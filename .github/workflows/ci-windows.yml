@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}\.deps\qtscript
-          key: qtscript-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.ps1') }}
+          key: qtscript-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.ps1', 'scripts/qtscript-patches/**') }}
       - name: Build isolated QtScript
         if: steps.qtscript-cache.outputs.cache-hit != 'true'
         shell: pwsh
@@ -137,7 +137,9 @@ jobs:
           if ($qchdman.HasExited) { throw "qchdman exited during startup with code $($qchdman.ExitCode)" }
           Stop-Process -Id $qchdman.Id
       - uses: actions/upload-artifact@v7
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         with:
           name: qmc2-windows-msvc2022-${{ github.sha }}
+          retention-days: 14
           path: |
             release
