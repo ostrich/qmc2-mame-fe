@@ -9,7 +9,53 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
+  changes:
+    name: Select checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      linux: ${{ steps.classify.outputs.linux }}
+      core: ${{ steps.classify.outputs.core }}
+      qchdman: ${{ steps.classify.outputs.qchdman }}
+      xml: ${{ steps.classify.outputs.xml }}
+      qtscript: ${{ steps.classify.outputs.qtscript }}
+      ftp: ${{ steps.classify.outputs.ftp }}
+      archive: ${{ steps.classify.outputs.archive }}
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: Test change classification
+        run: scripts/test-classify-ci-paths.sh
+      - name: Classify changed paths
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BASE: ${{ github.event.before }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = schedule ] || [ "$EVENT_NAME" = workflow_dispatch ]; then
+            scripts/classify-ci-paths.sh .github/workflows/ci-linux.yml >> "$GITHUB_OUTPUT"
+          else
+            base=$PUSH_BASE
+            [ "$EVENT_NAME" = pull_request ] && base=$PULL_REQUEST_BASE
+            if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              base=$(git rev-list --max-parents=0 HEAD | tail -1)
+            fi
+            git diff --name-only "$base" "$GITHUB_SHA" | scripts/classify-ci-paths.sh >> "$GITHUB_OUTPUT"
+          fi
+      - name: Summarize selection
+        run: |
+          printf '### Linux CI selection\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Suite | Run |\n| --- | --- |\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Main application | %s |\n' '${{ steps.classify.outputs.core }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| qchdman | %s |\n' '${{ steps.classify.outputs.qchdman }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| XML | %s |\n' '${{ steps.classify.outputs.xml }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| QtScript | %s |\n' '${{ steps.classify.outputs.qtscript }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| FTP | %s |\n' '${{ steps.classify.outputs.ftp }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Archive | %s |\n' '${{ steps.classify.outputs.archive }}' >> "$GITHUB_STEP_SUMMARY"
   build:
+    needs: changes
+    if: needs.changes.outputs.linux == 'true'
     strategy:
       matrix:
         qt: [6.8.3, 6.11.2]
@@ -24,27 +70,51 @@ jobs:
           modules: qt5compat qtmultimedia qtpositioning qtwebchannel qtwebengine
           cache: true
       - name: Install native dependencies
-        run: sudo apt-get update && sudo apt-get install -y libarchive-dev libcurl4-openssl-dev libminizip-dev libsdl2-dev ninja-build zlib1g-dev
+        run: |
+          packages=""
+          if [ '${{ needs.changes.outputs.core }}' = true ]; then
+            packages="$packages libarchive-dev libcurl4-openssl-dev libminizip-dev libsdl2-dev zlib1g-dev"
+          fi
+          if [ '${{ needs.changes.outputs.archive }}' = true ]; then
+            packages="$packages libarchive-dev zlib1g-dev"
+          fi
+          if [ '${{ needs.changes.outputs.ftp }}' = true ]; then
+            packages="$packages libcurl4-openssl-dev"
+          fi
+          if [ '${{ needs.changes.outputs.qchdman }}' = true ] || [ '${{ needs.changes.outputs.qtscript }}' = true ]; then
+            packages="$packages ninja-build"
+          fi
+          if [ -n "$packages" ]; then
+            sudo apt-get update
+            # shellcheck disable=SC2086
+            sudo apt-get install -y $packages
+          fi
       - name: Cache isolated QtScript
+        if: needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true'
         id: qtscript-cache
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.deps/qtscript
           key: qtscript-${{ runner.os }}-${{ runner.arch }}-qt-${{ matrix.qt }}-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
       - name: Build isolated QtScript
-        if: steps.qtscript-cache.outputs.cache-hit != 'true'
+        if: (needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true') && steps.qtscript-cache.outputs.cache-hit != 'true'
         run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
       - name: Build qmc2 and qchdman
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.qchdman == 'true'
         env:
           DISTCFG: 1
           LIBARCHIVE: 1
           QMAKEPATH: ${{ github.workspace }}/.deps/qtscript:${{ github.workspace }}/.deps/qtscript/lib/qt6
           QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript
         run: |
-          make -j4 QMAKE="$QT_ROOT_DIR/bin/qmake" LRELEASE="$QT_ROOT_DIR/bin/lrelease" LUPDATE="$QT_ROOT_DIR/bin/lupdate"
-          make -j4 QMAKE="$QT_ROOT_DIR/bin/qmake" LRELEASE="$QT_ROOT_DIR/bin/lrelease" LUPDATE="$QT_ROOT_DIR/bin/lupdate" qchdman
+          if [ '${{ needs.changes.outputs.core }}' = true ]; then
+            make -j4 QMAKE="$QT_ROOT_DIR/bin/qmake" LRELEASE="$QT_ROOT_DIR/bin/lrelease" LUPDATE="$QT_ROOT_DIR/bin/lupdate"
+          fi
+          if [ '${{ needs.changes.outputs.qchdman }}' = true ]; then
+            make -j4 QMAKE="$QT_ROOT_DIR/bin/qmake" LRELEASE="$QT_ROOT_DIR/bin/lrelease" LUPDATE="$QT_ROOT_DIR/bin/lupdate" qchdman
+          fi
       - name: Validate system zlib and minizip
-        if: matrix.qt == '6.8.3'
+        if: matrix.qt == '6.8.3' && needs.changes.outputs.core == 'true'
         run: |
           mkdir build-system-libs
           cd build-system-libs
@@ -54,6 +124,7 @@ jobs:
           ldd qmc2 | grep 'libminizip'
           ldd qmc2 | grep 'libz.so'
       - name: Run XML compatibility fixtures
+        if: needs.changes.outputs.xml == 'true'
         run: |
           mkdir build-xml-tests
           cd build-xml-tests
@@ -61,6 +132,7 @@ jobs:
           make -j2
           ./tst_xmlmachine
       - name: Run QtScript compatibility fixtures
+        if: needs.changes.outputs.qtscript == 'true'
         env:
           QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript
         run: |
@@ -70,6 +142,7 @@ jobs:
           make -j2
           QT_QPA_PLATFORM=offscreen ./tst_qtscript
       - name: Run FTP compatibility fixtures
+        if: needs.changes.outputs.ftp == 'true'
         run: |
           mkdir build-ftp-tests
           cd build-ftp-tests
@@ -77,6 +150,7 @@ jobs:
           make -j2
           ./tst_ftp
       - name: Run archive correctness fixtures
+        if: needs.changes.outputs.archive == 'true'
         run: |
           for test in archivefile bigbytearray sevenzip; do
             mkdir "build-$test-tests"
@@ -87,10 +161,15 @@ jobs:
             cd ..
           done
       - name: Verify runtime libraries
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.qchdman == 'true'
         run: |
-          ! ldd qmc2-sdlmame | grep 'not found'
-          ! ldd src/tools/qchdman/qchdman | grep 'not found'
-          ldd src/tools/qchdman/qchdman | grep "$GITHUB_WORKSPACE/.deps/qtscript/lib/libQt6Script"
+          if [ '${{ needs.changes.outputs.core }}' = true ]; then
+            ! ldd qmc2-sdlmame | grep 'not found'
+          fi
+          if [ '${{ needs.changes.outputs.qchdman }}' = true ]; then
+            ! ldd src/tools/qchdman/qchdman | grep 'not found'
+            ldd src/tools/qchdman/qchdman | grep "$GITHUB_WORKSPACE/.deps/qtscript/lib/libQt6Script"
+          fi
       - uses: actions/upload-artifact@v7
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         with:

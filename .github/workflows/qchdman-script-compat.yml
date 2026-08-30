@@ -2,9 +2,7 @@ name: qchdman scripting compatibility
 
 on:
   push:
-    paths: ['src/tools/qchdman/**', 'tests/qchdman-script/**', 'tests/qtscript/**', 'scripts/bootstrap-qtscript*', 'scripts/qtscript-*-patches/**', '.github/workflows/qchdman-script-compat.yml']
   pull_request:
-    paths: ['src/tools/qchdman/**', 'tests/qchdman-script/**', 'tests/qtscript/**', 'scripts/bootstrap-qtscript*', 'scripts/qtscript-*-patches/**', '.github/workflows/qchdman-script-compat.yml']
   schedule:
     - cron: '23 5 * * 1'
   workflow_dispatch:
@@ -14,7 +12,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Select checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      differential: ${{ steps.classify.outputs.differential }}
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: Test change classification
+        run: scripts/test-classify-ci-paths.sh
+      - name: Classify changed paths
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BASE: ${{ github.event.before }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = schedule ] || [ "$EVENT_NAME" = workflow_dispatch ]; then
+            scripts/classify-ci-paths.sh .github/workflows/qchdman-script-compat.yml >> "$GITHUB_OUTPUT"
+          else
+            base=$PUSH_BASE
+            [ "$EVENT_NAME" = pull_request ] && base=$PULL_REQUEST_BASE
+            if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              base=$(git rev-list --max-parents=0 HEAD | tail -1)
+            fi
+            git diff --name-only "$base" "$GITHUB_SHA" | scripts/classify-ci-paths.sh >> "$GITHUB_OUTPUT"
+          fi
+      - name: Summarize selection
+        run: |
+          printf '### qchdman scripting CI selection\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Suite | Run |\n| --- | --- |\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Three-engine differential | %s |\n' '${{ steps.classify.outputs.differential }}' >> "$GITHUB_STEP_SUMMARY"
   linux-differential:
+    needs: changes
+    if: needs.changes.outputs.differential == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6

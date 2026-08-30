@@ -9,7 +9,53 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
+  changes:
+    name: Select checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      windows: ${{ steps.classify.outputs.windows }}
+      core: ${{ steps.classify.outputs.core }}
+      qchdman: ${{ steps.classify.outputs.qchdman }}
+      xml: ${{ steps.classify.outputs.xml }}
+      qtscript: ${{ steps.classify.outputs.qtscript }}
+      ftp: ${{ steps.classify.outputs.ftp }}
+      archive: ${{ steps.classify.outputs.archive }}
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: Test change classification
+        run: scripts/test-classify-ci-paths.sh
+      - name: Classify changed paths
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BASE: ${{ github.event.before }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = schedule ] || [ "$EVENT_NAME" = workflow_dispatch ]; then
+            scripts/classify-ci-paths.sh .github/workflows/ci-windows.yml >> "$GITHUB_OUTPUT"
+          else
+            base=$PUSH_BASE
+            [ "$EVENT_NAME" = pull_request ] && base=$PULL_REQUEST_BASE
+            if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              base=$(git rev-list --max-parents=0 HEAD | tail -1)
+            fi
+            git diff --name-only "$base" "$GITHUB_SHA" | scripts/classify-ci-paths.sh >> "$GITHUB_OUTPUT"
+          fi
+      - name: Summarize selection
+        run: |
+          printf '### Windows CI selection\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Suite | Run |\n| --- | --- |\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Main application | %s |\n' '${{ steps.classify.outputs.core }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| qchdman | %s |\n' '${{ steps.classify.outputs.qchdman }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| XML | %s |\n' '${{ steps.classify.outputs.xml }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| QtScript | %s |\n' '${{ steps.classify.outputs.qtscript }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| FTP | %s |\n' '${{ steps.classify.outputs.ftp }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Archive | %s |\n' '${{ steps.classify.outputs.archive }}' >> "$GITHUB_STEP_SUMMARY"
   build:
+    needs: changes
+    if: needs.changes.outputs.windows == 'true'
     runs-on: windows-2022
     env:
       SDL_VERSION: 2.30.3
@@ -35,34 +81,40 @@ jobs:
           modules: qt5compat qtmultimedia qtpositioning qtwebchannel qtwebengine
           cache: true
       - name: Download SDL
+        if: needs.changes.outputs.core == 'true'
         shell: pwsh
         run: |
           Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-$env:SDL_VERSION/SDL2-devel-$env:SDL_VERSION-VC.zip" -OutFile "${{ runner.workspace }}\SDL2.zip"
           Expand-Archive "${{ runner.workspace }}\SDL2.zip" -DestinationPath "${{ runner.workspace }}"
       - uses: ilammy/msvc-dev-cmd@v1
       - name: Cache vcpkg binary packages
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.archive == 'true' || needs.changes.outputs.ftp == 'true'
         uses: actions/cache@v5
         with:
           path: ~/AppData/Local/vcpkg/archives
           key: vcpkg-archives-${{ runner.os }}-${{ runner.arch }}-x64-windows-curl-libarchive-v1
       - name: Install native dependencies
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.archive == 'true' || needs.changes.outputs.ftp == 'true'
         shell: pwsh
         run: vcpkg install curl:x64-windows libarchive:x64-windows
       - uses: msys2/setup-msys2@v2
+        if: needs.changes.outputs.core == 'true'
         with:
           install: make
           path-type: inherit
       - name: Cache isolated QtScript
+        if: needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true'
         id: qtscript-cache
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}\.deps\qtscript
           key: qtscript-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.ps1', 'scripts/qtscript-patches/**') }}
       - name: Build isolated QtScript
-        if: steps.qtscript-cache.outputs.cache-hit != 'true'
+        if: (needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true') && steps.qtscript-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: scripts/bootstrap-qtscript.ps1 -QtRoot $env:QT_ROOT_DIR -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript"
       - name: Configure qmc2
+        if: needs.changes.outputs.core == 'true'
         shell: msys2 {0}
         env:
           MKSPEC: win32-msvc
@@ -76,18 +128,26 @@ jobs:
           QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
         run: make -j4 configure
       - name: Build qmc2 and qchdman
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.qchdman == 'true'
         shell: pwsh
         env:
           QMAKEPATH: ${{ github.workspace }}\.deps\qtscript;${{ github.workspace }}\.deps\qtscript\lib\qt6
           QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
         run: |
-          jom /f Makefile.qmake.release
-          Push-Location src\tools\qchdman
-          qmake qchdman.pro CONFIG+=release
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          jom
-          Pop-Location
+          if ('${{ needs.changes.outputs.core }}' -eq 'true') {
+            jom /f Makefile.qmake.release
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          if ('${{ needs.changes.outputs.qchdman }}' -eq 'true') {
+            Push-Location src\tools\qchdman
+            qmake qchdman.pro CONFIG+=release
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            jom
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Pop-Location
+          }
       - name: Run XML compatibility fixtures
+        if: needs.changes.outputs.xml == 'true'
         shell: pwsh
         run: |
           New-Item -ItemType Directory build-xml-tests
@@ -96,6 +156,7 @@ jobs:
           jom
           .\release\tst_xmlmachine.exe
       - name: Run QtScript compatibility fixtures
+        if: needs.changes.outputs.qtscript == 'true'
         shell: pwsh
         env:
           QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
@@ -126,9 +187,11 @@ jobs:
             throw "QtScript compatibility fixtures failed with native exit code $($process.ExitCode)"
           }
       - name: Run qchdman scripting contract
+        if: needs.changes.outputs.qchdman == 'true'
         shell: pwsh
         run: tests/qchdman-script/run-engine.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript" -QMake "$env:QT_ROOT_DIR\bin\qmake.exe" -Name jsc
       - name: Run FTP compatibility fixtures
+        if: needs.changes.outputs.ftp == 'true'
         shell: pwsh
         run: |
           New-Item -ItemType Directory build-ftp-tests
@@ -137,6 +200,7 @@ jobs:
           jom
           .\release\tst_ftp.exe
       - name: Run archive correctness fixtures
+        if: needs.changes.outputs.archive == 'true'
         shell: pwsh
         run: |
           $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
@@ -153,15 +217,25 @@ jobs:
             Pop-Location
           }
       - name: Deploy
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.qchdman == 'true'
         shell: pwsh
         run: |
-          windeployqt release\qmc2-mame.exe
-          Copy-Item src\tools\qchdman\release\qchdman.exe release
-          Copy-Item "${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll" release
-          $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
-          Copy-Item "$vcpkgRoot\installed\x64-windows\bin\*.dll" release
-          Copy-Item .deps\qtscript\bin\Qt6Script*.dll release
+          New-Item -ItemType Directory -Force release
+          if ('${{ needs.changes.outputs.core }}' -eq 'true') {
+            windeployqt release\qmc2-mame.exe
+            Copy-Item "${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll" release
+          }
+          if ('${{ needs.changes.outputs.qchdman }}' -eq 'true') {
+            Copy-Item src\tools\qchdman\release\qchdman.exe release
+            windeployqt release\qchdman.exe
+            Copy-Item .deps\qtscript\bin\Qt6Script*.dll release
+          }
+          if ('${{ needs.changes.outputs.core }}' -eq 'true') {
+            $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
+            Copy-Item "$vcpkgRoot\installed\x64-windows\bin\*.dll" release
+          }
       - name: Verify deployed applications start
+        if: needs.changes.outputs.qchdman == 'true'
         shell: pwsh
         run: |
           $qchdman = Start-Process release\qchdman.exe -PassThru

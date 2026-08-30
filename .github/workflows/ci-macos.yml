@@ -9,7 +9,53 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
+  changes:
+    name: Select checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      macos: ${{ steps.classify.outputs.macos }}
+      core: ${{ steps.classify.outputs.core }}
+      qchdman: ${{ steps.classify.outputs.qchdman }}
+      xml: ${{ steps.classify.outputs.xml }}
+      qtscript: ${{ steps.classify.outputs.qtscript }}
+      ftp: ${{ steps.classify.outputs.ftp }}
+      archive: ${{ steps.classify.outputs.archive }}
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: Test change classification
+        run: scripts/test-classify-ci-paths.sh
+      - name: Classify changed paths
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BASE: ${{ github.event.before }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = schedule ] || [ "$EVENT_NAME" = workflow_dispatch ]; then
+            scripts/classify-ci-paths.sh .github/workflows/ci-macos.yml >> "$GITHUB_OUTPUT"
+          else
+            base=$PUSH_BASE
+            [ "$EVENT_NAME" = pull_request ] && base=$PULL_REQUEST_BASE
+            if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              base=$(git rev-list --max-parents=0 HEAD | tail -1)
+            fi
+            git diff --name-only "$base" "$GITHUB_SHA" | scripts/classify-ci-paths.sh >> "$GITHUB_OUTPUT"
+          fi
+      - name: Summarize selection
+        run: |
+          printf '### macOS CI selection\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Suite | Run |\n| --- | --- |\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Main application | %s |\n' '${{ steps.classify.outputs.core }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| qchdman | %s |\n' '${{ steps.classify.outputs.qchdman }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| XML | %s |\n' '${{ steps.classify.outputs.xml }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| QtScript | %s |\n' '${{ steps.classify.outputs.qtscript }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| FTP | %s |\n' '${{ steps.classify.outputs.ftp }}' >> "$GITHUB_STEP_SUMMARY"
+          printf '| Archive | %s |\n' '${{ steps.classify.outputs.archive }}' >> "$GITHUB_STEP_SUMMARY"
   build:
+    needs: changes
+    if: needs.changes.outputs.macos == 'true'
     strategy:
       matrix:
         include:
@@ -28,27 +74,48 @@ jobs:
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
         run: |
-          brew install curl libarchive ninja sdl2
-          echo "PKG_CONFIG_PATH=$(brew --prefix curl)/lib/pkgconfig:$(brew --prefix libarchive)/lib/pkgconfig:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          packages=()
+          if [ '${{ needs.changes.outputs.core }}' = true ] || [ '${{ needs.changes.outputs.archive }}' = true ] || [ '${{ needs.changes.outputs.ftp }}' = true ]; then
+            packages+=(curl libarchive)
+          fi
+          if [ '${{ needs.changes.outputs.core }}' = true ]; then
+            packages+=(sdl2)
+          fi
+          if [ '${{ needs.changes.outputs.qchdman }}' = true ] || [ '${{ needs.changes.outputs.qtscript }}' = true ]; then
+            packages+=(ninja)
+          fi
+          if [ ${#packages[@]} -gt 0 ]; then
+            brew install "${packages[@]}"
+          fi
+          if [ '${{ needs.changes.outputs.core }}' = true ] || [ '${{ needs.changes.outputs.archive }}' = true ] || [ '${{ needs.changes.outputs.ftp }}' = true ]; then
+            echo "PKG_CONFIG_PATH=$(brew --prefix curl)/lib/pkgconfig:$(brew --prefix libarchive)/lib/pkgconfig:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          fi
       - name: Cache isolated QtScript
+        if: needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true'
         id: qtscript-cache
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.deps/qtscript
           key: qtscript-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
       - name: Build isolated QtScript
-        if: steps.qtscript-cache.outputs.cache-hit != 'true'
+        if: (needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true') && steps.qtscript-cache.outputs.cache-hit != 'true'
         run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
       - name: Build qmc2 and qchdman
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.qchdman == 'true'
         env:
           DISTCFG: 1
           LIBARCHIVE: 1
           QMAKEPATH: ${{ github.workspace }}/.deps/qtscript:${{ github.workspace }}/.deps/qtscript/lib/qt6
           QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript
         run: |
-          make -j3
-          make -j3 qchdman
+          if [ '${{ needs.changes.outputs.core }}' = true ]; then
+            make -j3
+          fi
+          if [ '${{ needs.changes.outputs.qchdman }}' = true ]; then
+            make -j3 qchdman
+          fi
       - name: Run XML compatibility fixtures
+        if: needs.changes.outputs.xml == 'true'
         run: |
           mkdir build-xml-tests
           cd build-xml-tests
@@ -56,6 +123,7 @@ jobs:
           make -j2
           ./tst_xmlmachine
       - name: Run QtScript compatibility fixtures
+        if: needs.changes.outputs.qtscript == 'true'
         env:
           QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript
         run: |
@@ -65,12 +133,14 @@ jobs:
           make -j2
           QT_QPA_PLATFORM=offscreen ./tst_qtscript
       - name: Run qchdman scripting contract
+        if: needs.changes.outputs.qchdman == 'true'
         env:
           QTSCRIPT_JSC_PREFIX: ${{ github.workspace }}/.deps/qtscript
           QTSCRIPT_QUICKJS_PREFIX: ${{ github.workspace }}/.deps/qtscript
           QCHDMAN_ENGINES: jsc
         run: tests/qchdman-script/run-differential.sh
       - name: Run FTP compatibility fixtures
+        if: needs.changes.outputs.ftp == 'true'
         run: |
           mkdir build-ftp-tests
           cd build-ftp-tests
@@ -78,6 +148,7 @@ jobs:
           make -j2
           ./tst_ftp
       - name: Run archive correctness fixtures
+        if: needs.changes.outputs.archive == 'true'
         run: |
           for test in archivefile bigbytearray sevenzip; do
             mkdir "build-$test-tests"
@@ -88,18 +159,28 @@ jobs:
             cd ..
           done
       - name: Deploy application bundles
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.qchdman == 'true'
         run: |
-          macdeployqt qmc2-sdlmame.app
-          macdeployqt src/tools/qchdman/qchdman.app
-          mkdir -p src/tools/qchdman/qchdman.app/Contents/Frameworks
-          for framework in .deps/qtscript/lib/QtScript*.framework; do
-            ditto "$framework" "src/tools/qchdman/qchdman.app/Contents/Frameworks/$(basename "$framework")"
-          done
+          if [ '${{ needs.changes.outputs.core }}' = true ]; then
+            macdeployqt qmc2-sdlmame.app
+          fi
+          if [ '${{ needs.changes.outputs.qchdman }}' = true ]; then
+            macdeployqt src/tools/qchdman/qchdman.app
+            mkdir -p src/tools/qchdman/qchdman.app/Contents/Frameworks
+            for framework in .deps/qtscript/lib/QtScript*.framework; do
+              ditto "$framework" "src/tools/qchdman/qchdman.app/Contents/Frameworks/$(basename "$framework")"
+            done
+          fi
       - name: Verify bundled libraries
+        if: needs.changes.outputs.core == 'true' || needs.changes.outputs.qchdman == 'true'
         run: |
-          otool -L qmc2-sdlmame.app/Contents/MacOS/qmc2-sdlmame
-          otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman
-          ! otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman | grep "$GITHUB_WORKSPACE/.deps"
+          if [ '${{ needs.changes.outputs.core }}' = true ]; then
+            otool -L qmc2-sdlmame.app/Contents/MacOS/qmc2-sdlmame
+          fi
+          if [ '${{ needs.changes.outputs.qchdman }}' = true ]; then
+            otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman
+            ! otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman | grep "$GITHUB_WORKSPACE/.deps"
+          fi
       - uses: actions/upload-artifact@v7
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         with:
