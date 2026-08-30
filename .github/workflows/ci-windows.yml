@@ -27,6 +27,11 @@ jobs:
           Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-$env:SDL_VERSION/SDL2-devel-$env:SDL_VERSION-VC.zip" -OutFile "${{ runner.workspace }}\SDL2.zip"
           Expand-Archive "${{ runner.workspace }}\SDL2.zip" -DestinationPath "${{ runner.workspace }}"
       - uses: ilammy/msvc-dev-cmd@v1
+      - name: Cache vcpkg binary packages
+        uses: actions/cache@v5
+        with:
+          path: ~/AppData/Local/vcpkg/archives
+          key: vcpkg-archives-${{ runner.os }}-${{ runner.arch }}-x64-windows-curl-libarchive-v1
       - name: Install native dependencies
         shell: pwsh
         run: vcpkg install curl:x64-windows libarchive:x64-windows
