@@ -1,0 +1,228 @@
+diff --git a/src/script/quickjs/qscriptenginequickjs.cpp b/src/script/quickjs/qscriptenginequickjs.cpp
+index 3d3c1b0..b880342 100644
+--- a/src/script/quickjs/qscriptenginequickjs.cpp
++++ b/src/script/quickjs/qscriptenginequickjs.cpp
+@@ -212,6 +212,55 @@ static QByteArray normalizeDuplicateRegExpFlags(const QByteArray &source)
+     return normalized.toUtf8();
+ }
+ 
++// QuickJS-NG intentionally compiles the debugger statement as a no-op.  Keep
++// the source offsets and line numbers intact while redirecting it to the
++// private hook installed by QtScriptTools.  The small scanner deliberately
++// skips strings, templates and comments.
++static QByteArray enableDebuggerStatements(const QByteArray &source)
++{
++    static constexpr char hook[] = "$QSDbg$_()";
++    QByteArray result = source;
++    enum State { Code, SingleQuote, DoubleQuote, Template, LineComment, BlockComment } state = Code;
++    bool escaped = false;
++    for (qsizetype i = 0; i < result.size(); ++i) {
++        const char ch = result.at(i);
++        const char next = i + 1 < result.size() ? result.at(i + 1) : '\0';
++        if (state == LineComment) {
++            if (ch == '\n') state = Code;
++            continue;
++        }
++        if (state == BlockComment) {
++            if (ch == '*' && next == '/') { state = Code; ++i; }
++            continue;
++        }
++        if (state != Code) {
++            if (escaped) { escaped = false; continue; }
++            if (ch == '\\') { escaped = true; continue; }
++            if ((state == SingleQuote && ch == '\'') || (state == DoubleQuote && ch == '"')
++                || (state == Template && ch == '`')) state = Code;
++            continue;
++        }
++        if (ch == '/' && next == '/') { state = LineComment; ++i; continue; }
++        if (ch == '/' && next == '*') { state = BlockComment; ++i; continue; }
++        if (ch == '\'') { state = SingleQuote; continue; }
++        if (ch == '"') { state = DoubleQuote; continue; }
++        if (ch == '`') { state = Template; continue; }
++        if (i + 8 <= result.size() && result.mid(i, 8) == "debugger") {
++            const auto identifier = [](char c) {
++                return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
++                    || (c >= '0' && c <= '9') || c == '_' || c == '$';
++            };
++            const bool before = i > 0 && identifier(result.at(i - 1));
++            const bool after = i + 8 < result.size() && identifier(result.at(i + 8));
++            if (!before && !after) {
++                result.replace(i, 8, hook);
++                i += int(sizeof(hook)) - 2;
++            }
++        }
++    }
++    return result;
++}
++
+ static void freeQuickJSDescriptor(JSContext *context, JSPropertyDescriptor *descriptor);
+ 
+ static JSValue qtScriptPrint(JSContext *context, JSValueConst, int argc,
+@@ -2333,6 +2382,7 @@ QScriptValue QScriptEngine::evaluate(const QString &program, const QString &file
+ {
+     Q_D(QScriptEngine);
+     QScriptEngineState *state = d->state.data();
++    setProperty("_q_qtscript_source", program);
+     state->clearException();
+     state->clearAbortValue();
+     state->abortRequested = false;
+@@ -2501,7 +2551,8 @@ QScriptValue QScriptEngine::evaluate(const QString &program, const QString &file
+         }
+     }
+ 
+-    QByteArray source = normalizeDuplicateRegExpFlags(program.toUtf8());
++    QByteArray source = enableDebuggerStatements(
++        normalizeDuplicateRegExpFlags(program.toUtf8()));
+     QSet<QString> declaredNames;
+     const bool legacyReservedWordError = isLegacyReservedWordProgram(source);
+     if (!legacyReservedWordError && previousPrivate && previousPrivate->parent) {
+diff --git a/src/scripttools/debugging/qscriptenginedebugger.h b/src/scripttools/debugging/qscriptenginedebugger.h
+index 771e344..2e73192 100644
+--- a/src/scripttools/debugging/qscriptenginedebugger.h
++++ b/src/scripttools/debugging/qscriptenginedebugger.h
+@@ -119,6 +119,9 @@ Q_SIGNALS:
+     void evaluationSuspended();
+     void evaluationResumed();
+ 
++private Q_SLOTS:
++    void _q_quickjsPause();
++
+ private:
+     Q_DECLARE_PRIVATE(QScriptEngineDebugger)
+     Q_DISABLE_COPY(QScriptEngineDebugger)
+diff --git a/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp b/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp
+index 046b0bf..58981f3 100644
+--- a/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp
++++ b/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp
+@@ -7,11 +7,17 @@
+ #include "qscriptenginedebugger.h"
+ 
+ #include <QtScript/qscriptengine.h>
++#include <QtScript/qscriptcontext.h>
++#include <QtScript/qscriptvalue.h>
+ #include <QtCore/QPointer>
++#include <QtCore/QEventLoop>
++#include <QtCore/QMetaObject>
+ #include <QtCore/private/qobject_p.h>
+ #include <QtGui/QAction>
+ #include <QtWidgets/QApplication>
+ #include <QtWidgets/QLabel>
++#include <QtWidgets/QLineEdit>
++#include <QtWidgets/QPlainTextEdit>
+ #include <QtWidgets/QMainWindow>
+ #include <QtWidgets/QMenu>
+ #include <QtWidgets/QToolBar>
+@@ -41,6 +47,10 @@ public:
+     std::array<QPointer<QAction>, 16> actions{};
+     std::array<QPointer<QWidget>, 9> widgets{};
+     QPointer<QMainWindow> standardWindow;
++    QPointer<QEventLoop> pauseLoop;
++    QString source;
++    QScriptEngineDebugger::DebuggerState state = QScriptEngineDebugger::RunningState;
++    bool stepAgain = false;
+ };
+ 
+ namespace {
+@@ -69,6 +79,13 @@ QString widgetText(QScriptEngineDebugger::DebuggerWidget widget)
+ 
+ } // unnamed namespace
+ 
++static QScriptValue quickJsDebuggerHook(QScriptContext *context, QScriptEngine *)
++{
++    if (QObject *debugger = context->engine()->property("_q_qtscript_debugger").value<QObject *>())
++        QMetaObject::invokeMethod(debugger, "_q_quickjsPause", Qt::DirectConnection);
++    return QScriptValue();
++}
++
+ QScriptEngineDebugger::QScriptEngineDebugger(QObject *parent)
+     : QObject(*new QScriptEngineDebuggerPrivate, parent)
+ {
+@@ -80,11 +97,22 @@ void QScriptEngineDebugger::attachTo(QScriptEngine *engine)
+ {
+     Q_D(QScriptEngineDebugger);
+     d->engine = engine;
++    if (engine) {
++        engine->setProperty("_q_qtscript_debugger", QVariant::fromValue<QObject *>(this));
++        QScriptValue hook = engine->newFunction(quickJsDebuggerHook);
++        engine->globalObject().setProperty(QStringLiteral("$QSDbg$_"), hook,
++                                            QScriptValue::SkipInEnumeration
++                                            | QScriptValue::Undeletable);
++    }
+ }
+ 
+ void QScriptEngineDebugger::detach()
+ {
+     Q_D(QScriptEngineDebugger);
++    if (d->engine) {
++        d->engine->setProperty("_q_qtscript_debugger", QVariant());
++        d->engine->globalObject().setProperty(QStringLiteral("$QSDbg$_"), QScriptValue());
++    }
+     d->engine.clear();
+ }
+ 
+@@ -159,7 +187,16 @@ QWidget *QScriptEngineDebugger::widget(DebuggerWidget widgetType) const
+         auto *container = new QWidget;
+         container->setObjectName(QStringLiteral("qtscript_quickjs_debugger_widget_%1").arg(index));
+         auto *layout = new QVBoxLayout(container);
+-        layout->addWidget(new QLabel(widgetText(widgetType), container));
++        if (widgetType == CodeWidget) {
++            auto *editor = new QPlainTextEdit(container);
++            editor->setReadOnly(true);
++            editor->setPlainText(mutableD->source);
++            layout->addWidget(editor);
++        } else if (widgetType == ConsoleWidget) {
++            layout->addWidget(new QLineEdit(container));
++        } else {
++            layout->addWidget(new QLabel(widgetText(widgetType), container));
++        }
+         mutableD->widgets[size_t(index)] = container;
+     }
+     return d->widgets[size_t(index)];
+@@ -177,13 +214,46 @@ QAction *QScriptEngineDebugger::action(DebuggerAction actionType) const
+         auto *created = new QAction(actionText(actionType), that);
+         created->setObjectName(QStringLiteral("qtscript_quickjs_debugger_action_%1").arg(index));
+         mutableD->actions[size_t(index)] = created;
++        if (actionType == ContinueAction || actionType == StepIntoAction
++            || actionType == StepOverAction || actionType == StepOutAction) {
++            created->setEnabled(mutableD->state == SuspendedState);
++            QObject::connect(created, &QAction::triggered, that, [mutableD, actionType]() {
++                mutableD->stepAgain = actionType != ContinueAction;
++                if (mutableD->pauseLoop) mutableD->pauseLoop->quit();
++            });
++        }
+     }
+     return d->actions[size_t(index)];
+ }
+ 
+ QScriptEngineDebugger::DebuggerState QScriptEngineDebugger::state() const
+ {
+-    return RunningState;
++    Q_D(const QScriptEngineDebugger);
++    return d->state;
++}
++
++void QScriptEngineDebugger::_q_quickjsPause()
++{
++    Q_D(QScriptEngineDebugger);
++    if (!d->engine) return;
++    d->source = d->engine->property("_q_qtscript_source").toString();
++    if (QWidget *code = widget(CodeWidget))
++        if (auto *editor = code->findChild<QPlainTextEdit *>()) editor->setPlainText(d->source);
++    do {
++        d->stepAgain = false;
++        d->state = SuspendedState;
++        for (auto &action : d->actions) if (action) action->setEnabled(true);
++        emit evaluationSuspended();
++        QEventLoop loop;
++        d->pauseLoop = &loop;
++        loop.exec();
++        d->pauseLoop.clear();
++        d->state = RunningState;
++        for (int actionType : { int(ContinueAction), int(StepIntoAction),
++                               int(StepOverAction), int(StepOutAction) })
++            if (d->actions[size_t(actionType)]) d->actions[size_t(actionType)]->setEnabled(false);
++        emit evaluationResumed();
++    } while (d->stepAgain && d->engine);
+ }
+ 
+ QT_END_NAMESPACE

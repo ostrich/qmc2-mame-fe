@@ -29,3 +29,18 @@ environment variables in its source.
 its normalized fixture observations with the checked-in reference. It never
 changes that reference. Maintainers regenerate it explicitly with
 `./run-reference.sh --update-reference` and review the resulting Git diff.
+
+## Three-engine differential run
+
+Build the pinned JSC and QuickJS variants into separate prefixes with
+`scripts/bootstrap-qtscript.sh` and `scripts/bootstrap-qtscript-quickjs.sh`.
+Then compare both Qt 6 engines against the locked Qt 5 contract:
+
+```sh
+QTSCRIPT_JSC_PREFIX=/path/to/jsc \
+QTSCRIPT_QUICKJS_PREFIX=/path/to/quickjs \
+./run-differential.sh
+```
+
+The runner never updates reference data. Both engines must pass the explicit
+QtTest assertions before their normalized result can be compared.
