@@ -17,7 +17,7 @@ jobs:
           - { os: macos-15, arch: arm64 }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jurplel/install-qt-action@v4
         with:
           version: 6.8.3
@@ -100,7 +100,7 @@ jobs:
           otool -L qmc2-sdlmame.app/Contents/MacOS/qmc2-sdlmame
           otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman
           ! otool -L src/tools/qchdman/qchdman.app/Contents/MacOS/qchdman | grep "$GITHUB_WORKSPACE/.deps"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: qmc2-macos-${{ matrix.arch }}-${{ github.sha }}
           path: |

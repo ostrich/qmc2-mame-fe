@@ -17,7 +17,7 @@ jobs:
   linux-differential:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jurplel/install-qt-action@v4
         with:
           version: 6.8.3
@@ -48,7 +48,7 @@ jobs:
     needs: linux-differential
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jurplel/install-qt-action@v4
         with: { version: 6.8.3, modules: qt5compat, cache: true }
       - run: sudo apt-get update && sudo apt-get install -y ninja-build
@@ -68,7 +68,7 @@ jobs:
           - { os: macos-15, arch: arm64 }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jurplel/install-qt-action@v4
         with: { version: 6.8.3, modules: qt5compat, cache: true, arch: clang_64 }
       - run: brew install ninja mame
@@ -87,7 +87,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jurplel/install-qt-action@v4
         with: { version: 6.8.3, arch: win64_msvc2022_64, modules: qt5compat, cache: true }
       - name: Build pinned QuickJS engine
