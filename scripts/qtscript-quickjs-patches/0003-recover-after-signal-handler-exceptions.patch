@@ -1,0 +1,34 @@
+diff --git a/src/script/quickjs/qscriptenginequickjs.cpp b/src/script/quickjs/qscriptenginequickjs.cpp
+index b880342..c73a8e1 100644
+--- a/src/script/quickjs/qscriptenginequickjs.cpp
++++ b/src/script/quickjs/qscriptenginequickjs.cpp
+@@ -2383,6 +2383,8 @@ QScriptValue QScriptEngine::evaluate(const QString &program, const QString &file
+     Q_D(QScriptEngine);
+     QScriptEngineState *state = d->state.data();
+     setProperty("_q_qtscript_source", program);
++    if (JS_HasException(state->context))
++        JS_FreeValue(state->context, JS_GetException(state->context));
+     state->clearException();
+     state->clearAbortValue();
+     state->abortRequested = false;
+diff --git a/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp b/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp
+index 58981f3..7d6e1c2 100644
+--- a/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp
++++ b/src/scripttools/debugging/qscriptenginedebuggerquickjs.cpp
+@@ -104,5 +104,7 @@ void QScriptEngineDebugger::attachTo(QScriptEngine *engine)
+         engine->globalObject().setProperty(QStringLiteral("$QSDbg$_"), hook,
+                                             QScriptValue::SkipInEnumeration
+                                             | QScriptValue::Undeletable);
++        QObject::connect(engine, &QScriptEngine::signalHandlerException, this,
++                         [this](const QScriptValue &) { _q_quickjsPause(); });
+     }
+ }
+@@ -111,7 +113,8 @@ void QScriptEngineDebugger::attachTo(QScriptEngine *engine)
+ void QScriptEngineDebugger::detach()
+ {
+     Q_D(QScriptEngineDebugger);
+     if (d->engine) {
++        QObject::disconnect(d->engine, nullptr, this, nullptr);
+         d->engine->setProperty("_q_qtscript_debugger", QVariant());
+         d->engine->globalObject().setProperty(QStringLiteral("$QSDbg$_"), QScriptValue());
+     }
