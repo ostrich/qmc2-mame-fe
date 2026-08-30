@@ -11,6 +11,7 @@
 #include <QInputDialog>
 #include <QQueue>
 #include <QTimer>
+#include <algorithm>
 
 #include "mainwindow.h"
 #include "qchdmansettings.h"
@@ -99,6 +100,8 @@ private slots:
     void inputDialogs();
     void versionOnePersistence();
     void projectProperties();
+    void projectLifecycleAndFailures();
+    void scriptInterruptionAndStress();
     void structuredResultRoundTrip();
     void slotManifestComplete();
 
@@ -125,6 +128,7 @@ void QchdmanScriptTest::initTestCase()
     globalConfig->setPreferencesNativeFileDialogs(false);
     window = new MainWindow;
     mainWindow = window;
+    QCoreApplication::processEvents();
     scriptWindow = window->createProjectWindow(QCHDMAN_MDI_SCRIPT);
     QVERIFY(scriptWindow);
     scriptWidget = qobject_cast<ScriptWidget *>(scriptWindow->widget());
@@ -663,6 +667,182 @@ void QchdmanScriptTest::projectProperties()
     QJsonObject observedResult = result;
     observedResult.insert(QStringLiteral("commands"), commands);
     observation.insert(QStringLiteral("result"), observedResult);
+    observations.append(observation);
+}
+
+void QchdmanScriptTest::projectLifecycleAndFailures()
+{
+    const QString fakeChdman = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
+    QVERIFY2(QFileInfo::exists(fakeChdman),
+             "QCHDMAN_FAKE_CHDMAN must name the built fake-chdman executable");
+    globalConfig->setPreferencesChdmanBinary(fakeChdman);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString recordPath = directory.filePath(QStringLiteral("invocations.jsonl"));
+    qputenv("QCHDMAN_FAKE_RECORD", QFile::encodeName(recordPath));
+    qputenv("QCHDMAN_FAKE_MODE", "success");
+    qputenv("QCHDMAN_FAKE_DELAY_MS", "25");
+    qputenv("QCHDMAN_FAKE_STDERR", "Compressing, 25.0% complete...\nCompression complete ... final ratio = 1.00\n");
+
+    const QJsonObject success = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "var started=[],finished=[];"
+        "scriptEngine.projectStarted.connect(function(id){started.push(id);});"
+        "scriptEngine.projectFinished.connect(function(id){finished.push(id);});"
+        "scriptEngine.projectCreate('parallel-a','Copy');"
+        "scriptEngine.projectCreate('parallel-b','Verify');"
+        "scriptEngine.projectSetCopyInputFile('parallel-a','input a.chd');"
+        "scriptEngine.projectSetCopyOutputFile('parallel-a','output a.chd');"
+        "scriptEngine.projectSetVerifyInputFile('parallel-b','input b.chd');"
+        "scriptEngine.runProjects('parallel-a, parallel-b');"
+        "var peak=scriptEngine.runningProjects();"
+        "scriptEngine.waitForRunningProjects(2);scriptEngine.syncProjects();"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({"
+        "started:started,finished:finished,peak:peak,running:scriptEngine.runningProjects(),"
+        "aStatus:scriptEngine.projectStatus('parallel-a'),bStatus:scriptEngine.projectStatus('parallel-b'),"
+        "aRc:scriptEngine.projectReturnCode('parallel-a'),bRc:scriptEngine.projectReturnCode('parallel-b')}));"))
+        .toUtf8()).object();
+    QCOMPARE(success.value(QStringLiteral("started")).toArray().size(), 2);
+    QCOMPARE(success.value(QStringLiteral("finished")).toArray().size(), 2);
+    QCOMPARE(success.value(QStringLiteral("peak")).toInt(), 2);
+    QCOMPARE(success.value(QStringLiteral("running")).toInt(), 0);
+    QCOMPARE(success.value(QStringLiteral("aStatus")).toString(), QStringLiteral("finished"));
+    QCOMPARE(success.value(QStringLiteral("bStatus")).toString(), QStringLiteral("finished"));
+    QCOMPARE(success.value(QStringLiteral("aRc")).toInt(), 0);
+    QCOMPARE(success.value(QStringLiteral("bRc")).toInt(), 0);
+
+    qputenv("QCHDMAN_FAKE_MODE", "exit");
+    qputenv("QCHDMAN_FAKE_EXIT_CODE", "7");
+    qputenv("QCHDMAN_FAKE_DELAY_MS", "0");
+    qunsetenv("QCHDMAN_FAKE_STDERR");
+    const QJsonObject nonzero = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "scriptEngine.projectCreate('nonzero','Info');scriptEngine.runProjects('nonzero');scriptEngine.syncProjects('nonzero');"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({status:scriptEngine.projectStatus('nonzero'),rc:scriptEngine.projectReturnCode('nonzero')}));"))
+        .toUtf8()).object();
+    QCOMPARE(nonzero.value(QStringLiteral("status")).toString(), QStringLiteral("finished"));
+    QCOMPARE(nonzero.value(QStringLiteral("rc")).toInt(), 7);
+
+    qputenv("QCHDMAN_FAKE_MODE", "crash");
+    const QJsonObject crashed = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "scriptEngine.projectCreate('crash','Info');scriptEngine.runProjects('crash');scriptEngine.syncProjects('crash');"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({status:scriptEngine.projectStatus('crash')}));"))
+        .toUtf8()).object();
+    QCOMPARE(crashed.value(QStringLiteral("status")).toString(), QStringLiteral("crashed"));
+
+    qputenv("QCHDMAN_FAKE_MODE", "wait");
+    const QJsonObject stopped = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "scriptEngine.projectCreate('stopped','Info');scriptEngine.runProjects('stopped');"
+        "var running=scriptEngine.runningProjects();scriptEngine.stopProjects('stopped');"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({running:running,status:scriptEngine.projectStatus('stopped'),left:scriptEngine.runningProjects()}));"))
+        .toUtf8()).object();
+    QCOMPARE(stopped.value(QStringLiteral("running")).toInt(), 1);
+    QCOMPARE(stopped.value(QStringLiteral("status")).toString(), QStringLiteral("terminated"));
+    QCOMPARE(stopped.value(QStringLiteral("left")).toInt(), 0);
+
+    globalConfig->setPreferencesChdmanBinary(directory.filePath(QStringLiteral("missing-chdman")));
+    const QJsonObject missing = QJsonDocument::fromJson(runFixture(QStringLiteral(
+        "scriptEngine.projectCreate('missing','Info');scriptEngine.runProjects('missing');"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({status:scriptEngine.projectStatus('missing'),rc:scriptEngine.projectReturnCode('missing')}));"))
+        .toUtf8()).object();
+    QCOMPARE(missing.value(QStringLiteral("status")).toString(), QStringLiteral("error"));
+    QCOMPARE(missing.value(QStringLiteral("rc")).toInt(), -1);
+
+    globalConfig->setPreferencesChdmanBinary(fakeChdman);
+    const QString projectPath = directory.filePath(QStringLiteral("lifecycle.prj"));
+    QFile projectFile(projectPath);
+    QVERIFY(projectFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    projectFile.write("ProjectFormatVersion = 1\nProjectType = Info\nInfoInputFile = from-file.chd\n");
+    projectFile.close();
+    QString escapedPath = projectPath;
+    escapedPath.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    const QString lifecycleScript = QStringLiteral(
+        "var serialized='ProjectFormatVersion = 1\\nProjectType = Verify\\nVerifyInputFile = from-string.chd\\n';"
+        "scriptEngine.projectCreate('base','Info');scriptEngine.projectClone('base','clone');"
+        "scriptEngine.projectSetType('clone','Copy');"
+        "scriptEngine.projectCreateFromString('string',serialized);"
+        "scriptEngine.projectCreateFromFile('file','%1');"
+        "var before={base:scriptEngine.projectGetType('base'),clone:scriptEngine.projectGetType('clone'),"
+        "string:scriptEngine.projectGetType('string'),file:scriptEngine.projectGetType('file')};"
+        "scriptEngine.projectDestroy('base');scriptEngine.destroyProjects('clone,string');"
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({before:before,base:scriptEngine.projectStatus('base'),"
+        "clone:scriptEngine.projectStatus('clone'),file:scriptEngine.projectStatus('file')}));").arg(escapedPath);
+    const QJsonObject lifecycle = QJsonDocument::fromJson(runFixture(lifecycleScript).toUtf8()).object();
+    QCOMPARE(lifecycle.value(QStringLiteral("before")).toObject().value(QStringLiteral("base")).toString(), QStringLiteral("Info"));
+    QCOMPARE(lifecycle.value(QStringLiteral("before")).toObject().value(QStringLiteral("clone")).toString(), QStringLiteral("Copy"));
+    QCOMPARE(lifecycle.value(QStringLiteral("before")).toObject().value(QStringLiteral("string")).toString(), QStringLiteral("Verify"));
+    QCOMPARE(lifecycle.value(QStringLiteral("before")).toObject().value(QStringLiteral("file")).toString(), QStringLiteral("Info"));
+    QCOMPARE(lifecycle.value(QStringLiteral("base")).toString(), QStringLiteral("unknown"));
+    QCOMPARE(lifecycle.value(QStringLiteral("clone")).toString(), QStringLiteral("unknown"));
+    QCOMPARE(lifecycle.value(QStringLiteral("file")).toString(), QStringLiteral("idle"));
+
+    QFile record(recordPath);
+    QVERIFY(record.open(QIODevice::ReadOnly | QIODevice::Text));
+    QList<QJsonObject> invocationObjects;
+    while (!record.atEnd()) {
+        const QJsonDocument invocation = QJsonDocument::fromJson(record.readLine());
+        QVERIFY(invocation.isObject());
+        if (invocation.object().value(QStringLiteral("mode")).toString() != QStringLiteral("wait"))
+            invocationObjects.append(invocation.object());
+    }
+    std::sort(invocationObjects.begin(), invocationObjects.end(), [](const QJsonObject &left, const QJsonObject &right) {
+        return QJsonDocument(left).toJson(QJsonDocument::Compact)
+                < QJsonDocument(right).toJson(QJsonDocument::Compact);
+    });
+    QJsonArray invocations;
+    for (const QJsonObject &invocation : invocationObjects)
+        invocations.append(invocation);
+    QCOMPARE(invocations.size(), 4);
+
+    qunsetenv("QCHDMAN_FAKE_RECORD");
+    qunsetenv("QCHDMAN_FAKE_MODE");
+    qunsetenv("QCHDMAN_FAKE_DELAY_MS");
+    qunsetenv("QCHDMAN_FAKE_EXIT_CODE");
+    QJsonObject result;
+    result.insert(QStringLiteral("success"), success);
+    result.insert(QStringLiteral("nonzero"), nonzero);
+    result.insert(QStringLiteral("crashed"), crashed);
+    result.insert(QStringLiteral("stopped"), stopped);
+    result.insert(QStringLiteral("missing"), missing);
+    result.insert(QStringLiteral("lifecycle"), lifecycle);
+    result.insert(QStringLiteral("invocations"), invocations);
+    QJsonObject observation;
+    observation.insert(QStringLiteral("id"), QStringLiteral("projects/lifecycle"));
+    observation.insert(QStringLiteral("result"), result);
+    observations.append(observation);
+}
+
+void QchdmanScriptTest::scriptInterruptionAndStress()
+{
+    const QString fakeChdman = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
+    QVERIFY(QFileInfo::exists(fakeChdman));
+    globalConfig->setPreferencesChdmanBinary(fakeChdman);
+    qputenv("QCHDMAN_FAKE_MODE", "wait");
+    QElapsedTimer elapsed;
+    elapsed.start();
+    for (int iteration = 0; iteration < 5; ++iteration) {
+        QTimer::singleShot(20, scriptWidget->engine(), [this]() {
+            scriptWidget->engine()->stopScript();
+        });
+        const QString script = (iteration % 2 == 0)
+                ? QStringLiteral("while (true) {}")
+                : QStringLiteral("scriptEngine.projectCreate('active','Info');scriptEngine.runProjects('active');while (true) {}");
+        scriptWidget->engine()->runScript(script);
+        QVERIFY(scriptWidget->engine()->externalStop);
+        QCOMPARE(scriptWidget->engine()->runningProjects(), 0);
+        const QJsonObject recovery = QJsonDocument::fromJson(runFixture(QStringLiteral(
+            "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({ok:true,running:scriptEngine.runningProjects()}));"))
+            .toUtf8()).object();
+        QCOMPARE(recovery.value(QStringLiteral("ok")).toBool(), true);
+        QCOMPARE(recovery.value(QStringLiteral("running")).toInt(), 0);
+    }
+    QVERIFY(elapsed.elapsed() < 5000);
+    qunsetenv("QCHDMAN_FAKE_MODE");
+    QJsonObject observation;
+    observation.insert(QStringLiteral("id"), QStringLiteral("runtime/interruption-stress"));
+    observation.insert(QStringLiteral("result"), QJsonObject{
+        {QStringLiteral("iterations"), 5},
+        {QStringLiteral("activeProcessIterations"), 2},
+        {QStringLiteral("recovered"), true}
+    });
     observations.append(observation);
 }
 

@@ -1070,6 +1070,94 @@
             }
         },
         {
+            "id": "projects/lifecycle",
+            "result": {
+                "crashed": {
+                    "status": "crashed"
+                },
+                "invocations": [
+                    {
+                        "arguments": [
+                            "copy",
+                            "--input",
+                            "input a.chd",
+                            "--output",
+                            "output a.chd"
+                        ],
+                        "mode": "success"
+                    },
+                    {
+                        "arguments": [
+                            "info"
+                        ],
+                        "mode": "crash"
+                    },
+                    {
+                        "arguments": [
+                            "info"
+                        ],
+                        "mode": "exit"
+                    },
+                    {
+                        "arguments": [
+                            "verify",
+                            "--input",
+                            "input b.chd"
+                        ],
+                        "mode": "success"
+                    }
+                ],
+                "lifecycle": {
+                    "base": "unknown",
+                    "before": {
+                        "base": "Info",
+                        "clone": "Copy",
+                        "file": "Info",
+                        "string": "Verify"
+                    },
+                    "clone": "unknown",
+                    "file": "idle"
+                },
+                "missing": {
+                    "rc": -1,
+                    "status": "error"
+                },
+                "nonzero": {
+                    "rc": 7,
+                    "status": "finished"
+                },
+                "stopped": {
+                    "left": 0,
+                    "running": 1,
+                    "status": "terminated"
+                },
+                "success": {
+                    "aRc": 0,
+                    "aStatus": "finished",
+                    "bRc": 0,
+                    "bStatus": "finished",
+                    "finished": [
+                        "parallel-a",
+                        "parallel-b"
+                    ],
+                    "peak": 2,
+                    "running": 0,
+                    "started": [
+                        "parallel-a",
+                        "parallel-b"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "runtime/interruption-stress",
+            "result": {
+                "activeProcessIterations": 2,
+                "iterations": 5,
+                "recovered": true
+            }
+        },
+        {
             "id": "globals/structured-result",
             "result": {
                 "hasLog": true,

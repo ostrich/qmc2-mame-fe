@@ -23,13 +23,14 @@ build_root=$(mktemp -d "${TMPDIR:-/tmp}/qchdman-qt5-reference.XXXXXX")
 trap 'rm -rf "$build_root"' EXIT
 (
     cd "$build_root"
-    "$qmake_bin" "$test_root/harness/harness.pro" CONFIG+=release
+    "$qmake_bin" "$test_root/qchdman-script.pro" CONFIG+=release
     make -j"${QCHDMAN_TEST_JOBS:-2}"
 )
 
 actual="$build_root/qt5-reference.json"
 QT_QPA_PLATFORM=offscreen QCHDMAN_TEST_RESULTS="$actual" \
-    "$build_root/tst_qchdman_script"
+    QCHDMAN_FAKE_CHDMAN="$build_root/fake-chdman/fake-chdman" \
+    "$build_root/harness/tst_qchdman_script"
 
 reference="$test_root/reference/qt5-5.15.19.json"
 if $update; then

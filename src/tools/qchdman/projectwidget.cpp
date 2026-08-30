@@ -666,7 +666,11 @@ void ProjectWidget::on_toolButtonRun_clicked(bool refreshArgsOnly)
 	}
 	chdmanProc = new QProcess(this);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	connect(chdmanProc, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(error(QProcess::ProcessError)));
+#else
 	connect(chdmanProc, SIGNAL(error(QProcess::ProcessError)), this, SLOT(error(QProcess::ProcessError)));
+#endif
 	connect(chdmanProc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(finished(int, QProcess::ExitStatus)));
 	connect(chdmanProc, SIGNAL(readyReadStandardOutput()), this, SLOT(readyReadStandardOutput()));
 	connect(chdmanProc, SIGNAL(readyReadStandardError()), this, SLOT(readyReadStandardError()));
