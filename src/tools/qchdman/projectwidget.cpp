@@ -4,6 +4,7 @@
 #include <QScrollBar>
 #include <QStatusBar>
 #include <QApplication>
+#include <QTimer>
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -697,7 +698,15 @@ void ProjectWidget::on_toolButtonStop_clicked()
 {
 	log(tr("terminating process"));
 	terminatedOnDemand = true;
-	chdmanProc->terminate();
+	QProcess *process = chdmanProc;
+	process->terminate();
+	// terminate() is only a graceful request.  In particular, Windows console
+	// processes may have no window or message loop through which to receive it.
+	// Ensure Stop cannot leave the UI or a script waiting forever.
+	QTimer::singleShot(QCHDMAN_PROCESS_TERMINATE_TIMEOUT, process, [process]() {
+		if ( process->state() != QProcess::NotRunning )
+			process->kill();
+	});
 }
 
 void ProjectWidget::started()

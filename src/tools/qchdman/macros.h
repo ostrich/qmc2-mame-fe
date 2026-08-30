@@ -96,6 +96,7 @@
 
 // time between process state polls when synchronizing projects
 #define QCHDMAN_PROCESS_POLL_TIME   50
+#define QCHDMAN_PROCESS_TERMINATE_TIMEOUT 2000
 
 // script engine's "process events" interval
 #define QCHDMAN_SCR_EVENT_INTERVAL  10

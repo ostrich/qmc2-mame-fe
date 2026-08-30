@@ -9,6 +9,8 @@
 
 #ifdef Q_OS_WIN
 #include <qt_windows.h>
+#else
+#include <csignal>
 #endif
 
 static void writeText(FILE *stream, const QString &text)
@@ -25,6 +27,10 @@ int main(int argc, char **argv)
     const QString recordPath = environment.value(QStringLiteral("QCHDMAN_FAKE_RECORD"));
     const QString mode = environment.value(QStringLiteral("QCHDMAN_FAKE_MODE"), QStringLiteral("success"));
     int delay = environment.value(QStringLiteral("QCHDMAN_FAKE_DELAY_MS"), QStringLiteral("0")).toInt();
+#ifndef Q_OS_WIN
+    if (mode == QStringLiteral("wait"))
+        std::signal(SIGTERM, SIG_IGN);
+#endif
 
     QJsonArray arguments;
     const QStringList applicationArguments = app.arguments();
@@ -68,6 +74,9 @@ int main(int argc, char **argv)
 #endif
     }
     if (mode == QStringLiteral("wait")) {
+        // On Unix the handler above exercises qchdman's forced-stop fallback.
+        // Windows console processes already ignore QProcess::terminate() when
+        // they do not own a window or run a message loop.
         for (;;)
             QThread::msleep(100);
     }
