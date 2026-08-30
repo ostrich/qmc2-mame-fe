@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 $testRoot = $PSScriptRoot
 $env:QMAKEPATH = "$(Join-Path $Prefix 'lib\qt6');$env:QMAKEPATH"
 $env:QTSCRIPT_PREFIX = $Prefix
+$env:PATH = "$(Join-Path $Prefix 'bin');$env:PATH"
 New-Item -ItemType Directory -Path $BuildRoot -Force | Out-Null
 Push-Location $BuildRoot
 try {

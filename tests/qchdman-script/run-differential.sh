@@ -33,5 +33,9 @@ run_engine() {
     echo "$name matches the Qt 5.15.19 qchdman scripting contract"
 }
 
-run_engine jsc "$jsc_prefix"
-run_engine quickjs "$quickjs_prefix"
+case ${QCHDMAN_ENGINES:-jsc,quickjs} in
+    jsc) run_engine jsc "$jsc_prefix" ;;
+    quickjs) run_engine quickjs "$quickjs_prefix" ;;
+    jsc,quickjs) run_engine jsc "$jsc_prefix"; run_engine quickjs "$quickjs_prefix" ;;
+    *) echo "QCHDMAN_ENGINES must be jsc, quickjs, or jsc,quickjs" >&2; exit 2 ;;
+esac

@@ -1,5 +1,10 @@
 name: CI (Windows)
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '19 4 * * 1'
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -83,6 +88,9 @@ jobs:
           qmake ..\tests\qtscript\qtscript.pro CONFIG+=release
           nmake
           .\release\tst_qtscript.exe
+      - name: Run qchdman scripting contract
+        shell: pwsh
+        run: tests/qchdman-script/run-engine.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript" -QMake "$env:QT_ROOT_DIR\bin\qmake.exe" -Name jsc
       - name: Run FTP compatibility fixtures
         shell: pwsh
         run: |

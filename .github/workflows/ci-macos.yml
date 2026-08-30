@@ -1,5 +1,10 @@
 name: CI (macOS)
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -59,6 +64,12 @@ jobs:
           qmake ../tests/qtscript/qtscript.pro
           make -j2
           QT_QPA_PLATFORM=offscreen ./tst_qtscript
+      - name: Run qchdman scripting contract
+        env:
+          QTSCRIPT_JSC_PREFIX: ${{ github.workspace }}/.deps/qtscript
+          QTSCRIPT_QUICKJS_PREFIX: ${{ github.workspace }}/.deps/qtscript
+          QCHDMAN_ENGINES: jsc
+        run: tests/qchdman-script/run-differential.sh
       - name: Run FTP compatibility fixtures
         run: |
           mkdir build-ftp-tests
