@@ -31,7 +31,7 @@ Get-ChildItem (Join-Path $PSScriptRoot 'qtscript-quickjs-patches\*.patch') | Sor
     git -C $sourceDir apply $_.FullName
     if ($LASTEXITCODE) { throw "Failed to apply $($_.Name)" }
 }
-$quickjsLibrary = Join-Path $quickjsWork 'Release\build\Release\qjs.lib'
+$quickjsLibrary = Join-Path $quickjsWork 'Release\build\qjs.lib'
 $qtCmake = Join-Path $QtRoot 'bin\qt-cmake-private.bat'
 & $qtCmake -S $sourceDir -B $buildDir -G 'Ninja Multi-Config' `
     "-DCMAKE_INSTALL_PREFIX=$($Prefix.Replace('\', '/'))" `

@@ -22,7 +22,7 @@ jobs:
       ftp: ${{ steps.classify.outputs.ftp }}
       archive: ${{ steps.classify.outputs.archive }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with: { fetch-depth: 0, persist-credentials: false }
       - name: Test change classification
         run: scripts/test-classify-ci-paths.sh
@@ -63,8 +63,8 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v6
-      - uses: jurplel/install-qt-action@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: jurplel/install-qt-action@v4.3.1
         with:
           version: ${{ matrix.qt }}
           modules: qt5compat qtmultimedia qtpositioning qtwebchannel qtwebengine
@@ -92,7 +92,7 @@ jobs:
       - name: Cache isolated QtScript
         if: needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true'
         id: qtscript-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: ${{ github.workspace }}/.deps/qtscript
           key: qtscript-quickjs-${{ runner.os }}-${{ runner.arch }}-qt-${{ matrix.qt }}-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/bootstrap-qtscript-quickjs.sh', 'scripts/qtscript-quickjs-patches/**') }}
@@ -170,7 +170,7 @@ jobs:
             ! ldd src/tools/qchdman/qchdman | grep 'not found'
             ldd src/tools/qchdman/qchdman | grep "$GITHUB_WORKSPACE/.deps/qtscript/lib/libQt6Script"
           fi
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.1
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         with:
           name: qmc2-linux-qt-${{ matrix.qt }}-${{ github.sha }}

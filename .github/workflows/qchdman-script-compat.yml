@@ -19,7 +19,7 @@ jobs:
     outputs:
       differential: ${{ steps.classify.outputs.differential }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with: { fetch-depth: 0, persist-credentials: false }
       - name: Test change classification
         run: scripts/test-classify-ci-paths.sh
@@ -50,20 +50,20 @@ jobs:
     if: needs.changes.outputs.differential == 'true'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: jurplel/install-qt-action@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: jurplel/install-qt-action@v4.3.1
         with:
           version: 6.8.3
           modules: qt5compat
           cache: true
       - run: sudo apt-get update && sudo apt-get install -y ninja-build mame-tools
       - name: Cache JSC engine
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/qtscript-jsc
           key: qchdman-jsc-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-jsc.sh', 'scripts/qtscript-patches/**') }}
       - name: Cache QuickJS engine
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/qtscript-quickjs
           key: qchdman-quickjs-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-quickjs.sh', 'scripts/qtscript-quickjs-patches/**') }}
@@ -95,13 +95,13 @@ jobs:
     needs: linux-differential
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: jurplel/install-qt-action@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: jurplel/install-qt-action@v4.3.1
         with: { version: 6.8.3, modules: qt5compat, cache: true }
       - run: sudo apt-get update && sudo apt-get install -y ninja-build
       - name: Cache JSC engine
         id: qtscript-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/qtscript-jsc
           key: qchdman-jsc-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-jsc.sh', 'scripts/qtscript-patches/**') }}
@@ -122,17 +122,17 @@ jobs:
           - { os: macos-15, arch: arm64 }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: jurplel/install-qt-action@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: jurplel/install-qt-action@v4.3.1
         with: { version: 6.8.3, modules: qt5compat, cache: true, arch: clang_64 }
       - run: brew install ninja mame
       - name: Cache JSC engine
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/qtscript
           key: qchdman-jsc-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-jsc.sh', 'scripts/qtscript-patches/**') }}
       - name: Cache QuickJS engine
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/qtscript-quickjs
           key: qchdman-quickjs-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-quickjs.sh', 'scripts/qtscript-quickjs-patches/**') }}
@@ -151,10 +151,10 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: Cache jom
         id: jom-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/jom
           key: jom-${{ runner.os }}-${{ hashFiles('scripts/install-jom.ps1') }}
@@ -165,11 +165,11 @@ jobs:
       - name: Add jom to PATH
         shell: pwsh
         run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\.deps\jom"
-      - uses: jurplel/install-qt-action@v4
+      - uses: jurplel/install-qt-action@v4.3.1
         with: { version: 6.8.3, arch: win64_msvc2022_64, modules: qt5compat, cache: true }
       - name: Cache QuickJS engine
         id: quickjs-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/qtscript-quickjs
           key: qchdman-quickjs-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-quickjs.ps1', 'scripts/qtscript-quickjs-patches/**') }}

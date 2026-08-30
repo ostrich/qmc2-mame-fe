@@ -22,7 +22,7 @@ jobs:
       ftp: ${{ steps.classify.outputs.ftp }}
       archive: ${{ steps.classify.outputs.archive }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with: { fetch-depth: 0, persist-credentials: false }
       - name: Test change classification
         run: scripts/test-classify-ci-paths.sh
@@ -60,10 +60,10 @@ jobs:
     env:
       SDL_VERSION: 2.30.3
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: Cache jom
         id: jom-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: .deps/jom
           key: jom-${{ runner.os }}-${{ hashFiles('scripts/install-jom.ps1') }}
@@ -74,7 +74,7 @@ jobs:
       - name: Add jom to PATH
         shell: pwsh
         run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\.deps\jom"
-      - uses: jurplel/install-qt-action@v4
+      - uses: jurplel/install-qt-action@v4.3.1
         with:
           version: 6.8.3
           arch: win64_msvc2022_64
@@ -86,10 +86,28 @@ jobs:
         run: |
           Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-$env:SDL_VERSION/SDL2-devel-$env:SDL_VERSION-VC.zip" -OutFile "${{ runner.workspace }}\SDL2.zip"
           Expand-Archive "${{ runner.workspace }}\SDL2.zip" -DestinationPath "${{ runner.workspace }}"
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Enable MSVC developer environment
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $installation = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) { throw 'Visual Studio C++ tools were not found' }
+          $vcvars = Join-Path $installation 'VC\Auxiliary\Build\vcvars64.bat'
+          $variables = cmd /c "call `"$vcvars`" >nul 2>&1 && set"
+          if ($LASTEXITCODE) { throw 'Failed to initialize the MSVC developer environment' }
+          $exportNames = @(
+            'Path', 'INCLUDE', 'LIB', 'LIBPATH', 'VCINSTALLDIR',
+            'VCToolsInstallDir', 'VisualStudioVersion', 'VSINSTALLDIR',
+            'UniversalCRTSdkDir', 'UCRTVersion', 'WindowsSdkDir', 'WindowsSDKVersion'
+          )
+          foreach ($line in $variables) {
+            if ($line -match '^([^=]+)=(.*)$' -and $exportNames -contains $Matches[1]) {
+              "$($Matches[1])=$($Matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            }
+          }
       - name: Cache vcpkg binary packages
         if: needs.changes.outputs.core == 'true' || needs.changes.outputs.archive == 'true' || needs.changes.outputs.ftp == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/AppData/Local/vcpkg/archives
           key: vcpkg-archives-${{ runner.os }}-${{ runner.arch }}-x64-windows-curl-libarchive-v1
@@ -97,7 +115,7 @@ jobs:
         if: needs.changes.outputs.core == 'true' || needs.changes.outputs.archive == 'true' || needs.changes.outputs.ftp == 'true'
         shell: pwsh
         run: vcpkg install curl:x64-windows libarchive:x64-windows
-      - uses: msys2/setup-msys2@v2
+      - uses: msys2/setup-msys2@v2.32.0
         if: needs.changes.outputs.core == 'true'
         with:
           install: make
@@ -105,7 +123,7 @@ jobs:
       - name: Cache isolated QtScript
         if: needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true'
         id: qtscript-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: ${{ github.workspace }}\.deps\qtscript
           key: qtscript-quickjs-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.ps1', 'scripts/bootstrap-qtscript-quickjs.ps1', 'scripts/qtscript-quickjs-patches/**') }}
@@ -252,7 +270,7 @@ jobs:
           Start-Sleep -Seconds 3
           if ($qchdman.HasExited) { throw "qchdman exited during startup with code $($qchdman.ExitCode)" }
           Stop-Process -Id $qchdman.Id
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.1
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         with:
           name: qmc2-windows-msvc2022-${{ github.sha }}

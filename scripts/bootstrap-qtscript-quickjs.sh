@@ -40,6 +40,10 @@ git -C "$quickjs_dir" remote set-url origin "$QUICKJS_REPO"
 git -C "$quickjs_dir" fetch --quiet origin "$QUICKJS_REV"
 git -C "$quickjs_dir" checkout --quiet --detach "$QUICKJS_REV"
 
+# The pinned port initializes its default job count with Linux's nproc before
+# parsing --parallel. Supply the equivalent shell function on every Unix host.
+nproc() { printf '%s\n' "$parallel"; }
+export -f nproc
 bash "$port_dir/scripts/build-quickjs-ng.sh" --configuration Release \
     --work-root "$quickjs_work" --quickjs-source "$quickjs_dir" --parallel "$parallel"
 quickjs_library=$quickjs_work/Release/build/libqjs.a
