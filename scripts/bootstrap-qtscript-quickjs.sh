@@ -42,7 +42,8 @@ git -C "$quickjs_dir" checkout --quiet --detach "$QUICKJS_REV"
 
 # The pinned port initializes its default job count with Linux's nproc before
 # parsing --parallel. Supply the equivalent shell function on every Unix host.
-nproc() { printf '%s\n' "$parallel"; }
+export QTSCRIPT_BOOTSTRAP_PARALLEL=$parallel
+nproc() { printf '%s\n' "$QTSCRIPT_BOOTSTRAP_PARALLEL"; }
 export -f nproc
 bash "$port_dir/scripts/build-quickjs-ng.sh" --configuration Release \
     --work-root "$quickjs_work" --quickjs-source "$quickjs_dir" --parallel "$parallel"

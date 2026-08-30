@@ -39,8 +39,8 @@ $qtCmake = Join-Path $QtRoot 'bin\qt-cmake-private.bat'
     "-DQTSCRIPT_QUICKJS_LIBRARY=$($quickjsLibrary.Replace('\', '/'))" `
     -DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF
 if ($LASTEXITCODE) { throw 'QtScript QuickJS configure failed' }
-cmake --build $buildDir --config Release --parallel $Parallel
+cmake --build $buildDir --config RelWithDebInfo --parallel $Parallel
 if ($LASTEXITCODE) { throw 'QtScript QuickJS build failed' }
-cmake --install $buildDir --config Release
+cmake --install $buildDir --config RelWithDebInfo
 if ($LASTEXITCODE) { throw 'QtScript QuickJS install failed' }
 Write-Host "QtScript QuickJS $portRevision with QuickJS-NG $quickjsRevision installed in $Prefix"
