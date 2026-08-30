@@ -109,6 +109,19 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v6
+      - name: Cache jom
+        id: jom-cache
+        uses: actions/cache@v5
+        with:
+          path: .deps/jom
+          key: jom-${{ runner.os }}-${{ hashFiles('scripts/install-jom.ps1') }}
+      - name: Install jom
+        if: steps.jom-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: scripts/install-jom.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\jom"
+      - name: Add jom to PATH
+        shell: pwsh
+        run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\.deps\jom"
       - uses: jurplel/install-qt-action@v4
         with: { version: 6.8.3, arch: win64_msvc2022_64, modules: qt5compat, cache: true }
       - name: Cache QuickJS engine

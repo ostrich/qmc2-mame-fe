@@ -15,7 +15,7 @@ Push-Location $BuildRoot
 try {
     & $QMake (Join-Path $testRoot 'qchdman-script.pro') CONFIG+=release
     if ($LASTEXITCODE) { throw 'qchdman scripting harness configure failed' }
-    nmake
+    jom
     if ($LASTEXITCODE) { throw 'qchdman scripting harness build failed' }
     $env:QT_QPA_PLATFORM = 'offscreen'
     $env:QCHDMAN_TEST_RESULTS = Join-Path $BuildRoot "$Name.json"

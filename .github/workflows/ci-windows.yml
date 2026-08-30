@@ -15,6 +15,19 @@ jobs:
       SDL_VERSION: 2.30.3
     steps:
       - uses: actions/checkout@v6
+      - name: Cache jom
+        id: jom-cache
+        uses: actions/cache@v5
+        with:
+          path: .deps/jom
+          key: jom-${{ runner.os }}-${{ hashFiles('scripts/install-jom.ps1') }}
+      - name: Install jom
+        if: steps.jom-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: scripts/install-jom.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\jom"
+      - name: Add jom to PATH
+        shell: pwsh
+        run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\.deps\jom"
       - uses: jurplel/install-qt-action@v4
         with:
           version: 6.8.3
@@ -68,11 +81,11 @@ jobs:
           QMAKEPATH: ${{ github.workspace }}\.deps\qtscript;${{ github.workspace }}\.deps\qtscript\lib\qt6
           QTSCRIPT_PREFIX: ${{ github.workspace }}\.deps\qtscript
         run: |
-          nmake /f Makefile.qmake.release
+          jom /f Makefile.qmake.release
           Push-Location src\tools\qchdman
           qmake qchdman.pro CONFIG+=release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          nmake
+          jom
           Pop-Location
       - name: Run XML compatibility fixtures
         shell: pwsh
@@ -80,7 +93,7 @@ jobs:
           New-Item -ItemType Directory build-xml-tests
           Set-Location build-xml-tests
           qmake ..\tests\xmlmachine\xmlmachine.pro CONFIG+=release
-          nmake
+          jom
           .\release\tst_xmlmachine.exe
       - name: Run QtScript compatibility fixtures
         shell: pwsh
@@ -91,7 +104,7 @@ jobs:
           New-Item -ItemType Directory build-qtscript-tests
           Set-Location build-qtscript-tests
           qmake ..\tests\qtscript\qtscript.pro CONFIG+=release
-          nmake
+          jom
           .\release\tst_qtscript.exe
       - name: Run qchdman scripting contract
         shell: pwsh
@@ -102,7 +115,7 @@ jobs:
           New-Item -ItemType Directory build-ftp-tests
           Set-Location build-ftp-tests
           qmake ..\tests\ftp\ftp.pro CONFIG+=release
-          nmake
+          jom
           .\release\tst_ftp.exe
       - name: Run archive correctness fixtures
         shell: pwsh
@@ -114,7 +127,7 @@ jobs:
             Push-Location "build-$test-tests"
             qmake "..\tests\$test\$test.pro" CONFIG+=release
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            nmake
+            jom
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             & ".\release\tst_$test.exe"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
