@@ -44,3 +44,18 @@ QTSCRIPT_QUICKJS_PREFIX=/path/to/quickjs \
 
 The runner never updates reference data. Both engines must pass the explicit
 QtTest assertions before their normalized result can be compared.
+Narrow language or diagnostic differences live in `allowed-differences.json`;
+the comparator rejects entries for qchdman API, project, command, signal,
+file, cleanup, interruption, or debugger behavior.
+
+`./run-real-chdman-smoke.sh` exercises small repository-independent raw and
+hard-disk images through create, info, verify, copy, extraction, and metadata
+operations. Set `CHDMAN` when the executable is not on `PATH`.
+
+Linux lifetime checks use `QTSCRIPT_PREFIX=/path/to/jsc ./run-sanitized.sh`.
+They run the same contract under ASan and UBSan with leak detection enabled.
+
+Pull requests run the complete fake-chdman differential suite on Linux Qt
+6.8. Scheduled runs add both macOS architectures, Windows, sanitizers, and
+real-chdman smoke coverage. QuickJS stays experimental until those scheduled
+jobs and the existing release builds are green on every supported platform.

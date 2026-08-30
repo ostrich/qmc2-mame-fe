@@ -1,0 +1,98 @@
+name: qchdman scripting compatibility
+
+on:
+  push:
+    paths: ['src/tools/qchdman/**', 'tests/qchdman-script/**', 'tests/qtscript/**', 'scripts/bootstrap-qtscript*', 'scripts/qtscript-*-patches/**', '.github/workflows/qchdman-script-compat.yml']
+  pull_request:
+    paths: ['src/tools/qchdman/**', 'tests/qchdman-script/**', 'tests/qtscript/**', 'scripts/bootstrap-qtscript*', 'scripts/qtscript-*-patches/**', '.github/workflows/qchdman-script-compat.yml']
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-differential:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.8.3
+          modules: qt5compat
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build mame-tools
+      - uses: actions/cache@v5
+        with:
+          path: |
+            .deps/qtscript-jsc
+            .deps/qtscript-quickjs
+          key: qchdman-engines-linux-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript*', 'scripts/qtscript-*-patches/**') }}
+      - name: Build pinned engines
+        run: |
+          test -f .deps/qtscript-jsc/lib/libQt6Script.so || scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-jsc"
+          test -f .deps/qtscript-quickjs/lib/libQt6Script.so || scripts/bootstrap-qtscript-quickjs.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-quickjs"
+      - name: Compare JSC and QuickJS with Qt 5 contract
+        env:
+          QTSCRIPT_JSC_PREFIX: ${{ github.workspace }}/.deps/qtscript-jsc
+          QTSCRIPT_QUICKJS_PREFIX: ${{ github.workspace }}/.deps/qtscript-quickjs
+          QCHDMAN_QT6_QMAKE: qmake
+        run: tests/qchdman-script/run-differential.sh
+      - name: Real chdman workflows
+        run: tests/qchdman-script/run-real-chdman-smoke.sh
+
+  linux-sanitizers:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: linux-differential
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with: { version: 6.8.3, modules: qt5compat, cache: true }
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-jsc"
+      - name: ASan and UBSan qchdman contract
+        env:
+          QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript-jsc
+        run: tests/qchdman-script/run-sanitized.sh
+
+  scheduled-unix:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15-intel, arch: x64 }
+          - { os: macos-15, arch: arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with: { version: 6.8.3, modules: qt5compat, cache: true, arch: clang_64 }
+      - run: brew install ninja mame
+      - name: Build pinned engines
+        run: |
+          scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-jsc"
+          scripts/bootstrap-qtscript-quickjs.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-quickjs"
+      - name: Three-engine qchdman contract
+        env:
+          QTSCRIPT_JSC_PREFIX: ${{ github.workspace }}/.deps/qtscript-jsc
+          QTSCRIPT_QUICKJS_PREFIX: ${{ github.workspace }}/.deps/qtscript-quickjs
+        run: tests/qchdman-script/run-differential.sh
+      - run: tests/qchdman-script/run-real-chdman-smoke.sh
+
+  scheduled-windows:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with: { version: 6.8.3, arch: win64_msvc2022_64, modules: qt5compat, cache: true }
+      - name: Build pinned QuickJS engine
+        shell: pwsh
+        run: scripts/bootstrap-qtscript-quickjs.ps1 -QtRoot $env:QT_ROOT_DIR -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript-quickjs"
+      - name: QuickJS qchdman contract
+        shell: pwsh
+        run: tests/qchdman-script/run-engine.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript-quickjs" -QMake "$env:QT_ROOT_DIR\bin\qmake.exe" -Name quickjs

@@ -13,13 +13,52 @@ def load(path):
     return data
 
 
+def fixture_map(data):
+    return {fixture["id"]: fixture for fixture in data["fixtures"]}
+
+
+def apply_allowlist(reference, actual, path, engine):
+    if not path:
+        return
+    with path.open(encoding="utf-8") as stream:
+        entries = json.load(stream).get("differences", [])
+    reference_fixtures = fixture_map(reference)
+    actual_fixtures = fixture_map(actual)
+    for entry in entries:
+        if entry.get("engine") != engine:
+            continue
+        if entry.get("category") not in {"language", "diagnostic"}:
+            raise ValueError(f"{path}: forbidden difference category")
+        fixture_id = entry["fixture"]
+        value_path = entry["path"].split(".")
+        if not value_path or value_path[0] != "result":
+            raise ValueError(f"{path}: differences may only name fixture language results")
+        if any(token in entry["path"].lower() for token in
+               ("project", "command", "signal", "debugger", "file", "cleanup", "interrupt")):
+            raise ValueError(f"{path}: qchdman contract fields cannot be allowlisted")
+        if not entry.get("rationale"):
+            raise ValueError(f"{path}: every difference needs a rationale")
+        expected = reference_fixtures[fixture_id]
+        observed = actual_fixtures[fixture_id]
+        for component in value_path[:-1]:
+            expected = expected[component]
+            observed = observed[component]
+        key = value_path[-1]
+        if expected[key] != entry["reference"] or observed[key] != entry["actual"]:
+            raise ValueError(f"{path}: stale difference for {fixture_id}:{entry['path']}")
+        observed[key] = expected[key]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Compare normalized qchdman script observations")
     parser.add_argument("reference", type=pathlib.Path)
     parser.add_argument("actual", type=pathlib.Path)
+    parser.add_argument("--engine", default="")
+    parser.add_argument("--allowlist", type=pathlib.Path)
     args = parser.parse_args()
     reference = load(args.reference)
     actual = load(args.actual)
+    apply_allowlist(reference, actual, args.allowlist, args.engine)
     if reference == actual:
         return 0
     reference_text = json.dumps(reference, indent=2, sort_keys=True).splitlines()

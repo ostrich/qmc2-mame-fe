@@ -1,0 +1,13 @@
+{
+  "differences": [
+    {
+      "engine": "quickjs",
+      "fixture": "runtime/language-bridge",
+      "path": "result.stackAvailable",
+      "category": "language",
+      "reference": false,
+      "actual": true,
+      "rationale": "QuickJS supplies a caught-error stack for this language-level probe while the original Qt 5 JSC build does not; qchdman control flow and APIs are unchanged."
+    }
+  ]
+}

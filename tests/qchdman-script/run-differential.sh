@@ -25,7 +25,11 @@ run_engine() {
     QT_QPA_PLATFORM=offscreen QCHDMAN_TEST_RESULTS="$actual" \
         QCHDMAN_FAKE_CHDMAN="$build/fake-chdman/fake-chdman" \
         "$build/harness/tst_qchdman_script"
-    "$test_root/tools/compare_results.py" "$reference" "$actual"
+    compare_args=("$reference" "$actual")
+    if [[ $name == quickjs ]]; then
+        compare_args+=(--engine quickjs --allowlist "$test_root/allowed-differences.json")
+    fi
+    "$test_root/tools/compare_results.py" "${compare_args[@]}"
     echo "$name matches the Qt 5.15.19 qchdman scripting contract"
 }
 
