@@ -951,7 +951,7 @@ void QchdmanScriptTest::repeatedParallelProjects()
     qputenv("QCHDMAN_FAKE_MODE", "success");
     // Keep each process alive long enough for even the slower reference
     // engine to start the complete eight-project batch concurrently.
-    qputenv("QCHDMAN_FAKE_DELAY_MS", "100");
+    qputenv("QCHDMAN_FAKE_DELAY_MS", "1000");
     const QString script = QStringLiteral(
         "var started=0,finished=0,rounds=[],ids=[];"
         "scriptEngine.projectStarted.connect(function(id){started++;});"
