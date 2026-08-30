@@ -3,7 +3,6 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QFile>
-#include <QFileInfo>
 #include <QPlainTextEdit>
 #include <QTemporaryDir>
 #include <QMetaMethod>
@@ -58,9 +57,10 @@ protected:
                 dialog->reject();
             } else if (QFileDialog *fileDialog = qobject_cast<QFileDialog *>(dialog)) {
                 if (action.kind == Folder) {
-                    const QFileInfo folder(action.value.toString());
-                    fileDialog->setDirectory(folder.absolutePath());
-                    fileDialog->selectFile(folder.fileName());
+                    // In Directory mode the current directory is the selection.
+                    // selectFile() treats the directory name like a file on macOS
+                    // and getExistingDirectory() consequently returns its parent.
+                    fileDialog->setDirectory(action.value.toString());
                 } else {
                     fileDialog->selectFile(action.value.toString());
                 }
