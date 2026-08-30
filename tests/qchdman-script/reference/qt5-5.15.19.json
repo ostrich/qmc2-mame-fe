@@ -83,6 +83,993 @@
             }
         },
         {
+            "id": "projects/properties",
+            "result": {
+                "boundaries": {
+                    "projectSetAddMetaIndex": [
+                        0,
+                        0,
+                        999999999
+                    ],
+                    "projectSetAddMetaInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetAddMetaNoCheckSum": [
+                        false,
+                        true
+                    ],
+                    "projectSetAddMetaTag": [
+                        "",
+                        "ABCD"
+                    ],
+                    "projectSetAddMetaValueFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetAddMetaValueText": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCopyCompressors": [
+                        "",
+                        "none",
+                        "zlib,lzma"
+                    ],
+                    "projectSetCopyForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetCopyHunkSize": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCopyInputBytes": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCopyInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCopyInputHunks": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCopyInputStartByte": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCopyInputStartHunk": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCopyOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCopyParentInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCopyParentOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCopyProcessors": [
+                        0,
+                        0,
+                        9999
+                    ],
+                    "projectSetCreateCDCompressors": [
+                        "",
+                        "none",
+                        "zlib,lzma"
+                    ],
+                    "projectSetCreateCDForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetCreateCDHunkSize": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateCDInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateCDOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateCDParentOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateCDProcessors": [
+                        0,
+                        0,
+                        9999
+                    ],
+                    "projectSetCreateHDCompressors": [
+                        "",
+                        "none",
+                        "zlib,lzma"
+                    ],
+                    "projectSetCreateHDCylinders": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetCreateHDHeads": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDHunkSize": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDInputBytes": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateHDInputHunks": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDInputStartByte": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDInputStartHunk": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateHDParentOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateHDProcessors": [
+                        0,
+                        0,
+                        9999
+                    ],
+                    "projectSetCreateHDSectorSize": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateHDSectors": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateLDCompressors": [
+                        "",
+                        "none",
+                        "zlib,lzma"
+                    ],
+                    "projectSetCreateLDForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetCreateLDHunkSize": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateLDInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateLDInputFrames": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateLDInputStartFrame": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateLDOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateLDParentOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateLDProcessors": [
+                        0,
+                        0,
+                        9999
+                    ],
+                    "projectSetCreateRawCompressors": [
+                        "",
+                        "none",
+                        "zlib,lzma"
+                    ],
+                    "projectSetCreateRawForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetCreateRawHunkSize": [
+                        0,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateRawInputBytes": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateRawInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateRawInputHunks": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateRawInputStartByte": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateRawInputStartHunk": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetCreateRawOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateRawParentOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetCreateRawProcessors": [
+                        0,
+                        0,
+                        9999
+                    ],
+                    "projectSetCreateRawUnitSize": [
+                        0,
+                        0,
+                        999999999
+                    ],
+                    "projectSetDelMetaIndex": [
+                        0,
+                        0,
+                        999999999
+                    ],
+                    "projectSetDelMetaInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetDelMetaTag": [
+                        "",
+                        "ABCD"
+                    ],
+                    "projectSetDumpMetaForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetDumpMetaIndex": [
+                        0,
+                        0,
+                        999999999
+                    ],
+                    "projectSetDumpMetaInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetDumpMetaOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetDumpMetaTag": [
+                        "",
+                        "ABCD"
+                    ],
+                    "projectSetExtractCDForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetExtractCDInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractCDOutputBinFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractCDOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractCDParentInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractHDForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetExtractHDInputBytes": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractHDInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractHDInputHunks": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractHDInputStartByte": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractHDInputStartHunk": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractHDOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractHDParentInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractLDForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetExtractLDInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractLDInputFrames": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractLDInputStartFrame": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractLDOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractLDParentInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractRawForce": [
+                        false,
+                        true
+                    ],
+                    "projectSetExtractRawInputBytes": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractRawInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractRawInputHunks": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractRawInputStartByte": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractRawInputStartHunk": [
+                        -1,
+                        0,
+                        999999999
+                    ],
+                    "projectSetExtractRawOutputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetExtractRawParentInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetInfoInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetInfoVerbose": [
+                        false,
+                        true
+                    ],
+                    "projectSetVerifyInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ],
+                    "projectSetVerifyParentInputFile": [
+                        "",
+                        "Grüße 世界\nline"
+                    ]
+                },
+                "calls": [
+                    "projectSetInfoInputFile",
+                    "projectGetInfoInputFile",
+                    "projectSetInfoVerbose",
+                    "projectGetInfoVerbose",
+                    "projectSetVerifyInputFile",
+                    "projectGetVerifyInputFile",
+                    "projectSetVerifyParentInputFile",
+                    "projectGetVerifyParentInputFile",
+                    "projectSetCopyInputFile",
+                    "projectGetCopyInputFile",
+                    "projectSetCopyParentInputFile",
+                    "projectGetCopyParentInputFile",
+                    "projectSetCopyOutputFile",
+                    "projectGetCopyOutputFile",
+                    "projectSetCopyParentOutputFile",
+                    "projectGetCopyParentOutputFile",
+                    "projectSetCopyForce",
+                    "projectGetCopyForce",
+                    "projectSetCopyInputStartByte",
+                    "projectGetCopyInputStartByte",
+                    "projectSetCopyInputStartHunk",
+                    "projectGetCopyInputStartHunk",
+                    "projectSetCopyInputBytes",
+                    "projectGetCopyInputBytes",
+                    "projectSetCopyInputHunks",
+                    "projectGetCopyInputHunks",
+                    "projectSetCopyHunkSize",
+                    "projectGetCopyHunkSize",
+                    "projectSetCopyCompressors",
+                    "projectGetCopyCompressors",
+                    "projectSetCopyProcessors",
+                    "projectGetCopyProcessors",
+                    "projectSetCreateRawInputFile",
+                    "projectGetCreateRawInputFile",
+                    "projectSetCreateRawOutputFile",
+                    "projectGetCreateRawOutputFile",
+                    "projectSetCreateRawParentOutputFile",
+                    "projectGetCreateRawParentOutputFile",
+                    "projectSetCreateRawForce",
+                    "projectGetCreateRawForce",
+                    "projectSetCreateRawInputStartByte",
+                    "projectGetCreateRawInputStartByte",
+                    "projectSetCreateRawInputStartHunk",
+                    "projectGetCreateRawInputStartHunk",
+                    "projectSetCreateRawInputBytes",
+                    "projectGetCreateRawInputBytes",
+                    "projectSetCreateRawInputHunks",
+                    "projectGetCreateRawInputHunks",
+                    "projectSetCreateRawHunkSize",
+                    "projectGetCreateRawHunkSize",
+                    "projectSetCreateRawUnitSize",
+                    "projectGetCreateRawUnitSize",
+                    "projectSetCreateRawCompressors",
+                    "projectGetCreateRawCompressors",
+                    "projectSetCreateRawProcessors",
+                    "projectGetCreateRawProcessors",
+                    "projectSetCreateHDInputFile",
+                    "projectGetCreateHDInputFile",
+                    "projectSetCreateHDOutputFile",
+                    "projectGetCreateHDOutputFile",
+                    "projectSetCreateHDParentOutputFile",
+                    "projectGetCreateHDParentOutputFile",
+                    "projectSetCreateHDForce",
+                    "projectGetCreateHDForce",
+                    "projectSetCreateHDInputStartByte",
+                    "projectGetCreateHDInputStartByte",
+                    "projectSetCreateHDInputStartHunk",
+                    "projectGetCreateHDInputStartHunk",
+                    "projectSetCreateHDInputBytes",
+                    "projectGetCreateHDInputBytes",
+                    "projectSetCreateHDInputHunks",
+                    "projectGetCreateHDInputHunks",
+                    "projectSetCreateHDHunkSize",
+                    "projectGetCreateHDHunkSize",
+                    "projectSetCreateHDCompressors",
+                    "projectGetCreateHDCompressors",
+                    "projectSetCreateHDProcessors",
+                    "projectGetCreateHDProcessors",
+                    "projectSetCreateHDSectorSize",
+                    "projectGetCreateHDSectorSize",
+                    "projectSetCreateHDCylinders",
+                    "projectGetCreateHDCylinders",
+                    "projectSetCreateHDHeads",
+                    "projectGetCreateHDHeads",
+                    "projectSetCreateHDSectors",
+                    "projectGetCreateHDSectors",
+                    "projectSetCreateHDChsFromTemplate",
+                    "projectSetCreateCDInputFile",
+                    "projectGetCreateCDInputFile",
+                    "projectSetCreateCDOutputFile",
+                    "projectGetCreateCDOutputFile",
+                    "projectSetCreateCDParentOutputFile",
+                    "projectGetCreateCDParentOutputFile",
+                    "projectSetCreateCDForce",
+                    "projectGetCreateCDForce",
+                    "projectSetCreateCDHunkSize",
+                    "projectGetCreateCDHunkSize",
+                    "projectSetCreateCDCompressors",
+                    "projectGetCreateCDCompressors",
+                    "projectSetCreateCDProcessors",
+                    "projectGetCreateCDProcessors",
+                    "projectSetCreateLDInputFile",
+                    "projectGetCreateLDInputFile",
+                    "projectSetCreateLDOutputFile",
+                    "projectGetCreateLDOutputFile",
+                    "projectSetCreateLDParentOutputFile",
+                    "projectGetCreateLDParentOutputFile",
+                    "projectSetCreateLDForce",
+                    "projectGetCreateLDForce",
+                    "projectSetCreateLDInputStartFrame",
+                    "projectGetCreateLDInputStartFrame",
+                    "projectSetCreateLDInputFrames",
+                    "projectGetCreateLDInputFrames",
+                    "projectSetCreateLDHunkSize",
+                    "projectGetCreateLDHunkSize",
+                    "projectSetCreateLDCompressors",
+                    "projectGetCreateLDCompressors",
+                    "projectSetCreateLDProcessors",
+                    "projectGetCreateLDProcessors",
+                    "projectSetExtractRawInputFile",
+                    "projectGetExtractRawInputFile",
+                    "projectSetExtractRawParentInputFile",
+                    "projectGetExtractRawParentInputFile",
+                    "projectSetExtractRawOutputFile",
+                    "projectGetExtractRawOutputFile",
+                    "projectSetExtractRawForce",
+                    "projectGetExtractRawForce",
+                    "projectSetExtractRawInputStartByte",
+                    "projectGetExtractRawInputStartByte",
+                    "projectSetExtractRawInputStartHunk",
+                    "projectGetExtractRawInputStartHunk",
+                    "projectSetExtractRawInputBytes",
+                    "projectGetExtractRawInputBytes",
+                    "projectSetExtractRawInputHunks",
+                    "projectGetExtractRawInputHunks",
+                    "projectSetExtractHDInputFile",
+                    "projectGetExtractHDInputFile",
+                    "projectSetExtractHDParentInputFile",
+                    "projectGetExtractHDParentInputFile",
+                    "projectSetExtractHDOutputFile",
+                    "projectGetExtractHDOutputFile",
+                    "projectSetExtractHDForce",
+                    "projectGetExtractHDForce",
+                    "projectSetExtractHDInputStartByte",
+                    "projectGetExtractHDInputStartByte",
+                    "projectSetExtractHDInputStartHunk",
+                    "projectGetExtractHDInputStartHunk",
+                    "projectSetExtractHDInputBytes",
+                    "projectGetExtractHDInputBytes",
+                    "projectSetExtractHDInputHunks",
+                    "projectGetExtractHDInputHunks",
+                    "projectSetExtractCDInputFile",
+                    "projectGetExtractCDInputFile",
+                    "projectSetExtractCDParentInputFile",
+                    "projectGetExtractCDParentInputFile",
+                    "projectSetExtractCDOutputFile",
+                    "projectGetExtractCDOutputFile",
+                    "projectSetExtractCDOutputBinFile",
+                    "projectGetExtractCDOutputBinFile",
+                    "projectSetExtractCDForce",
+                    "projectGetExtractCDForce",
+                    "projectSetExtractLDInputFile",
+                    "projectGetExtractLDInputFile",
+                    "projectSetExtractLDParentInputFile",
+                    "projectGetExtractLDParentInputFile",
+                    "projectSetExtractLDOutputFile",
+                    "projectGetExtractLDOutputFile",
+                    "projectSetExtractLDForce",
+                    "projectGetExtractLDForce",
+                    "projectSetExtractLDInputStartFrame",
+                    "projectGetExtractLDInputStartFrame",
+                    "projectSetExtractLDInputFrames",
+                    "projectGetExtractLDInputFrames",
+                    "projectSetDumpMetaInputFile",
+                    "projectGetDumpMetaInputFile",
+                    "projectSetDumpMetaOutputFile",
+                    "projectGetDumpMetaOutputFile",
+                    "projectSetDumpMetaForce",
+                    "projectGetDumpMetaForce",
+                    "projectSetDumpMetaTag",
+                    "projectGetDumpMetaTag",
+                    "projectSetDumpMetaIndex",
+                    "projectGetDumpMetaIndex",
+                    "projectSetAddMetaInputFile",
+                    "projectGetAddMetaInputFile",
+                    "projectSetAddMetaValueFile",
+                    "projectGetAddMetaValueFile",
+                    "projectSetAddMetaValueText",
+                    "projectGetAddMetaValueText",
+                    "projectSetAddMetaTag",
+                    "projectGetAddMetaTag",
+                    "projectSetAddMetaIndex",
+                    "projectGetAddMetaIndex",
+                    "projectSetAddMetaNoCheckSum",
+                    "projectGetAddMetaNoCheckSum",
+                    "projectSetDelMetaInputFile",
+                    "projectGetDelMetaInputFile",
+                    "projectSetDelMetaTag",
+                    "projectGetDelMetaTag",
+                    "projectSetDelMetaIndex",
+                    "projectGetDelMetaIndex"
+                ],
+                "commands": {
+                    "AddMeta": [
+                        "addmeta",
+                        "--input",
+                        "value-addmeta-1",
+                        "--valuefile",
+                        "value-addmeta-1",
+                        "--valuetext",
+                        "value-addmeta-1",
+                        "--tag",
+                        "valu",
+                        "--index",
+                        "7",
+                        "--nochecksum"
+                    ],
+                    "Copy": [
+                        "copy",
+                        "--input",
+                        "value-copy-1",
+                        "--parentinput",
+                        "value-copy-1",
+                        "--output",
+                        "value-copy-1",
+                        "--parentoutput",
+                        "value-copy-1",
+                        "--force",
+                        "--inputstartbyte",
+                        "7",
+                        "--inputstarthunk",
+                        "7",
+                        "--inputbytes",
+                        "7",
+                        "--inputhunks",
+                        "7",
+                        "--hunksize",
+                        "7",
+                        "--compression",
+                        "zlib,lzma",
+                        "--numprocessors",
+                        "7"
+                    ],
+                    "CreateCD": [
+                        "createcd",
+                        "--input",
+                        "value-createcd-1",
+                        "--output",
+                        "value-createcd-1",
+                        "--parentoutput",
+                        "value-createcd-1",
+                        "--force",
+                        "--hunksize",
+                        "7",
+                        "--compression",
+                        "zlib,lzma",
+                        "--numprocessors",
+                        "7"
+                    ],
+                    "CreateHD": [
+                        "createhd",
+                        "--input",
+                        "value-createhd-1",
+                        "--output",
+                        "value-createhd-1",
+                        "--parentoutput",
+                        "value-createhd-1",
+                        "--force",
+                        "--inputstartbyte",
+                        "7",
+                        "--inputstarthunk",
+                        "7",
+                        "--inputbytes",
+                        "7",
+                        "--inputhunks",
+                        "7",
+                        "--hunksize",
+                        "7",
+                        "--compression",
+                        "zlib,lzma",
+                        "--numprocessors",
+                        "7",
+                        "--sectorsize",
+                        "7",
+                        "--chs",
+                        "7,7,7"
+                    ],
+                    "CreateLD": [
+                        "createld",
+                        "--input",
+                        "value-createld-1",
+                        "--output",
+                        "value-createld-1",
+                        "--parentoutput",
+                        "value-createld-1",
+                        "--force",
+                        "--inputstartframe",
+                        "7",
+                        "--inputframes",
+                        "7",
+                        "--hunksize",
+                        "7",
+                        "--compression",
+                        "zlib,lzma",
+                        "--numprocessors",
+                        "7"
+                    ],
+                    "CreateRaw": [
+                        "createraw",
+                        "--input",
+                        "value-createraw-1",
+                        "--output",
+                        "value-createraw-1",
+                        "--parentoutput",
+                        "value-createraw-1",
+                        "--force",
+                        "--inputstartbyte",
+                        "7",
+                        "--inputstarthunk",
+                        "7",
+                        "--inputbytes",
+                        "7",
+                        "--inputhunks",
+                        "7",
+                        "--hunksize",
+                        "7",
+                        "--unitsize",
+                        "7",
+                        "--compression",
+                        "zlib,lzma",
+                        "--numprocessors",
+                        "7"
+                    ],
+                    "DelMeta": [
+                        "delmeta",
+                        "--input",
+                        "value-delmeta-1",
+                        "--tag",
+                        "valu",
+                        "--index",
+                        "7"
+                    ],
+                    "DumpMeta": [
+                        "dumpmeta",
+                        "--input",
+                        "value-dumpmeta-1",
+                        "--output",
+                        "value-dumpmeta-1",
+                        "--force",
+                        "--tag",
+                        "valu",
+                        "--index",
+                        "7"
+                    ],
+                    "ExtractCD": [
+                        "extractcd",
+                        "--input",
+                        "value-extractcd-1",
+                        "--parentinput",
+                        "value-extractcd-1",
+                        "--output",
+                        "value-extractcd-1",
+                        "--outputbin",
+                        "value-extractcd-1",
+                        "--force"
+                    ],
+                    "ExtractHD": [
+                        "extracthd",
+                        "--input",
+                        "value-extracthd-1",
+                        "--parentinput",
+                        "value-extracthd-1",
+                        "--output",
+                        "value-extracthd-1",
+                        "--force",
+                        "--inputstartbyte",
+                        "7",
+                        "--inputstarthunk",
+                        "7",
+                        "--inputbytes",
+                        "7",
+                        "--inputhunks",
+                        "7"
+                    ],
+                    "ExtractLD": [
+                        "extractld",
+                        "--input",
+                        "value-extractld-1",
+                        "--output",
+                        "value-extractld-1",
+                        "--parentinput",
+                        "value-extractld-1",
+                        "--force",
+                        "--inputstartframe",
+                        "7",
+                        "--inputframes",
+                        "7"
+                    ],
+                    "ExtractRaw": [
+                        "extractraw",
+                        "--input",
+                        "value-extractraw-1",
+                        "--parentinput",
+                        "value-extractraw-1",
+                        "--output",
+                        "value-extractraw-1",
+                        "--force",
+                        "--inputstartbyte",
+                        "7",
+                        "--inputstarthunk",
+                        "7",
+                        "--inputbytes",
+                        "7",
+                        "--inputhunks",
+                        "7"
+                    ],
+                    "Info": [
+                        "info",
+                        "--input",
+                        "value-info-1",
+                        "--verbose"
+                    ],
+                    "Verify": [
+                        "verify",
+                        "--input",
+                        "value-verify-1",
+                        "--inputparent",
+                        "value-verify-1"
+                    ]
+                },
+                "values": {
+                    "projectGetAddMetaIndex": 7,
+                    "projectGetAddMetaInputFile": "value-addmeta-1",
+                    "projectGetAddMetaNoCheckSum": true,
+                    "projectGetAddMetaTag": "valu",
+                    "projectGetAddMetaValueFile": "value-addmeta-1",
+                    "projectGetAddMetaValueText": "value-addmeta-1",
+                    "projectGetCopyCompressors": "zlib,lzma",
+                    "projectGetCopyForce": true,
+                    "projectGetCopyHunkSize": 7,
+                    "projectGetCopyInputBytes": 7,
+                    "projectGetCopyInputFile": "value-copy-1",
+                    "projectGetCopyInputHunks": 7,
+                    "projectGetCopyInputStartByte": 7,
+                    "projectGetCopyInputStartHunk": 7,
+                    "projectGetCopyOutputFile": "value-copy-1",
+                    "projectGetCopyParentInputFile": "value-copy-1",
+                    "projectGetCopyParentOutputFile": "value-copy-1",
+                    "projectGetCopyProcessors": 7,
+                    "projectGetCreateCDCompressors": "zlib,lzma",
+                    "projectGetCreateCDForce": true,
+                    "projectGetCreateCDHunkSize": 7,
+                    "projectGetCreateCDInputFile": "value-createcd-1",
+                    "projectGetCreateCDOutputFile": "value-createcd-1",
+                    "projectGetCreateCDParentOutputFile": "value-createcd-1",
+                    "projectGetCreateCDProcessors": 7,
+                    "projectGetCreateHDCompressors": "zlib,lzma",
+                    "projectGetCreateHDCylinders": 7,
+                    "projectGetCreateHDForce": true,
+                    "projectGetCreateHDHeads": 7,
+                    "projectGetCreateHDHunkSize": 7,
+                    "projectGetCreateHDInputBytes": 7,
+                    "projectGetCreateHDInputFile": "value-createhd-1",
+                    "projectGetCreateHDInputHunks": 7,
+                    "projectGetCreateHDInputStartByte": 7,
+                    "projectGetCreateHDInputStartHunk": 7,
+                    "projectGetCreateHDOutputFile": "value-createhd-1",
+                    "projectGetCreateHDParentOutputFile": "value-createhd-1",
+                    "projectGetCreateHDProcessors": 7,
+                    "projectGetCreateHDSectorSize": 7,
+                    "projectGetCreateHDSectors": 7,
+                    "projectGetCreateLDCompressors": "zlib,lzma",
+                    "projectGetCreateLDForce": true,
+                    "projectGetCreateLDHunkSize": 7,
+                    "projectGetCreateLDInputFile": "value-createld-1",
+                    "projectGetCreateLDInputFrames": 7,
+                    "projectGetCreateLDInputStartFrame": 7,
+                    "projectGetCreateLDOutputFile": "value-createld-1",
+                    "projectGetCreateLDParentOutputFile": "value-createld-1",
+                    "projectGetCreateLDProcessors": 7,
+                    "projectGetCreateRawCompressors": "zlib,lzma",
+                    "projectGetCreateRawForce": true,
+                    "projectGetCreateRawHunkSize": 7,
+                    "projectGetCreateRawInputBytes": 7,
+                    "projectGetCreateRawInputFile": "value-createraw-1",
+                    "projectGetCreateRawInputHunks": 7,
+                    "projectGetCreateRawInputStartByte": 7,
+                    "projectGetCreateRawInputStartHunk": 7,
+                    "projectGetCreateRawOutputFile": "value-createraw-1",
+                    "projectGetCreateRawParentOutputFile": "value-createraw-1",
+                    "projectGetCreateRawProcessors": 7,
+                    "projectGetCreateRawUnitSize": 7,
+                    "projectGetDelMetaIndex": 7,
+                    "projectGetDelMetaInputFile": "value-delmeta-1",
+                    "projectGetDelMetaTag": "valu",
+                    "projectGetDumpMetaForce": true,
+                    "projectGetDumpMetaIndex": 7,
+                    "projectGetDumpMetaInputFile": "value-dumpmeta-1",
+                    "projectGetDumpMetaOutputFile": "value-dumpmeta-1",
+                    "projectGetDumpMetaTag": "valu",
+                    "projectGetExtractCDForce": true,
+                    "projectGetExtractCDInputFile": "value-extractcd-1",
+                    "projectGetExtractCDOutputBinFile": "value-extractcd-1",
+                    "projectGetExtractCDOutputFile": "value-extractcd-1",
+                    "projectGetExtractCDParentInputFile": "value-extractcd-1",
+                    "projectGetExtractHDForce": true,
+                    "projectGetExtractHDInputBytes": 7,
+                    "projectGetExtractHDInputFile": "value-extracthd-1",
+                    "projectGetExtractHDInputHunks": 7,
+                    "projectGetExtractHDInputStartByte": 7,
+                    "projectGetExtractHDInputStartHunk": 7,
+                    "projectGetExtractHDOutputFile": "value-extracthd-1",
+                    "projectGetExtractHDParentInputFile": "value-extracthd-1",
+                    "projectGetExtractLDForce": true,
+                    "projectGetExtractLDInputFile": "value-extractld-1",
+                    "projectGetExtractLDInputFrames": 7,
+                    "projectGetExtractLDInputStartFrame": 7,
+                    "projectGetExtractLDOutputFile": "value-extractld-1",
+                    "projectGetExtractLDParentInputFile": "value-extractld-1",
+                    "projectGetExtractRawForce": true,
+                    "projectGetExtractRawInputBytes": 7,
+                    "projectGetExtractRawInputFile": "value-extractraw-1",
+                    "projectGetExtractRawInputHunks": 7,
+                    "projectGetExtractRawInputStartByte": 7,
+                    "projectGetExtractRawInputStartHunk": 7,
+                    "projectGetExtractRawOutputFile": "value-extractraw-1",
+                    "projectGetExtractRawParentInputFile": "value-extractraw-1",
+                    "projectGetInfoInputFile": "value-info-1",
+                    "projectGetInfoVerbose": true,
+                    "projectGetVerifyInputFile": "value-verify-1",
+                    "projectGetVerifyParentInputFile": "value-verify-1"
+                }
+            }
+        },
+        {
             "id": "globals/structured-result",
             "result": {
                 "hasLog": true,

@@ -98,6 +98,7 @@ private slots:
     void repeatedRuns();
     void inputDialogs();
     void versionOnePersistence();
+    void projectProperties();
     void structuredResultRoundTrip();
     void slotManifestComplete();
 
@@ -498,6 +499,170 @@ void QchdmanScriptTest::versionOnePersistence()
     QJsonObject observation;
     observation.insert(QStringLiteral("id"), QStringLiteral("persistence/version-1"));
     observation.insert(QStringLiteral("result"), result);
+    observations.append(observation);
+}
+
+void QchdmanScriptTest::projectProperties()
+{
+    const QStringList projectTypes{
+        QStringLiteral("Info"), QStringLiteral("Verify"), QStringLiteral("Copy"),
+        QStringLiteral("CreateRaw"), QStringLiteral("CreateHD"), QStringLiteral("CreateCD"),
+        QStringLiteral("CreateLD"), QStringLiteral("ExtractRaw"), QStringLiteral("ExtractHD"),
+        QStringLiteral("ExtractCD"), QStringLiteral("ExtractLD"), QStringLiteral("DumpMeta"),
+        QStringLiteral("AddMeta"), QStringLiteral("DelMeta")
+    };
+    QString script = QStringLiteral("var propertyResults = {}, propertyBoundaries = {}, propertyCalls = []; ");
+    for (const QString &type : projectTypes) {
+        const QString id = QStringLiteral("properties-%1").arg(type.toLower());
+        script += QStringLiteral("scriptEngine.projectCreate('%1','%2');").arg(id, type);
+    }
+
+    int setterCount = 0;
+    int getterCount = 0;
+    const QMetaObject *metaObject = &ScriptEngine::staticMetaObject;
+    QSet<QString> methodNames;
+    for (int index = metaObject->methodOffset(); index < metaObject->methodCount(); ++index)
+        methodNames.insert(QString::fromLatin1(metaObject->method(index).name()));
+    QSet<QString> seen;
+    for (int index = metaObject->methodOffset(); index < metaObject->methodCount(); ++index) {
+        const QMetaMethod method = metaObject->method(index);
+        const QString name = QString::fromLatin1(method.name());
+        if (method.methodType() != QMetaMethod::Slot || seen.contains(name))
+            continue;
+        seen.insert(name);
+        if (!name.startsWith(QStringLiteral("projectSet")) && !name.startsWith(QStringLiteral("projectGet")))
+            continue;
+        QString type;
+        for (const QString &candidate : projectTypes) {
+            if (name.mid(QStringLiteral("projectSet").size()).startsWith(candidate)
+                    || name.mid(QStringLiteral("projectGet").size()).startsWith(candidate)) {
+                type = candidate;
+                break;
+            }
+        }
+        if (type.isEmpty())
+            continue;
+        const QString id = QStringLiteral("properties-%1").arg(type.toLower());
+        if (name.startsWith(QStringLiteral("projectGet"))) {
+            script += QStringLiteral("propertyResults['%1']=scriptEngine['%1']('%2');propertyCalls.push('%1');")
+                    .arg(name, id);
+            ++getterCount;
+            continue;
+        }
+
+        QStringList arguments{id};
+        const QList<QByteArray> parameterTypes = method.parameterTypes();
+        for (int parameter = 1; parameter < parameterTypes.size(); ++parameter) {
+            const QByteArray parameterType = parameterTypes.at(parameter);
+            if (parameterType == "bool") {
+                arguments.append(QStringLiteral("true"));
+            } else if (parameterType == "int") {
+                arguments.append(QStringLiteral("7"));
+            } else if (parameterType == "QString") {
+                QString value = QStringLiteral("value-%1-%2").arg(type.toLower(), QString::number(parameter));
+                if (name.endsWith(QStringLiteral("Compressors")))
+                    value = QStringLiteral("zlib,lzma");
+                arguments.append(QStringLiteral("'%1'").arg(value));
+                continue;
+            } else {
+                QFAIL(qPrintable(QStringLiteral("unsupported script parameter type %1 in %2")
+                                 .arg(QString::fromLatin1(parameterType), name)));
+            }
+            if (parameterTypes.at(parameter) != "QString")
+                continue;
+        }
+        // Quote the project id while leaving the generated typed values intact.
+        arguments[0] = QStringLiteral("'%1'").arg(id);
+        const QString getterName = QString(name).replace(QStringLiteral("projectSet"), QStringLiteral("projectGet"));
+        if (parameterTypes.size() == 2 && methodNames.contains(getterName)) {
+            QStringList boundaryValues;
+            if (parameterTypes.at(1) == "bool") {
+                boundaryValues << QStringLiteral("false") << QStringLiteral("true");
+            } else if (parameterTypes.at(1) == "int") {
+                boundaryValues << QStringLiteral("-1") << QStringLiteral("0") << QStringLiteral("2147483647");
+            } else if (name.endsWith(QStringLiteral("Compressors"))) {
+                boundaryValues << QStringLiteral("''") << QStringLiteral("'none'") << QStringLiteral("'zlib,lzma'");
+            } else if (name.endsWith(QStringLiteral("Tag"))) {
+                boundaryValues << QStringLiteral("''") << QStringLiteral("'ABCDE'");
+            } else {
+                boundaryValues << QStringLiteral("''") << QStringLiteral("'Grüße 世界\\nline'");
+            }
+            script += QStringLiteral("propertyBoundaries['%1']=[];").arg(name);
+            for (const QString &boundary : boundaryValues) {
+                script += QStringLiteral("scriptEngine['%1']('%2',%3);propertyBoundaries['%1'].push(scriptEngine['%4']('%2'));")
+                        .arg(name, id, boundary, getterName);
+            }
+        }
+        script += QStringLiteral("scriptEngine['%1'](%2);propertyCalls.push('%1');")
+                .arg(name, arguments.join(QLatin1Char(',')));
+        ++setterCount;
+    }
+    script += QStringLiteral(
+        "scriptEngine.log('QCHDMAN_TEST_RESULT '+JSON.stringify({calls:propertyCalls,boundaries:propertyBoundaries,values:propertyResults}));");
+
+    const QJsonObject result = QJsonDocument::fromJson(runFixture(script).toUtf8()).object();
+    const QJsonArray calls = result.value(QStringLiteral("calls")).toArray();
+    const QJsonObject boundaries = result.value(QStringLiteral("boundaries")).toObject();
+    const QJsonObject values = result.value(QStringLiteral("values")).toObject();
+    QCOMPARE(calls.size(), setterCount + getterCount);
+    QCOMPARE(values.size(), getterCount);
+    QCOMPARE(boundaries.size(), getterCount);
+    QVERIFY(setterCount > 80);
+    QVERIFY(getterCount > 80);
+    QCOMPARE(boundaries.value(QStringLiteral("projectSetCopyForce")).toArray(), QJsonArray({false, true}));
+    QCOMPARE(boundaries.value(QStringLiteral("projectSetCopyCompressors")).toArray(),
+             QJsonArray({QString(), QStringLiteral("none"), QStringLiteral("zlib,lzma")}));
+    QCOMPARE(boundaries.value(QStringLiteral("projectSetAddMetaTag")).toArray(),
+             QJsonArray({QString(), QStringLiteral("ABCD")}));
+    QCOMPARE(boundaries.value(QStringLiteral("projectSetCopyProcessors")).toArray(),
+             QJsonArray({0, 0, 9999}));
+    QCOMPARE(boundaries.value(QStringLiteral("projectSetCreateHDCylinders")).toArray(),
+             QJsonArray({-1, 0, 999999999}));
+    QCOMPARE(boundaries.value(QStringLiteral("projectSetInfoInputFile")).toArray(),
+             QJsonArray({QString(), QStringLiteral("Grüße 世界\nline")}));
+    for (const QJsonValue &call : calls)
+        QVERIFY2(!call.toString().isEmpty(), "empty property call name");
+
+    const QMap<QString, QString> expectedCommands{
+        {QStringLiteral("Info"), QStringLiteral("info")},
+        {QStringLiteral("Verify"), QStringLiteral("verify")},
+        {QStringLiteral("Copy"), QStringLiteral("copy")},
+        {QStringLiteral("CreateRaw"), QStringLiteral("createraw")},
+        {QStringLiteral("CreateHD"), QStringLiteral("createhd")},
+        {QStringLiteral("CreateCD"), QStringLiteral("createcd")},
+        {QStringLiteral("CreateLD"), QStringLiteral("createld")},
+        {QStringLiteral("ExtractRaw"), QStringLiteral("extractraw")},
+        {QStringLiteral("ExtractHD"), QStringLiteral("extracthd")},
+        {QStringLiteral("ExtractCD"), QStringLiteral("extractcd")},
+        {QStringLiteral("ExtractLD"), QStringLiteral("extractld")},
+        {QStringLiteral("DumpMeta"), QStringLiteral("dumpmeta")},
+        {QStringLiteral("AddMeta"), QStringLiteral("addmeta")},
+        {QStringLiteral("DelMeta"), QStringLiteral("delmeta")}
+    };
+    QJsonObject commands;
+    for (QWidget *widget : QApplication::allWidgets()) {
+        ProjectWidget *projectWidget = qobject_cast<ProjectWidget *>(widget);
+        if (!projectWidget)
+            continue;
+        if (!projectWidget->isScriptElement)
+            continue;
+        projectWidget->on_toolButtonRun_clicked(true);
+        if (!expectedCommands.contains(projectWidget->projectTypeName))
+            continue;
+        QVERIFY(!projectWidget->arguments.isEmpty());
+        QCOMPARE(projectWidget->arguments.first(), expectedCommands.value(projectWidget->projectTypeName));
+        QVERIFY2(!projectWidget->arguments.contains(QString()), qPrintable(projectWidget->projectTypeName));
+        commands.insert(projectWidget->projectTypeName,
+                        QJsonArray::fromStringList(projectWidget->arguments));
+    }
+    QCOMPARE(commands.size(), expectedCommands.size());
+
+    scriptWidget->engine()->destroyProjects();
+    QJsonObject observation;
+    observation.insert(QStringLiteral("id"), QStringLiteral("projects/properties"));
+    QJsonObject observedResult = result;
+    observedResult.insert(QStringLiteral("commands"), commands);
+    observation.insert(QStringLiteral("result"), observedResult);
     observations.append(observation);
 }
 
