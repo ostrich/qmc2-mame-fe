@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QFile>
+#include <QFileInfo>
 #include <QPlainTextEdit>
 #include <QTemporaryDir>
 #include <QMetaMethod>
@@ -56,9 +57,13 @@ protected:
             if (!action.accept) {
                 dialog->reject();
             } else if (QFileDialog *fileDialog = qobject_cast<QFileDialog *>(dialog)) {
-                if (action.kind == Folder)
-                    fileDialog->setDirectory(action.value.toString());
-                fileDialog->selectFile(action.value.toString());
+                if (action.kind == Folder) {
+                    const QFileInfo folder(action.value.toString());
+                    fileDialog->setDirectory(folder.absolutePath());
+                    fileDialog->selectFile(folder.fileName());
+                } else {
+                    fileDialog->selectFile(action.value.toString());
+                }
                 dialog->done(QDialog::Accepted);
             } else if (QInputDialog *inputDialog = qobject_cast<QInputDialog *>(dialog)) {
                 switch (action.kind) {
