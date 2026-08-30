@@ -14,7 +14,10 @@ greaterThan(QT_MAJOR_VERSION, 5) {
         INCLUDEPATH = $$QTSCRIPT_PREFIX/include/qt6 $$QTSCRIPT_PREFIX/include $$INCLUDEPATH
         QMAKE_LIBDIR = $$QTSCRIPT_PREFIX/lib $$QMAKE_LIBDIR
         unix:!macx: LIBS += $$QTSCRIPT_PREFIX/lib/libQt6ScriptTools.so $$QTSCRIPT_PREFIX/lib/libQt6Script.so
-        macx: LIBS += -F$$QTSCRIPT_PREFIX/lib -framework QtScriptTools -framework QtScript
+        macx {
+            QMAKE_FRAMEWORKPATH += $$QTSCRIPT_PREFIX/lib
+            LIBS += -F$$QTSCRIPT_PREFIX/lib -framework QtScriptTools -framework QtScript
+        }
         win32: LIBS += $$QTSCRIPT_PREFIX/lib/Qt6ScriptTools.lib $$QTSCRIPT_PREFIX/lib/Qt6Script.lib
         DEFINES += QT_SCRIPTTOOLS_LIB QT_SCRIPT_LIB
         unix: QMAKE_RPATHDIR += $$QTSCRIPT_PREFIX/lib

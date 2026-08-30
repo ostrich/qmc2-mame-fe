@@ -119,6 +119,7 @@ private:
 void QchdmanScriptTest::initTestCase()
 {
     QVERIFY2(settingsDirectory.isValid(), "could not create isolated settings directory");
+    QApplication::setStyle(QStringLiteral("Fusion"));
     QCoreApplication::setOrganizationName(QStringLiteral("qmc2-tests"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("invalid.example"));
     QCoreApplication::setApplicationName(QStringLiteral("qchdman-script-test"));

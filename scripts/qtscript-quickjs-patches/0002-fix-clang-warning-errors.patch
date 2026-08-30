@@ -1,0 +1,41 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -10,2 +10,12 @@ find_package(Qt6 ${QT_REPO_MODULE_VERSION} CONFIG REQUIRED
+ )
++# Recent macOS SDKs no longer ship an AGL link stub. QtGui already records its
++# runtime dependency on AGL, so do not propagate the obsolete framework when
++# linking this out-of-tree module.
++if(APPLE AND TARGET WrapOpenGL::WrapOpenGL)
++    get_target_property(wrap_opengl_libraries WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
++    if(wrap_opengl_libraries)
++        list(FILTER wrap_opengl_libraries EXCLUDE REGEX "AGL(\\.framework)?$")
++        set_property(TARGET WrapOpenGL::WrapOpenGL PROPERTY INTERFACE_LINK_LIBRARIES "${wrap_opengl_libraries}")
++    endif()
++endif()
+ find_package(Threads REQUIRED)
+diff --git a/src/script/quickjs/qscriptenginequickjs.cpp b/src/script/quickjs/qscriptenginequickjs.cpp
+--- a/src/script/quickjs/qscriptenginequickjs.cpp
++++ b/src/script/quickjs/qscriptenginequickjs.cpp
+@@ -2181,6 +2181,8 @@ QScriptValue QScriptEnginePrivate::createNativeFunction(const QScriptNativeFunc
+     const int id = state->nextFunctionId++;
+     state->nativeFunctions.insert(id, function);
+     JSContext *context = state->context;
++    JSCFunctionType nativeFunction{};
++    nativeFunction.generic_magic = nativeFunctionThunk;
+     JSValue native = JS_NewCFunction2(context,
+-        reinterpret_cast<JSCFunction *>(nativeFunctionThunk), "qtNativeFunction",
++        nativeFunction.generic, "qtNativeFunction",
+         function.length + 3, JS_CFUNC_generic_magic, id);
+@@ -2716,9 +2718,8 @@ QScriptValue QScriptEngine::evaluate(const QString &program, const QString &file
+             }
+         }
+         JSPropertyDescriptor declarationDescriptor{};
+-        const int declarationResult = JS_GetOwnProperty(state->context,
+-                                                         &declarationDescriptor,
+-                                                         evaluationGlobal, it->atom);
++        JS_GetOwnProperty(state->context, &declarationDescriptor,
++                          evaluationGlobal, it->atom);
+         if (!activationIsEvaluationGlobal && !preserveScriptFunctionGlobals) {
+             JS_DeleteProperty(state->context, evaluationGlobal, it->atom, 0);
+             discardQuickJSException(state->context);

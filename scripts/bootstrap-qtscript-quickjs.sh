@@ -55,8 +55,14 @@ cmake -S "$source_dir" -B "$build_dir" -G Ninja \
     -DCMAKE_PREFIX_PATH="$qt_root" \
     -DQTSCRIPT_QUICKJS_INCLUDE_DIR="$quickjs_dir" \
     -DQTSCRIPT_QUICKJS_LIBRARY="$quickjs_library" \
-    -DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF -DWARNINGS_ARE_ERRORS=OFF
+    -DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF -DWARNINGS_ARE_ERRORS=OFF \
+    -DQT_REPO_NOT_WARNINGS_CLEAN=ON
 cmake --build "$build_dir" --parallel "$parallel"
 cmake --install "$build_dir"
-test -f "$prefix/lib/libQt6Script.so" || test -f "$prefix/lib/Qt6Script.lib"
+module_root="$prefix"
+if [[ -f "$prefix/lib/qt6/mkspecs/modules/qt_lib_script.pri" ]]; then
+    module_root="$prefix/lib/qt6"
+fi
+test -f "$module_root/mkspecs/modules/qt_lib_script.pri"
+test -f "$module_root/mkspecs/modules/qt_lib_scripttools.pri"
 echo "QtScript QuickJS $PORT_REV with QuickJS-NG $QUICKJS_REV installed in $prefix"
