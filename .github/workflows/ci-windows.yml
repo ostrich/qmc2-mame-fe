@@ -226,9 +226,13 @@ jobs:
             Copy-Item "${{ runner.workspace }}\SDL2-$env:SDL_VERSION\lib\x64\SDL2.dll" release
           }
           if ('${{ needs.changes.outputs.qchdman }}' -eq 'true') {
+            # windeployqt resolves Qt module dependencies from QT_ROOT_DIR. The
+            # pinned QtScript build is intentionally isolated, so expose its
+            # runtime DLLs there while deployment scans qchdman.
+            Copy-Item .deps\qtscript\bin\Qt6Script*.dll "$env:QT_ROOT_DIR\bin" -Force
             Copy-Item src\tools\qchdman\release\qchdman.exe release
             windeployqt release\qchdman.exe
-            Copy-Item .deps\qtscript\bin\Qt6Script*.dll release
+            Copy-Item .deps\qtscript\bin\Qt6Script*.dll release -Force
           }
           if ('${{ needs.changes.outputs.core }}' -eq 'true') {
             $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
