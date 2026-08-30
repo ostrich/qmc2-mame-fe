@@ -189,7 +189,7 @@ jobs:
       - name: Run qchdman scripting contract
         if: needs.changes.outputs.qchdman == 'true'
         shell: pwsh
-        run: tests/qchdman-script/run-engine.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript" -QMake "$env:QT_ROOT_DIR\bin\qmake.exe" -Name jsc
+        run: tests/qchdman-script/run-engine.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript" -QMake "$env:QT_ROOT_DIR\bin\qmake.exe" -Name jsc -Repeat 3
       - name: Run FTP compatibility fixtures
         if: needs.changes.outputs.ftp == 'true'
         shell: pwsh
@@ -233,6 +233,12 @@ jobs:
             Copy-Item src\tools\qchdman\release\qchdman.exe release
             windeployqt release\qchdman.exe
             Copy-Item .deps\qtscript\bin\Qt6Script*.dll release -Force
+            Get-ChildItem .deps\qtscript\bin\Qt6Script*.dll | ForEach-Object {
+              $deployedDll = Join-Path release $_.Name
+              if ((Get-FileHash $_.FullName).Hash -ne (Get-FileHash $deployedDll).Hash) {
+                throw "deployed $($_.Name) does not match the pinned QtScript build"
+              }
+            }
           }
           if ('${{ needs.changes.outputs.core }}' -eq 'true') {
             $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { $env:VCPKG_ROOT }
