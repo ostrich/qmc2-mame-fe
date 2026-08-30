@@ -20,8 +20,31 @@ try {
     $env:QT_QPA_PLATFORM = 'offscreen'
     $env:QCHDMAN_TEST_RESULTS = Join-Path $BuildRoot "$Name.json"
     $env:QCHDMAN_FAKE_CHDMAN = Join-Path $BuildRoot 'fake-chdman\release\fake-chdman.exe'
-    & (Join-Path $BuildRoot 'harness\release\tst_qchdman_script.exe')
-    if ($LASTEXITCODE) { throw 'qchdman scripting harness failed' }
+    $harness = Join-Path $BuildRoot 'harness\release\tst_qchdman_script.exe'
+    & $harness
+    $harnessExitCode = $LASTEXITCODE
+    if ($harnessExitCode) {
+        Write-Host "qchdman scripting harness exited with native code $harnessExitCode; isolating test functions"
+        foreach ($testName in @(
+            'coreUtilities',
+            'languageRuntimeBridge',
+            'repeatedRuns',
+            'inputDialogs',
+            'versionOnePersistence',
+            'projectProperties',
+            'projectLifecycleAndFailures',
+            'scriptInterruptionAndStress',
+            'debuggerWorkflow',
+            'structuredResultRoundTrip',
+            'slotManifestComplete'
+        )) {
+            $isolatedLog = Join-Path $BuildRoot "$Name-$testName.txt"
+            $isolated = Start-Process $harness -ArgumentList @($testName, '-o', "$isolatedLog,txt") -NoNewWindow -Wait -PassThru
+            Write-Host "--- $testName (exit $($isolated.ExitCode)) ---"
+            if (Test-Path $isolatedLog) { Get-Content $isolatedLog }
+        }
+        throw "qchdman scripting harness failed with native exit code $harnessExitCode"
+    }
     $compareArgs = @((Join-Path $testRoot 'tools\compare_results.py'),
         (Join-Path $testRoot 'reference\qt5-5.15.19.json'), $env:QCHDMAN_TEST_RESULTS)
     if ($Name -eq 'quickjs') {
