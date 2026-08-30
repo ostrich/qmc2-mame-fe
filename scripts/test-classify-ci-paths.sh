@@ -42,7 +42,7 @@ xml=$(profile all false false true false false false false)
 qtscript=$(profile all false false false true false false false)
 ftp=$(profile all false false false false true false false)
 archive=$(profile all false false false false false true false)
-quickjs=$(profile none false false false false false false true)
+script_engine=$(profile all false true false true false false true)
 windows_tools=$(profile windows true true false true false false false)
 full=$(profile all true true true true true true true)
 
@@ -58,7 +58,8 @@ assert_profile 'FTP implementation' \
     "$(profile all true false false false true false false)" src/ftpreply.cpp
 assert_profile 'archive implementation' \
     "$(profile all true false false false false true false)" src/archivefile.cpp src/sevenzipfile.cpp
-assert_profile 'QuickJS dependency only' "$quickjs" scripts/qtscript-quickjs-patches/0001-enable-debugger-workflow.patch
+assert_profile 'default QuickJS dependency' "$script_engine" scripts/qtscript-quickjs-patches/0001-enable-debugger-workflow.patch
+assert_profile 'legacy JSC dependency' "$script_engine" scripts/qtscript-patches/0001-fix-debugger-action-signals.patch
 assert_profile 'Windows build helper' "$windows_tools" scripts/install-jom.ps1
 assert_profile 'workflow changes' "$full" .github/workflows/ci-linux.yml
 assert_profile 'unknown paths default to full coverage' "$full" tools/new-checker.cpp
