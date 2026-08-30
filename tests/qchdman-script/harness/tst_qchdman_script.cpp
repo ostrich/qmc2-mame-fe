@@ -900,6 +900,13 @@ void QchdmanScriptTest::debuggerWorkflow()
             for (QPlainTextEdit *editor : code->findChildren<QPlainTextEdit *>())
                 sourceVisible = sourceVisible || editor->toPlainText().contains(QStringLiteral("debuggerWorkflowInner"));
         }
+        // ContinueAction can become enabled before the code widget has applied
+        // its queued source update, particularly with Cocoa.  Keep the first
+        // suspension in place until the source we intend to exercise is shown.
+        if (pauses == 0 && !sourceVisible) {
+            QTimer::singleShot(10, this, pollDebugger);
+            return;
+        }
         consoleAvailable = consoleAvailable || (console && console->findChild<QLineEdit *>());
         if (pauses == 0 && console) {
             if (QLineEdit *lineEdit = console->findChild<QLineEdit *>()) {
