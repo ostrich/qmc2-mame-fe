@@ -95,7 +95,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.deps/qtscript
-          key: qtscript-${{ runner.os }}-${{ runner.arch }}-qt-${{ matrix.qt }}-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
+          key: qtscript-quickjs-${{ runner.os }}-${{ runner.arch }}-qt-${{ matrix.qt }}-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/bootstrap-qtscript-quickjs.sh', 'scripts/qtscript-quickjs-patches/**') }}
       - name: Build isolated QtScript
         if: (needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true') && steps.qtscript-cache.outputs.cache-hit != 'true'
         run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"

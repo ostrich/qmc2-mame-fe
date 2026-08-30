@@ -33,8 +33,9 @@ one exact language or diagnostic value, both expected values, and a rationale.
 The comparator refuses qchdman project, command, signal, file, cleanup,
 interruption, and debugger fields.
 
-Pull requests run both Qt 6 engines on Linux Qt 6.8. Scheduled runs add Intel
+QuickJS-NG is qchdman's default backend; JSC is retained as the explicit
+`QTSCRIPT_BACKEND=jsc` compatibility option. Pull requests run both Qt 6
+engines on Linux Qt 6.8. Scheduled runs add Intel
 and Apple Silicon macOS, Windows, ASan/UBSan, full debugger automation, and
 small real-chdman create/verify/copy/extract/metadata workflows. Release
 validation additionally requires the existing current-Qt platform builds.
-QuickJS remains experimental until every scheduled and release job is green.

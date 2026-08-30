@@ -41,7 +41,8 @@ changes that reference. Maintainers regenerate it explicitly with
 ## Three-engine differential run
 
 Build the pinned JSC and QuickJS variants into separate prefixes with
-`scripts/bootstrap-qtscript.sh` and `scripts/bootstrap-qtscript-quickjs.sh`.
+`scripts/bootstrap-qtscript-jsc.sh` and
+`scripts/bootstrap-qtscript-quickjs.sh`.
 Then compare both Qt 6 engines against the locked Qt 5 contract:
 
 ```sh
@@ -65,5 +66,5 @@ They run the same contract under ASan and UBSan with leak detection enabled.
 
 Pull requests run the complete fake-chdman differential suite on Linux Qt
 6.8. Scheduled runs add both macOS architectures, Windows, sanitizers, and
-real-chdman smoke coverage. QuickJS stays experimental until those scheduled
-jobs and the existing release builds are green on every supported platform.
+real-chdman smoke coverage. QuickJS-NG is the product default, while the
+differential suite continues to enforce the same qchdman contract for JSC.

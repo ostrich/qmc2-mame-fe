@@ -13,8 +13,10 @@ qmc2-arcade are not supported by this branch.
 - Builds qmc2 and qchdman in CI on Linux, macOS Intel and Apple Silicon, and
   Windows MSVC 2022, with Qt 6.8 LTS and latest-Qt coverage where applicable.
 
-qchdman retains QtScript and its embedded debugger through the maintained
-[qtscript-qt6 compatibility port](https://github.com/ostrich/qtscript-qt6).
+qchdman retains QtScript and its embedded debugger through a maintained
+[QtScript compatibility port](https://github.com/JulienMaille/qtscript-qt6),
+using QuickJS-NG by default. The legacy JavaScriptCore port remains available
+as an explicit build option.
 
 ## Original README
 

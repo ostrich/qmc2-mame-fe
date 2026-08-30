@@ -75,12 +75,10 @@ classify_path() {
             qchdman=true
             qtscript=true
             ;;
-        scripts/bootstrap-qtscript-quickjs*|scripts/qtscript-quickjs-patches/*)
-            differential=true
-            ;;
-        scripts/bootstrap-qtscript*|scripts/qtscript-patches/*|scripts/patch-qtscript.cmake)
+        scripts/bootstrap-qtscript*|scripts/qtscript-patches/*|scripts/qtscript-quickjs-patches/*|scripts/patch-qtscript.cmake)
             enable_qtscript
             enable_qchdman
+            differential=true
             ;;
         tests/qchdman-script/*)
             enable_qchdman

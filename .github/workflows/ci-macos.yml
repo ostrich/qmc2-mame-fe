@@ -96,7 +96,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/.deps/qtscript
-          key: qtscript-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
+          key: qtscript-quickjs-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/bootstrap-qtscript-quickjs.sh', 'scripts/qtscript-quickjs-patches/**') }}
       - name: Build isolated QtScript
         if: (needs.changes.outputs.qchdman == 'true' || needs.changes.outputs.qtscript == 'true') && steps.qtscript-cache.outputs.cache-hit != 'true'
         run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
@@ -135,9 +135,8 @@ jobs:
       - name: Run qchdman scripting contract
         if: needs.changes.outputs.qchdman == 'true'
         env:
-          QTSCRIPT_JSC_PREFIX: ${{ github.workspace }}/.deps/qtscript
           QTSCRIPT_QUICKJS_PREFIX: ${{ github.workspace }}/.deps/qtscript
-          QCHDMAN_ENGINES: jsc
+          QCHDMAN_ENGINES: quickjs
         run: tests/qchdman-script/run-differential.sh
       - name: Run FTP compatibility fixtures
         if: needs.changes.outputs.ftp == 'true'

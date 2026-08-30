@@ -61,7 +61,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .deps/qtscript-jsc
-          key: qchdman-jsc-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
+          key: qchdman-jsc-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-jsc.sh', 'scripts/qtscript-patches/**') }}
       - name: Cache QuickJS engine
         uses: actions/cache@v5
         with:
@@ -69,8 +69,18 @@ jobs:
           key: qchdman-quickjs-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-quickjs.sh', 'scripts/qtscript-quickjs-patches/**') }}
       - name: Build pinned engines
         run: |
-          test -f .deps/qtscript-jsc/lib/libQt6Script.so || scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-jsc"
+          test -f .deps/qtscript-jsc/lib/libQt6Script.so || scripts/bootstrap-qtscript-jsc.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-jsc"
           test -f .deps/qtscript-quickjs/lib/libQt6Script.so || scripts/bootstrap-qtscript-quickjs.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-quickjs"
+      - name: Build legacy JSC qchdman option
+        env:
+          QMAKEPATH: ${{ github.workspace }}/.deps/qtscript-jsc:${{ github.workspace }}/.deps/qtscript-jsc/lib/qt6
+          QTSCRIPT_BACKEND: jsc
+          QTSCRIPT_JSC_PREFIX: ${{ github.workspace }}/.deps/qtscript-jsc
+        run: |
+          mkdir build-qchdman-jsc
+          cd build-qchdman-jsc
+          qmake ../src/tools/qchdman/qchdman.pro CONFIG+=release
+          make -j2
       - name: Compare JSC and QuickJS with Qt 5 contract
         env:
           QTSCRIPT_JSC_PREFIX: ${{ github.workspace }}/.deps/qtscript-jsc
@@ -94,9 +104,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .deps/qtscript-jsc
-          key: qchdman-jsc-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
+          key: qchdman-jsc-${{ runner.os }}-${{ runner.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-jsc.sh', 'scripts/qtscript-patches/**') }}
       - if: steps.qtscript-cache.outputs.cache-hit != 'true'
-        run: scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-jsc"
+        run: scripts/bootstrap-qtscript-jsc.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-jsc"
       - name: ASan and UBSan qchdman contract
         env:
           QTSCRIPT_PREFIX: ${{ github.workspace }}/.deps/qtscript-jsc
@@ -120,7 +130,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .deps/qtscript
-          key: qtscript-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript.sh', 'scripts/qtscript-patches/**') }}
+          key: qchdman-jsc-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-jsc.sh', 'scripts/qtscript-patches/**') }}
       - name: Cache QuickJS engine
         uses: actions/cache@v5
         with:
@@ -128,7 +138,7 @@ jobs:
           key: qchdman-quickjs-${{ runner.os }}-${{ matrix.arch }}-qt-6.8.3-${{ hashFiles('scripts/bootstrap-qtscript-quickjs.sh', 'scripts/qtscript-quickjs-patches/**') }}
       - name: Build pinned engines
         run: |
-          test -d .deps/qtscript/lib/QtScript.framework || scripts/bootstrap-qtscript.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
+          test -d .deps/qtscript/lib/QtScript.framework || scripts/bootstrap-qtscript-jsc.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript"
           test -d .deps/qtscript-quickjs/lib/QtScript.framework || scripts/bootstrap-qtscript-quickjs.sh --qt-root "$QT_ROOT_DIR" --prefix "$GITHUB_WORKSPACE/.deps/qtscript-quickjs"
       - name: Three-engine qchdman contract
         env:

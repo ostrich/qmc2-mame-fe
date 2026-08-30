@@ -6,8 +6,16 @@ readonly reference=$test_root/reference/qt5-5.15.19.json
 qmake_bin=${QCHDMAN_QT6_QMAKE:-qmake6}
 jsc_prefix=${QTSCRIPT_JSC_PREFIX:-}
 quickjs_prefix=${QTSCRIPT_QUICKJS_PREFIX:-}
-[[ -n $jsc_prefix && -d $jsc_prefix ]] || { echo "set QTSCRIPT_JSC_PREFIX" >&2; exit 2; }
-[[ -n $quickjs_prefix && -d $quickjs_prefix ]] || { echo "set QTSCRIPT_QUICKJS_PREFIX" >&2; exit 2; }
+engines=${QCHDMAN_ENGINES:-jsc,quickjs}
+case $engines in
+    jsc) [[ -n $jsc_prefix && -d $jsc_prefix ]] || { echo "set QTSCRIPT_JSC_PREFIX" >&2; exit 2; } ;;
+    quickjs) [[ -n $quickjs_prefix && -d $quickjs_prefix ]] || { echo "set QTSCRIPT_QUICKJS_PREFIX" >&2; exit 2; } ;;
+    jsc,quickjs)
+        [[ -n $jsc_prefix && -d $jsc_prefix ]] || { echo "set QTSCRIPT_JSC_PREFIX" >&2; exit 2; }
+        [[ -n $quickjs_prefix && -d $quickjs_prefix ]] || { echo "set QTSCRIPT_QUICKJS_PREFIX" >&2; exit 2; }
+        ;;
+    *) echo "QCHDMAN_ENGINES must be jsc, quickjs, or jsc,quickjs" >&2; exit 2 ;;
+esac
 
 work_root=$(mktemp -d "${TMPDIR:-/tmp}/qchdman-differential.XXXXXX")
 trap 'rm -rf "$work_root"' EXIT
@@ -53,9 +61,8 @@ run_engine() {
     echo "$name matches the Qt 5.15.19 qchdman scripting contract"
 }
 
-case ${QCHDMAN_ENGINES:-jsc,quickjs} in
+case $engines in
     jsc) run_engine jsc "$jsc_prefix" ;;
     quickjs) run_engine quickjs "$quickjs_prefix" ;;
     jsc,quickjs) run_engine jsc "$jsc_prefix"; run_engine quickjs "$quickjs_prefix" ;;
-    *) echo "QCHDMAN_ENGINES must be jsc, quickjs, or jsc,quickjs" >&2; exit 2 ;;
 esac

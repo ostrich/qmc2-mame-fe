@@ -14,11 +14,10 @@ migrated to Arcade Database; custom user URLs are never replaced.
 
 ## Building qchdman
 
-Qt 6 no longer ships QtScript. qchdman uses the qmc2-maintained Qt 6
-compatibility port from <https://github.com/ostrich/qtscript-qt6>, pinned by
-the bootstrap scripts to commit
-`1122594ab02aeb07c7a862738ef36486bab1ed7a`. The port in turn pins the KDE
-QtScript source revision and applies its ordered compatibility patch series.
+Qt 6 no longer ships QtScript. qchdman uses the QuickJS-NG QtScript
+compatibility port from <https://github.com/JulienMaille/qtscript-qt6> by
+default. The bootstrap scripts pin the port and QuickJS-NG revisions and apply
+qmc2's ordered compatibility patches.
 
 Build QtScript into an isolated prefix, never into the Qt installation:
 
@@ -37,16 +36,32 @@ and `-Prefix` arguments from an MSVC 2022 development environment. Release
 packages must include the Script and ScriptTools shared libraries from the
 isolated prefix alongside qchdman.
 
+For compatibility testing or a temporary fallback, build the legacy
+JavaScriptCore implementation with `scripts/bootstrap-qtscript-jsc.sh` (or
+`.ps1`) and select it when configuring qchdman:
+
+```sh
+QMAKEPATH="$PWD/.deps/qtscript-jsc:$PWD/.deps/qtscript-jsc/lib/qt6" \
+QTSCRIPT_JSC_PREFIX="$PWD/.deps/qtscript-jsc" \
+QTSCRIPT_BACKEND=jsc \
+make qchdman
+```
+
+`QTSCRIPT_BACKEND` is a compile-time qmake setting. It accepts `quickjs` (the
+default) or `jsc`; invalid values stop configuration. The selected backend
+uses `QTSCRIPT_QUICKJS_PREFIX` or `QTSCRIPT_JSC_PREFIX` when set, with the
+generic `QTSCRIPT_PREFIX` retained as a build-system override.
+
 ## Script compatibility and security
 
 The `.scr` file format, the `scriptEngine` and `qchdman` globals, and the
 callable slot API remain unchanged. qchdman also retains its embedded
-`QScriptEngineDebugger` rather than substituting a different JavaScript engine.
+`QScriptEngineDebugger` with either backend.
 
 qchdman scripts are trusted native-application automation, not sandboxed web
 content. The API can execute shell commands and create, modify, or remove files,
-and the compatibility library retains the legacy JavaScriptCore engine. Only
-run scripts whose source and effects you trust.
+and neither backend is a security boundary. Only run scripts whose source and
+effects you trust.
 
 ## Intentional compatibility boundaries
 
