@@ -105,7 +105,26 @@ jobs:
           Set-Location build-qtscript-tests
           qmake ..\tests\qtscript\qtscript.pro CONFIG+=release
           jom
-          .\release\tst_qtscript.exe
+          $testExecutable = (Resolve-Path .\release\tst_qtscript.exe).Path
+          $testLog = Join-Path $PWD 'qtscript-tests.txt'
+          $process = Start-Process $testExecutable -ArgumentList @('-o', "$testLog,txt") -NoNewWindow -Wait -PassThru
+          if (Test-Path $testLog) { Get-Content $testLog }
+          if ($process.ExitCode -ne 0) {
+            Write-Host "QtScript suite exited with native code $($process.ExitCode); isolating test functions"
+            foreach ($testName in @(
+              'exposesLegacyGlobals',
+              'reportsExceptions',
+              'interruptsInfiniteEvaluation',
+              'debuggerAttachAndCleanShutdown',
+              'debuggerActionsAndResources'
+            )) {
+              $isolatedLog = Join-Path $PWD "qtscript-$testName.txt"
+              $isolated = Start-Process $testExecutable -ArgumentList @($testName, '-o', "$isolatedLog,txt") -NoNewWindow -Wait -PassThru
+              Write-Host "--- $testName (exit $($isolated.ExitCode)) ---"
+              if (Test-Path $isolatedLog) { Get-Content $isolatedLog }
+            }
+            throw "QtScript compatibility fixtures failed with native exit code $($process.ExitCode)"
+          }
       - name: Run qchdman scripting contract
         shell: pwsh
         run: tests/qchdman-script/run-engine.ps1 -Prefix "$env:GITHUB_WORKSPACE\.deps\qtscript" -QMake "$env:QT_ROOT_DIR\bin\qmake.exe" -Name jsc
