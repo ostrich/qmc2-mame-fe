@@ -5,6 +5,6 @@ GenericName=Qt CHDMAN GUI
 Comment=Qt CHDMAN GUI
 Comment[de]=Qt CHDMAN GUI
 Exec=qchdman
-Icon=DATADIR/qmc2/img/qchdman.png
+Icon=qchdman
 Terminal=false
 Categories=Game;Emulator;

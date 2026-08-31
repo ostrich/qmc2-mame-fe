@@ -1,0 +1,7 @@
+/pkg/
+/src/
+/qmc2-mame-fe/
+/qtscript-port/
+/qtscript-source/
+/quickjs-ng/
+/*.pkg.tar.*

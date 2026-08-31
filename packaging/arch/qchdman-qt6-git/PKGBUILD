@@ -1,0 +1,125 @@
+# Maintainer: ostrich <570911+ostrich@users.noreply.github.com>
+
+pkgname=qchdman-qt6-git
+pkgver=0.244.r7133.gee8ba0b03
+pkgrel=1
+pkgdesc='Qt 6 graphical front-end for MAME chdman with QuickJS-NG scripting'
+arch=('x86_64')
+url='https://github.com/ostrich/qmc2-mame-fe'
+license=('GPL-2.0-only' 'GPL-3.0-only' 'LGPL-3.0-only')
+depends=(
+  'gcc-libs'
+  'glibc'
+  'hicolor-icon-theme'
+  'mame'
+  'qt6-base'
+)
+makedepends=(
+  'cmake'
+  'git'
+  'ninja'
+  'qt6-5compat'
+  'qt6-tools'
+  'rsync'
+)
+provides=('qchdman')
+conflicts=('qchdman')
+source=(
+  'qmc2-mame-fe::git+https://github.com/ostrich/qmc2-mame-fe.git#branch=qt6'
+  'qtscript-port::git+https://github.com/JulienMaille/qtscript-qt6.git#commit=09a5abc7b5cc41c8d99b34f0a66fa44f61d3a98e'
+  'qtscript-source::git+https://invent.kde.org/qt/qt/qtscript.git#commit=bcd7cae6215df8f1c8b45a338f3327da51edeaff'
+  'quickjs-ng::git+https://github.com/quickjs-ng/quickjs.git#commit=954dc53628e36891f93c359aa60895c2ae3dac6b'
+)
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+pkgver() {
+  cd qmc2-mame-fe
+
+  local version
+  version=$(awk '/^VERSION =/ { print $3; exit }' src/tools/qchdman/qchdman.pro)
+  printf '%s.r%s.g%s' \
+    "$version" \
+    "$(git rev-list --count HEAD)" \
+    "$(git rev-parse --short=9 HEAD)"
+}
+
+prepare() {
+  git -C qtscript-source reset --hard bcd7cae6215df8f1c8b45a338f3327da51edeaff
+  git -C quickjs-ng reset --hard 954dc53628e36891f93c359aa60895c2ae3dac6b
+  bash qtscript-port/scripts/apply-patches.sh qtscript-source
+  for patch in qmc2-mame-fe/scripts/qtscript-quickjs-patches/*.patch; do
+    git -C qtscript-source apply "$srcdir/$patch"
+  done
+
+  # A private staged QtScript prefix must not become a runtime search path.
+  sed -i '/QMAKE_RPATHDIR +=.*QTSCRIPT_PREFIX\/lib/d' \
+    qmc2-mame-fe/src/tools/qchdman/qchdman.pro
+}
+
+build() {
+  bash qtscript-port/scripts/build-quickjs-ng.sh \
+    --configuration Release \
+    --work-root "$srcdir/quickjs-build" \
+    --quickjs-source "$srcdir/quickjs-ng" \
+    --parallel "$(nproc)"
+
+  cmake -S qtscript-source -B qtscript-build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DQTSCRIPT_QUICKJS_INCLUDE_DIR="$srcdir/quickjs-ng" \
+    -DQTSCRIPT_QUICKJS_LIBRARY="$srcdir/quickjs-build/Release/build/libqjs.a" \
+    -DQT_BUILD_TESTS=OFF \
+    -DQT_BUILD_EXAMPLES=OFF \
+    -DWARNINGS_ARE_ERRORS=OFF \
+    -DQT_REPO_NOT_WARNINGS_CLEAN=ON
+  cmake --build qtscript-build
+  DESTDIR="$srcdir/qtscript-root" cmake --install qtscript-build
+
+  cd qmc2-mame-fe
+  QMAKEPATH="$srcdir/qtscript-root/usr/lib/qt6" \
+  QTSCRIPT_BACKEND=quickjs \
+  QTSCRIPT_QUICKJS_PREFIX="$srcdir/qtscript-root/usr" \
+    make \
+      QMAKE=qmake6 \
+      LRELEASE=/usr/lib/qt6/bin/lrelease \
+      LUPDATE=/usr/lib/qt6/bin/lupdate \
+      PREFIX=/usr \
+      SYSCONFDIR=/etc \
+      DISTCFG=1 \
+      qchdman
+  make man PREFIX=/usr SYSCONFDIR=/etc DISTCFG=1
+}
+
+package() {
+  cd qmc2-mame-fe
+
+  QMAKEPATH="$srcdir/qtscript-root/usr/lib/qt6" \
+  QTSCRIPT_BACKEND=quickjs \
+  QTSCRIPT_QUICKJS_PREFIX="$srcdir/qtscript-root/usr" \
+    make \
+      QMAKE=qmake6 \
+      PREFIX=/usr \
+      SYSCONFDIR=/etc \
+      DISTCFG=1 \
+      DESTDIR="$pkgdir" \
+      qchdman-install
+
+  install -Dm755 "$srcdir/qtscript-root/usr/lib/libQt6Script.so.6" \
+    "$pkgdir/usr/lib/libQt6Script.so.6"
+  install -Dm755 "$srcdir/qtscript-root/usr/lib/libQt6ScriptTools.so.6" \
+    "$pkgdir/usr/lib/libQt6ScriptTools.so.6"
+  install -Dm644 data/doc/man/qchdman.6.gz \
+    "$pkgdir/usr/share/man/man6/qchdman.6.gz"
+  install -Dm644 data/doc/html/us/copying.html \
+    "$pkgdir/usr/share/licenses/$pkgname/COPYING.html"
+  install -Dm644 "$srcdir/qtscript-port/LICENSES/LICENSE.GPL2" \
+    "$pkgdir/usr/share/licenses/$pkgname/QtScript-GPL-2.0.txt"
+  install -Dm644 "$srcdir/qtscript-port/LICENSES/LICENSE.GPL3" \
+    "$pkgdir/usr/share/licenses/$pkgname/QtScript-GPL-3.0.txt"
+  install -Dm644 "$srcdir/qtscript-port/LICENSES/LICENSE.GPL3-EXCEPT" \
+    "$pkgdir/usr/share/licenses/$pkgname/QtScript-GPL-3.0-exception.txt"
+  install -Dm644 "$srcdir/qtscript-port/LICENSES/LICENSE.LGPL3" \
+    "$pkgdir/usr/share/licenses/$pkgname/QtScript-LGPL-3.0.txt"
+  install -Dm644 "$srcdir/quickjs-ng/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/QuickJS-NG-MIT.txt"
+}

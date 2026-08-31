@@ -910,13 +910,13 @@ qchdman-install: qchdman-bin qchdman-macdeployqt
 	@$(RSYNC) src/tools/qchdman/Info.plist /Applications/qchdman.app/Contents/
 else
 qchdman-install: qchdman-bin
-	@$(MKDIR) "$(DESTDIR)/$(BINDIR)" "$(DESTDIR)/$(QMC2DATADIR)/$(PROJECT)"
+	@$(MKDIR) "$(DESTDIR)/$(BINDIR)" "$(GLOBAL_DATADIR)/icons/hicolor/256x256/apps"
 	@$(RSYNC) "src/tools/qchdman/qchdman" "$(DESTDIR)/$(BINDIR)"
-	@$(RSYNC) ./data/img "$(GLOBAL_DATADIR)/$(PROJECT)/"
+	@$(RSYNC) -L ./data/img/qchdman.png "$(GLOBAL_DATADIR)/icons/hicolor/256x256/apps/"
 	@$(ECHO) "Installing qchdman.desktop to $(GLOBAL_DATADIR)/applications"
 	@$(MKDIR) $(GLOBAL_DATADIR)/applications
 	@$(CHMOD) a+rx $(GLOBAL_DATADIR)/applications
-	@$(SED) -e "s*DATADIR*$(QMC2DATADIR)*g" < ./inst/qchdman.desktop.template > $(GLOBAL_DATADIR)/applications/qchdman.desktop
+	@$(RSYNC) ./inst/qchdman.desktop.template $(GLOBAL_DATADIR)/applications/qchdman.desktop
 endif
 
 tools: qchdman
