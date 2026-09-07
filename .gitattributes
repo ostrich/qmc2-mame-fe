@@ -1,0 +1,2 @@
+# Patches must remain LF even when Windows checks out source files as CRLF.
+*.patch text eol=lf

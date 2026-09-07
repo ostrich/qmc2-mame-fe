@@ -125,7 +125,8 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: jurplel/install-qt-action@v4.3.1
         with: { version: 6.8.3, modules: qt5compat, cache: true, arch: clang_64 }
-      - run: brew install ninja mame
+      # Homebrew packages chdman in rom-tools, not in the mame formula.
+      - run: brew install ninja rom-tools
       - name: Cache JSC engine
         uses: actions/cache@v6.1.0
         with:

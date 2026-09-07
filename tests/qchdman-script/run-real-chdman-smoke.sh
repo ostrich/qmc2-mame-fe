@@ -14,8 +14,8 @@ hd=$work_root/hd.bin
 hd_chd=$work_root/hd.chd
 metadata=$work_root/metadata.txt
 
-dd if=/dev/zero of="$raw" bs=4096 count=256 status=none
-printf 'qchdman-real-smoke' | dd of="$raw" conv=notrunc status=none
+dd if=/dev/zero of="$raw" bs=4096 count=256
+printf 'qchdman-real-smoke' | dd of="$raw" conv=notrunc
 "$chdman_bin" createraw -i "$raw" -o "$raw_chd" -hs 4096 -us 1 -c none
 "$chdman_bin" info -i "$raw_chd"
 "$chdman_bin" verify -i "$raw_chd"
@@ -33,7 +33,7 @@ if "$chdman_bin" dumpmeta -i "$copy_chd" -t TEST -o "$metadata.after-delete" 2>/
     exit 1
 fi
 
-dd if=/dev/zero of="$hd" bs=512 count=2016 status=none
+dd if=/dev/zero of="$hd" bs=512 count=2016
 "$chdman_bin" createhd -i "$hd" -o "$hd_chd" -chs 2,16,63 -ss 512 -c none
 "$chdman_bin" info -i "$hd_chd"
 "$chdman_bin" verify -i "$hd_chd"
