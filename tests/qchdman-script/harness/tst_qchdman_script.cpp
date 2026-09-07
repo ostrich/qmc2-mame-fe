@@ -109,6 +109,7 @@ private slots:
     void projectLifecycleAndFailures();
     void recursiveProjectScheduling();
     void repeatedParallelProjects();
+    void syncAlreadyStoppedProcess();
     void deterministicCancellationRecovery();
     void callbackExceptionRecovery();
     void scriptFileLoadingAndExecution();
@@ -980,6 +981,42 @@ void QchdmanScriptTest::repeatedParallelProjects()
     qunsetenv("QCHDMAN_FAKE_DELAY_MS");
     observations.append(QJsonObject{{QStringLiteral("id"), QStringLiteral("projects/repeated-parallel")},
                                     {QStringLiteral("result"), result}});
+}
+
+void QchdmanScriptTest::syncAlreadyStoppedProcess()
+{
+    ScriptEngine *engine = scriptWidget->engine();
+    const QString id = QStringLiteral("stopped-process-regression");
+    engine->projectCreate(id, QStringLiteral("Verify"));
+    ProjectWidget *project = nullptr;
+    for (QWidget *widget : QApplication::topLevelWidgets()) {
+        ProjectWidget *candidate = qobject_cast<ProjectWidget *>(widget);
+        if (candidate && candidate->scriptId == id) {
+            project = candidate;
+            break;
+        }
+    }
+    QVERIFY(project);
+    QVERIFY(!project->chdmanProc);
+    project->chdmanProc = new QProcess(project);
+    QCOMPARE(project->chdmanProc->state(), QProcess::NotRunning);
+    // Model the stale status seen when a process finishes during event dispatch.
+    const QString previousStatus = project->status;
+    project->status = QCHDMAN_PRJSTAT_RUNNING;
+    bool timedOut = false;
+    QTimer guard;
+    guard.setSingleShot(true);
+    connect(&guard, &QTimer::timeout, this, [&]() {
+        timedOut = true;
+        engine->externalStop = true;
+    });
+    guard.start(1000);
+    engine->syncProjects(id);
+    guard.stop();
+    engine->externalStop = false;
+    project->status = previousStatus;
+    engine->destroyProjects(id);
+    QVERIFY2(!timedOut, "syncProjects spun on an already stopped process");
 }
 
 void QchdmanScriptTest::deterministicCancellationRecovery()

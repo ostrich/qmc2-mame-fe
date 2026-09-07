@@ -2787,7 +2787,10 @@ void ScriptEngine::syncProjects(QString idList)
 			if ( mProjectMap[id]->status == QCHDMAN_PRJSTAT_RUNNING ) {
 				bool finished = false;
 				bool error = false;
-				while ( !finished && !error && !externalStop && mProjectMap[id]->chdmanProc ) {
+				// The process can finish while processEvents() dispatches signals.
+				// waitForFinished() returns false for an already stopped process.
+				while ( !finished && !error && !externalStop && mProjectMap[id]->chdmanProc
+				        && mProjectMap[id]->chdmanProc->state() != QProcess::NotRunning ) {
 					finished = mProjectMap[id]->chdmanProc->waitForFinished(QCHDMAN_PROCESS_POLL_TIME);
 					error = finished ? mProjectMap[id]->status != QCHDMAN_PRJSTAT_RUNNING : mErrorStates.contains(mProjectMap[id]->status);
 					qApp->processEvents();
