@@ -7,8 +7,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$portRepository = 'https://github.com/ostrich/qtscript-qt6.git'
-$portRevision = '1122594ab02aeb07c7a862738ef36486bab1ed7a'
+$portRepository = 'https://github.com/JulienMaille/qtscript-qt6.git'
+$portRevision = '3228aeb249f372c68882d1a658a347b93bda9f21'
 $portDir = Join-Path $WorkRoot 'port'
 $sourceDir = Join-Path $WorkRoot 'src'
 $buildDir = Join-Path $WorkRoot 'build'

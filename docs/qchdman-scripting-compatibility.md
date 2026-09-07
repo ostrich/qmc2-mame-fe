@@ -9,14 +9,22 @@ The immutable engine inputs are:
 
 - Qt 5 reference: qmc2 `1fb6d2b7429f6b1b709ed836f79ec2a9d11493d8`
   with Qt 5.15.19;
-- Qt 6 JSC port: `1122594ab02aeb07c7a862738ef36486bab1ed7a` plus
+- Qt 6 JSC port: `3228aeb249f372c68882d1a658a347b93bda9f21` plus
   the compatibility patches in `scripts/qtscript-patches`;
-- Qt 6 QuickJS port: `09a5abc7b5cc41c8d99b34f0a66fa44f61d3a98e`
+- Qt 6 QuickJS port: `3a7296a7a04b8c13e90ba89e656a077650918afb`
   with QuickJS-NG `954dc53628e36891f93c359aa60895c2ae3dac6b` plus
   `scripts/qtscript-quickjs-patches`.
 
+Both Qt 6 ports are pinned from JulienMaille/qtscript-qt6. Upstream now
+supplies the Clang and macOS AGL fixes. Local patches still provide JSC
+debugger action/resource fixes and the QuickJS debugger and signal-handler
+recovery behavior exercised by qchdman. The Qt 5 reference is unchanged.
+
 Build each Qt 6 engine into an isolated prefix; never install either into the
-host Qt tree. Run `tests/qchdman-script/run-differential.sh` with
+host Qt tree. Use a fresh `--work-root` when upgrading or restarting a
+QuickJS bootstrap: upstream patches the QuickJS checkout in place, and its
+overlapping patches can prevent reusing an already patched checkout.
+Run `tests/qchdman-script/run-differential.sh` with
 `QTSCRIPT_JSC_PREFIX` and `QTSCRIPT_QUICKJS_PREFIX` set. The runner first
 requires all explicit QtTest assertions to pass and then compares each result
 with `reference/qt5-5.15.19.json`.

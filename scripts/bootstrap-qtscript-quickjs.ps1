@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $portRepository = 'https://github.com/JulienMaille/qtscript-qt6.git'
-$portRevision = '09a5abc7b5cc41c8d99b34f0a66fa44f61d3a98e'
+$portRevision = '3a7296a7a04b8c13e90ba89e656a077650918afb'
 $quickjsRepository = 'https://github.com/quickjs-ng/quickjs.git'
 $quickjsRevision = '954dc53628e36891f93c359aa60895c2ae3dac6b'
 $portDir = Join-Path $WorkRoot 'port'

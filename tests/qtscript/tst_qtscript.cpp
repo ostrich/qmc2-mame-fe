@@ -42,6 +42,17 @@ private slots:
         QVERIFY(!engine.uncaughtExceptionBacktrace().isEmpty());
     }
 
+    void preservesThrownUndefined()
+    {
+        QScriptEngine engine;
+        const QScriptValue result = engine.evaluate("eval('throw undefined')", "undefined.js");
+        QVERIFY(engine.hasUncaughtException());
+        QVERIFY(result.isUndefined());
+        QVERIFY(engine.uncaughtException().isUndefined());
+        QCOMPARE(engine.evaluate("40 + 2").toInt32(), 42);
+        QVERIFY(!engine.hasUncaughtException());
+    }
+
     void interruptsInfiniteEvaluation()
     {
         QScriptEngine engine;

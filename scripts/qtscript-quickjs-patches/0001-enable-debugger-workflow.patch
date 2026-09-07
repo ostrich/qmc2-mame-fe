@@ -66,16 +66,15 @@ index 3d3c1b0..b880342 100644
      state->clearException();
      state->clearAbortValue();
      state->abortRequested = false;
-@@ -2501,7 +2551,8 @@ QScriptValue QScriptEngine::evaluate(const QString &program, const QString &file
+@@ -2493,6 +2543,7 @@ QScriptValue QScriptEngine::evaluate(const QString &program, const QString &file
          }
      }
  
 -    QByteArray source = normalizeDuplicateRegExpFlags(program.toUtf8());
 +    QByteArray source = enableDebuggerStatements(
 +        normalizeDuplicateRegExpFlags(program.toUtf8()));
-     QSet<QString> declaredNames;
-     const bool legacyReservedWordError = isLegacyReservedWordProgram(source);
-     if (!legacyReservedWordError && previousPrivate && previousPrivate->parent) {
+     if (previousPrivate && previousPrivate->parent) {
+         static const QRegularExpression declarationPattern(
 diff --git a/src/scripttools/debugging/qscriptenginedebugger.h b/src/scripttools/debugging/qscriptenginedebugger.h
 index 771e344..2e73192 100644
 --- a/src/scripttools/debugging/qscriptenginedebugger.h

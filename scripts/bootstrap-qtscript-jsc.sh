@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-readonly PORT_REPO=https://github.com/ostrich/qtscript-qt6.git
-readonly PORT_REV=1122594ab02aeb07c7a862738ef36486bab1ed7a
+readonly PORT_REPO=https://github.com/JulienMaille/qtscript-qt6.git
+readonly PORT_REV=3228aeb249f372c68882d1a658a347b93bda9f21
 readonly REPOSITORY_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 qt_root="${QT_ROOT_DIR:-}"
 prefix="${QTSCRIPT_PREFIX:-}"
@@ -34,12 +34,22 @@ git -C "$port_dir" remote set-url origin "$PORT_REPO"
 git -C "$port_dir" fetch --quiet origin "$PORT_REV"
 git -C "$port_dir" checkout --quiet --detach "$PORT_REV"
 rm -rf "$source_dir" "$build_dir"
-bash "$port_dir/scripts/apply-patches.sh" "$source_dir"
+platform_patches=()
+[[ $(uname -s) != Darwin ]] || platform_patches=(--include-macos)
+bash "$port_dir/scripts/apply-patches.sh" "$source_dir" "${platform_patches[@]}"
 for compatibility_patch in "$REPOSITORY_ROOT/scripts/qtscript-patches"/*.patch; do
 	git -C "$source_dir" apply "$compatibility_patch"
 done
 
 qt_cmake=""
+apple_check_args=()
+if [[ $(uname -s) == Darwin ]]; then
+	# Match upstream's support for Command Line Tools-only macOS hosts.
+	apple_check_args=(-DQT_FORCE_WARN_APPLE_SDK_AND_XCODE_CHECK=ON)
+	if ! command -v xcodebuild >/dev/null || ! xcodebuild -version >/dev/null 2>&1; then
+		apple_check_args+=(-DQT_NO_XCODE_MIN_VERSION_CHECK=ON)
+	fi
+fi
 for candidate in "$qt_root/bin/qt-cmake-private" "$qt_root/libexec/qt-cmake-private"; do
 	[[ -x "$candidate" ]] && qt_cmake="$candidate" && break
 done
@@ -47,13 +57,13 @@ if [[ -n "$qt_cmake" ]]; then
 	"$qt_cmake" -S "$source_dir" -B "$build_dir" -G Ninja \
 		-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$prefix" \
 		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF \
-		-DWARNINGS_ARE_ERRORS=OFF -DQT_REPO_NOT_WARNINGS_CLEAN=ON
+		-DWARNINGS_ARE_ERRORS=OFF -DQT_REPO_NOT_WARNINGS_CLEAN=ON "${apple_check_args[@]}"
 else
 	cmake -S "$source_dir" -B "$build_dir" -G Ninja \
 		-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$prefix" \
 		-DCMAKE_PREFIX_PATH="$qt_root" \
 		-DQT_BUILD_TESTS=OFF -DQT_BUILD_EXAMPLES=OFF \
-		-DWARNINGS_ARE_ERRORS=OFF -DQT_REPO_NOT_WARNINGS_CLEAN=ON
+		-DWARNINGS_ARE_ERRORS=OFF -DQT_REPO_NOT_WARNINGS_CLEAN=ON "${apple_check_args[@]}"
 fi
 cmake --build "$build_dir" --parallel "$parallel"
 cmake --install "$build_dir"
