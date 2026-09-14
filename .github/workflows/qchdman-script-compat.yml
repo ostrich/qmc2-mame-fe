@@ -168,6 +168,9 @@ jobs:
         run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\.deps\jom"
       - uses: jurplel/install-qt-action@v4.3.1
         with: { version: 6.8.3, arch: win64_msvc2022_64, modules: qt5compat, cache: true }
+      - name: Enable MSVC developer environment
+        shell: pwsh
+        run: scripts/enable-msvc.ps1
       - name: Cache QuickJS engine
         id: quickjs-cache
         uses: actions/cache@v6.1.0

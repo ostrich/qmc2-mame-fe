@@ -62,6 +62,7 @@ assert_profile 'default QuickJS dependency' "$script_engine" scripts/qtscript-qu
 assert_profile 'legacy JSC dependency' "$script_engine" scripts/qtscript-patches/0001-fix-debugger-action-signals.patch
 assert_profile 'Windows build helper' "$windows_tools" scripts/install-jom.ps1
 assert_profile 'workflow changes' "$full" .github/workflows/ci-linux.yml
+assert_profile 'shared MSVC environment setup' "$full" scripts/enable-msvc.ps1
 assert_profile 'unknown paths default to full coverage' "$full" tools/new-checker.cpp
 assert_profile 'profiles accumulate' \
     "$(profile all true true false true false false true)" \
