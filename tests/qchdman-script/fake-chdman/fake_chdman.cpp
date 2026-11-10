@@ -1,5 +1,7 @@
 #include <QCoreApplication>
 #include <QFile>
+#include <QFileInfo>
+#include <QElapsedTimer>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -60,6 +62,17 @@ int main(int argc, char **argv)
 
     if (delay > 0)
         QThread::msleep(static_cast<unsigned long>(delay));
+
+    const QString verifyGate = environment.value(QStringLiteral("QCHDMAN_FAKE_VERIFY_GATE"));
+    if (applicationArguments.value(1) == QStringLiteral("verify") && !verifyGate.isEmpty()) {
+        QElapsedTimer deadline;
+        deadline.start();
+        while (!QFileInfo::exists(verifyGate)) {
+            if (deadline.elapsed() >= 30000)
+                return 124;
+            QThread::msleep(5);
+        }
+    }
 
     const QString stdoutText = environment.value(QStringLiteral("QCHDMAN_FAKE_STDOUT"));
     const QString stderrText = environment.value(QStringLiteral("QCHDMAN_FAKE_STDERR"));

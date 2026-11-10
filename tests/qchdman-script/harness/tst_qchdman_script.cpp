@@ -781,7 +781,21 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
     qputenv("QCHDMAN_FAKE_RECORD", QFile::encodeName(recordPath));
     qputenv("QCHDMAN_FAKE_MODE", "success");
     qputenv("QCHDMAN_FAKE_DELAY_MS", "25");
-    qputenv("QCHDMAN_FAKE_VERIFY_STAGGER_MS", "75");
+    const QString verifyGate = directory.filePath(QStringLiteral("allow-verify"));
+    // Release Verify only after qchdman reports Copy's completion. Process
+    // startup times cannot establish completion order on a loaded CI runner.
+    qputenv("QCHDMAN_FAKE_VERIFY_GATE", QFile::encodeName(verifyGate));
+    bool gateWritten = false;
+    QTimer gateTimer;
+    gateTimer.setInterval(5);
+    connect(&gateTimer, &QTimer::timeout, this, [&]() {
+        if (scriptWidget->engine()->projectStatus(QStringLiteral("parallel-a")) == QStringLiteral("finished")) {
+            QFile gate(verifyGate);
+            gateWritten = gate.open(QIODevice::WriteOnly);
+            gateTimer.stop();
+        }
+    });
+    gateTimer.start();
     qputenv("QCHDMAN_FAKE_STDERR", "Compressing, 25.0% complete...\nCompression complete ... final ratio = 1.00\n");
 
     const QJsonObject success = QJsonDocument::fromJson(runFixture(QStringLiteral(
@@ -805,8 +819,13 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
         "aStatus:scriptEngine.projectStatus('parallel-a'),bStatus:scriptEngine.projectStatus('parallel-b'),"
         "aRc:scriptEngine.projectReturnCode('parallel-a'),bRc:scriptEngine.projectReturnCode('parallel-b')}));"))
         .toUtf8()).object();
+    gateTimer.stop();
+    qunsetenv("QCHDMAN_FAKE_VERIFY_GATE");
+    QVERIFY(gateWritten);
     QCOMPARE(success.value(QStringLiteral("started")).toArray().size(), 2);
     QCOMPARE(success.value(QStringLiteral("finished")).toArray().size(), 2);
+    QCOMPARE(success.value(QStringLiteral("finished")).toArray(),
+             QJsonArray({QStringLiteral("parallel-a"), QStringLiteral("parallel-b")}));
     QCOMPARE(success.value(QStringLiteral("peak")).toInt(), 2);
     QCOMPARE(success.value(QStringLiteral("running")).toInt(), 0);
     QCOMPARE(success.value(QStringLiteral("aStatus")).toString(), QStringLiteral("finished"));
@@ -902,7 +921,6 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
     qunsetenv("QCHDMAN_FAKE_RECORD");
     qunsetenv("QCHDMAN_FAKE_MODE");
     qunsetenv("QCHDMAN_FAKE_DELAY_MS");
-    qunsetenv("QCHDMAN_FAKE_VERIFY_STAGGER_MS");
     qunsetenv("QCHDMAN_FAKE_EXIT_CODE");
     QJsonObject result;
     result.insert(QStringLiteral("success"), success);
