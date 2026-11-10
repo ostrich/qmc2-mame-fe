@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QProcessEnvironment>
 #include <QTextStream>
 #include <QThread>
@@ -40,14 +41,21 @@ int main(int argc, char **argv)
         delay += environment.value(QStringLiteral("QCHDMAN_FAKE_VERIFY_STAGGER_MS"), QStringLiteral("0")).toInt();
 
     if (!recordPath.isEmpty()) {
+        // QFile's append mode does not serialize independent Windows writers.
+        // Hold the lock until the complete record has been flushed and closed.
+        QLockFile lock(recordPath + QStringLiteral(".lock"));
+        if (!lock.tryLock(30000))
+            return 125;
         QFile record(recordPath);
-        if (!record.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
+        if (!record.open(QIODevice::WriteOnly | QIODevice::Append))
             return 125;
         QJsonObject invocation;
         invocation.insert(QStringLiteral("arguments"), arguments);
         invocation.insert(QStringLiteral("mode"), mode);
-        record.write(QJsonDocument(invocation).toJson(QJsonDocument::Compact));
-        record.write("\n");
+        const QByteArray line = QJsonDocument(invocation).toJson(QJsonDocument::Compact) + '\n';
+        if (record.write(line) != line.size() || !record.flush())
+            return 125;
+        record.close();
     }
 
     if (delay > 0)

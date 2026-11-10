@@ -37,6 +37,7 @@ try {
                 'versionOnePersistence',
                 'projectProperties',
                 'projectLifecycleAndFailures',
+                'concurrentInvocationRecording',
                 'scriptInterruptionAndStress',
                 'debuggerWorkflow',
                 'structuredResultRoundTrip',

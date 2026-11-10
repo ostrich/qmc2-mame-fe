@@ -11,8 +11,12 @@
 #include <QInputDialog>
 #include <QQueue>
 #include <QTimer>
+#include <QProcessEnvironment>
+#include <QSet>
 #include <algorithm>
 #include <functional>
+#include <memory>
+#include <vector>
 
 #include "mainwindow.h"
 #include "qchdmansettings.h"
@@ -107,6 +111,7 @@ private slots:
     void versionOnePersistence();
     void projectProperties();
     void projectLifecycleAndFailures();
+    void concurrentInvocationRecording();
     void recursiveProjectScheduling();
     void repeatedParallelProjects();
     void syncAlreadyStoppedProcess();
@@ -712,6 +717,58 @@ void QchdmanScriptTest::projectProperties()
     observations.append(observation);
 }
 
+void QchdmanScriptTest::concurrentInvocationRecording()
+{
+    const QString executable = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
+    QVERIFY(QFileInfo::exists(executable));
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("parallel.jsonl"));
+    QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+    environment.insert(QStringLiteral("QCHDMAN_FAKE_RECORD"), path);
+    environment.insert(QStringLiteral("QCHDMAN_FAKE_MODE"), QStringLiteral("success"));
+    environment.insert(QStringLiteral("QCHDMAN_FAKE_DELAY_MS"), QStringLiteral("0"));
+    const QString payload(8192, QLatin1Char('x'));
+    QSet<QString> expected;
+    for (int batch = 0; batch < 3; ++batch) {
+        std::vector<std::unique_ptr<QProcess>> processes;
+        for (int i = 0; i < 12; ++i) {
+            const QString id = QStringLiteral("%1-%2").arg(batch).arg(i);
+            expected.insert(id);
+            processes.emplace_back(new QProcess);
+            QProcess *process = processes.back().get();
+            process->setProcessEnvironment(environment);
+            process->start(executable, QStringList{id, payload});
+            QVERIFY(process->waitForStarted());
+        }
+        for (const auto &process : processes) {
+            if (process->state() != QProcess::NotRunning)
+                QVERIFY(process->waitForFinished(60000));
+            QCOMPARE(process->exitStatus(), QProcess::NormalExit);
+            QCOMPARE(process->exitCode(), 0);
+        }
+    }
+    QFile record(path);
+    QVERIFY(record.open(QIODevice::ReadOnly));
+    int count = 0;
+    while (!record.atEnd()) {
+        const QByteArray line = record.readLine();
+        QVERIFY(line.endsWith('\n'));
+        QJsonParseError error;
+        const QJsonDocument document = QJsonDocument::fromJson(line, &error);
+        QVERIFY2(document.isObject(), qPrintable(error.errorString()));
+        const QJsonArray arguments = document.object().value(QStringLiteral("arguments")).toArray();
+        QCOMPARE(arguments.size(), 2);
+        QCOMPARE(arguments.at(1).toString(), payload);
+        QVERIFY(expected.remove(arguments.at(0).toString()));
+        QCOMPARE(document.object().value(QStringLiteral("mode")).toString(), QStringLiteral("success"));
+        ++count;
+    }
+    QCOMPARE(count, 36);
+    QVERIFY(expected.isEmpty());
+    QVERIFY(!QFileInfo::exists(path + QStringLiteral(".lock")));
+}
+
 void QchdmanScriptTest::projectLifecycleAndFailures()
 {
     const QString fakeChdman = qEnvironmentVariable("QCHDMAN_FAKE_CHDMAN");
@@ -775,6 +832,9 @@ void QchdmanScriptTest::projectLifecycleAndFailures()
         .toUtf8()).object();
     QCOMPARE(crashed.value(QStringLiteral("status")).toString(), QStringLiteral("crashed"));
 
+    // This child is deliberately killed immediately; it must not be allowed
+    // to leave a partially written record in the completed-invocation log.
+    qunsetenv("QCHDMAN_FAKE_RECORD");
     qputenv("QCHDMAN_FAKE_MODE", "wait");
     const QJsonObject stopped = QJsonDocument::fromJson(runFixture(QStringLiteral(
         "scriptEngine.projectCreate('stopped','Info');scriptEngine.runProjects('stopped');"
