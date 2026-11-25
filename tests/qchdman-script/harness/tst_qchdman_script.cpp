@@ -744,8 +744,11 @@ void QchdmanScriptTest::concurrentInvocationRecording()
         for (const auto &process : processes) {
             if (process->state() != QProcess::NotRunning)
                 QVERIFY(process->waitForFinished(60000));
-            QCOMPARE(process->exitStatus(), QProcess::NormalExit);
-            QCOMPARE(process->exitCode(), 0);
+            QVERIFY2(process->exitStatus() == QProcess::NormalExit && process->exitCode() == 0,
+                     qPrintable(QStringLiteral("Fake chdman %1 exited with status %2, code %3: %4")
+                                .arg(process->arguments().first())
+                                .arg(process->exitStatus()).arg(process->exitCode())
+                                .arg(QString::fromLocal8Bit(process->readAllStandardError()))));
         }
     }
     QFile record(path);

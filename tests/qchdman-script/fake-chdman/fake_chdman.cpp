@@ -46,17 +46,31 @@ int main(int argc, char **argv)
         // QFile's append mode does not serialize independent Windows writers.
         // Hold the lock until the complete record has been flushed and closed.
         QLockFile lock(recordPath + QStringLiteral(".lock"));
-        if (!lock.tryLock(30000))
+        if (!lock.tryLock(30000)) {
+            writeText(stderr, QStringLiteral("Cannot lock %1.lock (QLockFile error %2)\n")
+                              .arg(recordPath).arg(lock.error()));
             return 125;
+        }
         QFile record(recordPath);
-        if (!record.open(QIODevice::WriteOnly | QIODevice::Append))
+        if (!record.open(QIODevice::WriteOnly | QIODevice::Append)) {
+            writeText(stderr, QStringLiteral("Cannot open %1: %2\n")
+                              .arg(recordPath, record.errorString()));
             return 125;
+        }
         QJsonObject invocation;
         invocation.insert(QStringLiteral("arguments"), arguments);
         invocation.insert(QStringLiteral("mode"), mode);
         const QByteArray line = QJsonDocument(invocation).toJson(QJsonDocument::Compact) + '\n';
-        if (record.write(line) != line.size() || !record.flush())
+        if (record.write(line) != line.size()) {
+            writeText(stderr, QStringLiteral("Cannot write complete record to %1: %2\n")
+                              .arg(recordPath, record.errorString()));
             return 125;
+        }
+        if (!record.flush()) {
+            writeText(stderr, QStringLiteral("Cannot flush %1: %2\n")
+                              .arg(recordPath, record.errorString()));
+            return 125;
+        }
         record.close();
     }
 

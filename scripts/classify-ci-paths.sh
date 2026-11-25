@@ -92,7 +92,7 @@ classify_path() {
         tests/ftp/*)
             enable_ftp
             ;;
-        tests/archivefile/*|tests/bigbytearray/*|tests/sevenzip/*)
+        tests/archivefile/*|tests/bigbytearray/*|tests/sevenzip/*|tests/vcpkg-zlib.pri)
             enable_archive
             ;;
         src/tools/qchdman/*)
